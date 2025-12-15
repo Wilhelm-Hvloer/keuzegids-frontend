@@ -1,73 +1,128 @@
+const API_BASE = "https://keuzegids-backend.onrender.com";
+
 let currentNode = null;
 
-// START
+// Wacht tot de pagina geladen is
+document.addEventListener("DOMContentLoaded", () => {
+    const startBtn = document.getElementById("start-btn");
+    if (startBtn) {
+        startBtn.addEventListener("click", startKeuzegids);
+    } else {
+        console.error("Start-knop niet gevonden (id='start-btn')");
+    }
+});
+
+// =======================
+// START KEUZEGIDS
+// =======================
 async function startKeuzegids() {
-    const res = await fetch("https://keuzegids-backend.onrender.com/api/start");
-    const data = await res.json();
-    renderNode(data);
+    console.log("Start keuzegids");
+
+    try {
+        const res = await fetch(`${API_BASE}/api/start`);
+        const data = await res.json();
+        console.log("Start node:", data);
+        renderNode(data);
+    } catch (err) {
+        console.error("Fout bij starten:", err);
+    }
 }
 
-// KEUZE MAKEN → VOLGENDE NODE
+// =======================
+// KEUZE MAKEN
+// =======================
 async function chooseOption(index) {
     if (!currentNode || !currentNode.id) {
         console.error("Geen geldige currentNode:", currentNode);
         return;
     }
 
-    const res = await fetch("https://keuzegids-backend.onrender.com/api/next", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-            node_id: currentNode.id,   // JSON is leidend
-            choice: index
-        })
-    });
+    console.log("Keuze:", index, "bij node:", currentNode.id);
 
-    const data = await res.json();
-    renderNode(data);
+    try {
+        const res = await fetch(`${API_BASE}/api/next`, {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json"
+            },
+            body: JSON.stringify({
+                node_id: currentNode.id, // JSON is leidend
+                choice: index
+            })
+        });
+
+        const data = await res.json();
+        console.log("Volgende node:", data);
+        renderNode(data);
+    } catch (err) {
+        console.error("Fout bij volgende stap:", err);
+    }
 }
 
+// =======================
 // NODE RENDEREN
+// =======================
 function renderNode(node) {
     currentNode = node;
 
-    const container = document.getElementById("app");
-    container.innerHTML = "";
+    const questionEl = document.getElementById("question-text");
+    const optionsBox = document.getElementById("options-box");
+    const resultBox = document.getElementById("result-box");
+    const startBtn = document.getElementById("start-btn");
 
-    // Vraag / tekst
-    const title = document.createElement("h2");
-    title.innerText = node.text || "";
-    container.appendChild(title);
+    // Startknop verbergen zodra we begonnen zijn
+    if (startBtn) startBtn.classList.add("hidden");
 
+    // Reset UI
+    if (optionsBox) optionsBox.innerHTML = "";
+    if (resultBox) {
+        resultBox.innerHTML = "";
+        resultBox.classList.add("hidden");
+    }
+
+    // Vraagtekst
+    if (questionEl) {
+        questionEl.textContent = node.text || "";
+    }
+
+    // =======================
     // EINDE
+    // =======================
     if (node.type === "end") {
-        const done = document.createElement("p");
-        done.innerText = "Einde van de keuzegids.";
-        container.appendChild(done);
+        if (resultBox) {
+            resultBox.textContent = "Einde van de keuzegids.";
+            resultBox.classList.remove("hidden");
+        }
         return;
     }
 
-    // MEERKEUZE (vraag / systeemkeuze / afweging)
+    // =======================
+    // MEERKEUZE (JSON next[])
+    // =======================
     if (node.next && node.next.length > 0) {
-        // Teksten voor knoppen komen uit backend (answers / options)
         const labels = node.answers || node.options || [];
 
         node.next.forEach((_, index) => {
             const btn = document.createElement("button");
-            btn.classList.add("option-btn");
-            btn.innerText = labels[index] || `Keuze ${index + 1}`;
-            btn.onclick = () => chooseOption(index);
-            container.appendChild(btn);
+            btn.className = "option-btn";
+            btn.textContent = labels[index] || `Keuze ${index + 1}`;
+            btn.addEventListener("click", () => chooseOption(index));
+            optionsBox.appendChild(btn);
         });
+
+        return;
     }
 
-    // ANTWOORD / RESULTAAT (bijv. systeem)
-    if (node.type === "antwoord" || node.type === "systeem") {
-        const info = document.createElement("p");
-        info.innerText = node.answer || node.system || "";
-        container.appendChild(info);
+    // =======================
+    // RESULTAAT / ANTWOORD
+    // =======================
+    if (node.answer || node.system) {
+        if (resultBox) {
+            resultBox.textContent = node.answer || `Gekozen systeem: ${node.system}`;
+            resultBox.classList.remove("hidden");
+        }
+        return;
     }
 
-    // EXTRA TYPES (oppervlakte, ruimtes, prijs) → blijven mogelijk
-    // Deze logica kun je hier blijven uitbreiden
+    console.warn("Onverwerkte node:", node);
 }
