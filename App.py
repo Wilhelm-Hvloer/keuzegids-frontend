@@ -1,154 +1,104 @@
-import json
-import re
-from flask import Flask, request, jsonify
-from flask_cors import CORS
+// ----------------------------------------
+// Keuzegids Frontend - Interactieve Flow
+// ----------------------------------------
 
-# -------------------------------------------------------
-# INITIALISATIE
-# -------------------------------------------------------
-app = Flask(__name__)
-CORS(app)
+const API_BASE = "https://keuzegids-backend.onrender.com";
 
-KEUZEBESTAND = "keuzeboom.json"
-PRIJSBESTAND = "Prijstabellen coatingsystemen.json"
+// UI elements
+const questionBox = document.getElementById("question");
+const answersBox = document.getElementById("answers");
+const summaryBox = document.getElementById("summary");
 
-# Boom & prijzen laden
-with open(KEUZEBESTAND, "r", encoding="utf-8") as f:
-    boom = json.load(f)
+// Start direct
+startFlow();
 
-with open(PRIJSBESTAND, "r", encoding="utf-8") as f:
-    pdata = json.load(f)
+async function startFlow() {
+    const data = await api("/api/start");
 
-prijzen = pdata.get("Blad1", pdata)
-
-
-# -------------------------------------------------------
-# HELPERS
-# -------------------------------------------------------
-def clean_answer(txt):
-    return re.sub(r"^(Antw:|Sys:|Xtr:)\s*", "", txt).strip()
-
-def find_node(node_id):
-    if node_id == "END":
-        return {"id": "END", "type": "end", "text": "Einde", "next": []}
-    return next((n for n in boom if n["id"] == node_id), None)
-
-def staffel_index(staffels, opp):
-    if opp < 30:
-        return 0
-    for i, s in enumerate(staffels):
-        clean = s.replace("+", "")
-        parts = clean.split("-")
-        try:
-            low = float(parts[0])
-            high = float(parts[1]) if len(parts) > 1 else 999999
-        except:
-            continue
-        if low <= opp <= high:
-            return i
-    return len(staffels) - 1
-
-def bereken_prijs(systeem, opp, ruimtes):
-    sd = prijzen.get(systeem)
-    if not sd:
-        return None
-
-    staffels = sd["staffel"]
-    prijzen_m2 = sd["prijzen"][str(ruimtes)]
-
-    idx = staffel_index(staffels, opp)
-    pm2 = prijzen_m2[idx]
-    totaal = pm2 * opp
-
-    return {
-        "systeem": systeem,
-        "oppervlakte": opp,
-        "ruimtes": ruimtes,
-        "prijs_m2": pm2,
-        "basis": round(totaal, 2),
-        "staffel": staffels[idx],
+    if (!data) {
+        showError("Kan startinformatie niet laden.");
+        return;
     }
 
+    renderNode(data);
+}
 
-# -------------------------------------------------------
-# API ROUTES
-# -------------------------------------------------------
+async function handleAnswer(nextId) {
+    const data = await api("/api/next", { next: nextId });
 
-@app.route("/api/start", methods=["GET"])
-def start():
-    """Startvraag (BFC) ophalen."""
-    node = find_node("BFC")
-    answers = [clean_answer(find_node(n)["text"]) for n in node["next"]]
-
-    return jsonify({
-        "node_id": "BFC",
-        "type": node["type"],
-        "text": node["text"],
-        "answers": answers,
-        "next": node["next"]
-    })
-
-
-@app.route("/api/next", methods=["POST"])
-def next_step():
-    """Ontvangt node_id + keuze, geeft volgende node terug."""
-    data = request.json
-    node_id = data.get("node_id")
-    choice = data.get("choice")
-
-    current = find_node(node_id)
-    next_id = current["next"][choice]
-    node = find_node(next_id)
-
-    response = {
-        "node_id": next_id,
-        "type": node["type"],
-        "text": node["text"],
-        "answers": [],
-        "next": node["next"]
+    if (!data) {
+        showError("Backend gaf geen antwoord.");
+        return;
     }
 
-    if node["type"] == "vraag":
-        response["answers"] = [
-            clean_answer(find_node(n)["text"]) for n in node["next"]
-        ]
+    // END reached?
+    if (data.end === true) {
+        showSummary(data);
+        return;
+    }
 
-    if node["type"] == "antwoord":
-        response["answer"] = clean_answer(node["text"])
+    renderNode(data);
+}
 
-    if node["type"] == "systeem":
-        response["system"] = clean_answer(node["text"])
+function renderNode(node) {
+    summaryBox.innerHTML = "";
+    questionBox.innerHTML = node.text;
+    answersBox.innerHTML = "";
 
-    if node["type"] == "afw":
-        response["systems"] = []
-        for sid in node["next"]:
-            s_node = find_node(sid)
-            response["systems"].append({
-                "id": sid,
-                "name": clean_answer(s_node["text"])
-            })
+    node.answers.forEach(ans => {
+        const btn = document.createElement("button");
+        btn.className = "answer-btn";
+        btn.innerText = ans.text;
+        btn.onclick = () => handleAnswer(ans.next);
+        answersBox.appendChild(btn);
+    });
+}
 
-    return jsonify(response)
+function showSummary(data) {
+    questionBox.innerHTML = "Samenvatting";
+    answersBox.innerHTML = "";
 
+    summaryBox.innerHTML = `
+        <div class="summary-card">
+            <h2>🎉 Keuzegids voltooid</h2>
+            <p><strong>Gekozen systeem:</strong> ${data.systeem}</p>
+            <p><strong>Oppervlakte:</strong> ${data.m2} m²</p>
+            <p><strong>Aantal ruimtes:</strong> ${data.ruimtes}</p>
+            <p><strong>Basisprijs:</strong> € ${data.basisprijs}</p>
+            <br>
+            <h3>Extra’s:</h3>
+            <ul>
+                ${data.extras?.map(e => `<li>${e}</li>`).join("") || "<li>Geen</li>"}
+            </ul>
+            <br>
+            <h2>Totaalprijs: € ${data.totaal}</h2>
+            <br>
+            <button class="restart-btn" onclick="startFlow()">Opnieuw beginnen</button>
+        </div>
+    `;
+}
 
-@app.route("/api/price", methods=["POST"])
-def price():
-    """Prijsberekening voor gekozen systeem."""
-    data = request.json
-    systeem = data["system"]
-    opp = float(data["oppervlakte"])
-    ruimtes = int(data["ruimtes"])
+function showError(msg) {
+    questionBox.innerHTML = "⚠️ Fout";
+    answersBox.innerHTML = "";
+    summaryBox.innerHTML = `<p style="color:red">${msg}</p>`;
+}
 
-    pr = bereken_prijs(systeem, opp, ruimtes)
-    return jsonify(pr)
+async function api(url, body = null) {
+    try {
+        const opts = body
+            ? {
+                  method: "POST",
+                  headers: { "Content-Type": "application/json" },
+                  body: JSON.stringify(body),
+              }
+            : {};
 
-
-# -------------------------------------------------------
-# START SERVER
-# -------------------------------------------------------
-@app.route("/")
-def index():
-    return "Keuzegids API draait ✔"
-
-if __name__ == "__main__":
-    app.run(host="0.0.0.0", port=5000)
+        const res = await fetch(API_BASE + url, opts);
+        return await res.json();
+    } catch (err) {
+        console.error(err);
+        showError("Kan server niet bereiken.");
+        return null;
+    }
+}
