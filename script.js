@@ -2,43 +2,30 @@ const API = "https://keuzegids-backend.onrender.com";
 
 let currentNode = null;
 
-// Start-knop
+// Startknop
 document.getElementById("start-btn").addEventListener("click", startKeuzegids);
 
 function startKeuzegids() {
     fetch(API + "/api/start")
-        .then(response => response.json())
-        .then(data => {
-            showNode(data);
-        })
-        .catch(err => {
-            console.error("Fout bij starten:", err);
-        });
+        .then(r => r.json())
+        .then(data => showNode(data))
+        .catch(err => console.error("Start fout:", err));
 }
 
 function choose(optionIndex) {
-    if (!currentNode || !currentNode.node_id) {
-        console.error("Geen geldige huidige node:", currentNode);
-        return;
-    }
+    if (!currentNode) return;
 
     fetch(API + "/api/next", {
         method: "POST",
-        headers: {
-            "Content-Type": "application/json"
-        },
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-            node_id: currentNode.node_id,
+            node_id: currentNode.node_id || currentNode.id,
             choice: optionIndex
         })
     })
-        .then(response => response.json())
-        .then(data => {
-            showNode(data);
-        })
-        .catch(err => {
-            console.error("Fout bij volgende stap:", err);
-        });
+        .then(r => r.json())
+        .then(data => showNode(data))
+        .catch(err => console.error("Next fout:", err));
 }
 
 function showNode(data) {
@@ -46,19 +33,17 @@ function showNode(data) {
 
     currentNode = data;
 
-    // Startknop verbergen
-    document.getElementById("start-btn").classList.add("hidden");
-
+    const startBtn = document.getElementById("start-btn");
     const questionEl = document.getElementById("question-text");
     const optionsBox = document.getElementById("options-box");
     const resultBox = document.getElementById("result-box");
 
-    // Alles resetten
+    startBtn.classList.add("hidden");
     optionsBox.innerHTML = "";
     resultBox.classList.add("hidden");
     resultBox.innerHTML = "";
 
-    // Tekst tonen
+    // Vraagtekst
     questionEl.textContent = data.text || "";
 
     // EINDE
@@ -68,9 +53,11 @@ function showNode(data) {
         return;
     }
 
-    // MEERKEUZE (vragen)
-    if (data.answers && data.answers.length > 0) {
-        data.answers.forEach((opt, index) => {
+    // ANTWOORDOPTIES (BELANGRIJK DEEL)
+    const opties = data.answers || data.options;
+
+    if (opties && opties.length > 0) {
+        opties.forEach((opt, index) => {
             const btn = document.createElement("button");
             btn.className = "option-btn";
             btn.textContent = opt;
@@ -80,7 +67,7 @@ function showNode(data) {
         return;
     }
 
-    // TUSSENSTAP / ANTWOORD / SYSTEEM
+    // RESULTAAT / TUSSENSTAP
     if (data.answer) {
         resultBox.textContent = data.answer;
         resultBox.classList.remove("hidden");
