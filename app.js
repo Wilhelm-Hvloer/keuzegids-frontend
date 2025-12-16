@@ -1,18 +1,30 @@
-const API = "https://keuzegids-backend.onrender.com";
+console.log("Keuzegids frontend gestart");
 
+const API_BASE = "https://keuzegids-backend.onrender.com";
+
+// ======================
+// STATE
+// ======================
 let currentNode = null;
 let selectedSystem = null;
 
 // ======================
+// INIT
+// ======================
+document.addEventListener("DOMContentLoaded", () => {
+  const startBtn = document.getElementById("start-btn");
+  if (startBtn) {
+    startBtn.onclick = startKeuzegids;
+  }
+});
+
+// ======================
 // START
 // ======================
-document.getElementById("start-btn").onclick = startGuide;
+async function startKeuzegids() {
+  console.log("Start keuzegids");
 
-async function startGuide() {
-  document.getElementById("start-btn").style.display = "none";
-  setStatus("Keuzegids gestart");
-
-  const res = await fetch(`${API}/api/start`);
+  const res = await fetch(`${API_BASE}/api/start`);
   const node = await res.json();
   renderNode(node);
 }
@@ -21,7 +33,12 @@ async function startGuide() {
 // KEUZE
 // ======================
 async function chooseOption(index) {
-  const res = await fetch(`${API}/api/next`, {
+  if (!currentNode || !currentNode.next) {
+    console.warn("Geen currentNode of next");
+    return;
+  }
+
+  const res = await fetch(`${API_BASE}/api/next`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({
@@ -35,49 +52,49 @@ async function chooseOption(index) {
 }
 
 // ======================
-// RENDER
+// RENDER NODE  ✅ HIER ZAT HET PROBLEEM
 // ======================
 function renderNode(node) {
   currentNode = node;
 
   const questionEl = document.getElementById("question-text");
-  const optionsEl = document.getElementById("options-box");
-  const answerEl  = document.getElementById("answer-box");
-  const resultEl  = document.getElementById("result-box");
+  const optionsEl  = document.getElementById("options-box");
+  const answerEl   = document.getElementById("answer-box");
+  const resultEl   = document.getElementById("result-box");
 
-  questionEl.innerHTML = "";
+  // reset
+  questionEl.textContent = "";
   optionsEl.innerHTML = "";
+  answerEl.textContent = "";
   answerEl.classList.add("hidden");
   resultEl.classList.add("hidden");
 
-  // ------------------
-  // PRIJSFASE
-  // ------------------
-  if (node.price_ready) {
-    selectedSystem = node.system || node.text;
-    showPriceInput(selectedSystem);
-    return;
-  }
+  console.log("Render node:", node);
 
-  // ------------------
+  // ======================
   // VRAAG
-  // ------------------
+  // ======================
   if (node.type === "vraag") {
-    questionEl.textContent = node.text;
+    questionEl.textContent = node.text.replace(/^Vrg:\s*/i, "");
 
-    node.next.forEach((nextNode, index) => {
-      const btn = document.createElement("button");
-      btn.textContent = nextNode.text.replace(/^Antw:\s*/i, "");
-      btn.onclick = () => chooseOption(index);
-      optionsEl.appendChild(btn);
-    });
+    if (Array.isArray(node.next)) {
+      node.next.forEach((nextNode, index) => {
+        const btn = document.createElement("button");
+
+        // ANTWOORDTEKST KOMT UIT NEXT-NODE
+        btn.textContent = nextNode.text.replace(/^Antw:\s*/i, "");
+        btn.onclick = () => chooseOption(index);
+
+        optionsEl.appendChild(btn);
+      });
+    }
   }
 
-  // ------------------
-  // ANTWOORD
-  // ------------------
+  // ======================
+  // ANTWOORD → direct door
+  // ======================
   else if (node.type === "antwoord") {
-    answerEl.textContent = node.text;
+    answerEl.textContent = node.text.replace(/^Antw:\s*/i, "");
     answerEl.classList.remove("hidden");
 
     if (node.next && node.next.length > 0) {
@@ -85,76 +102,33 @@ function renderNode(node) {
     }
   }
 
-  // ------------------
-  // SYSTEEM (wordt normaal niet meer bereikt)
-  // ------------------
+  // ======================
+  // SYSTEEM → onthouden + door
+  // ======================
   else if (node.type === "systeem") {
-    answerEl.textContent = node.text;
+    selectedSystem = node.text.replace(/^Sys:\s*/i, "");
+    answerEl.textContent = selectedSystem;
     answerEl.classList.remove("hidden");
+
+    if (node.next && node.next.length > 0) {
+      chooseOption(0);
+    }
+  }
+
+  // ======================
+  // EINDE / RESULTAAT
+  // ======================
+  else {
+    resultEl.textContent = node.text || "Einde keuzegids";
+    resultEl.classList.remove("hidden");
   }
 }
 
 // ======================
-// PRIJS INPUT
+// PRIJS (placeholder – backend is leidend)
 // ======================
 function showPriceInput(system) {
-  const questionEl = document.getElementById("question-text");
-  const optionsEl  = document.getElementById("options-box");
-  const resultEl   = document.getElementById("result-box");
-
-  questionEl.innerHTML = `<strong>${system}</strong><br>Bereken prijs`;
-  optionsEl.innerHTML = "";
-
-  resultEl.innerHTML = `
-    <label>
-      Oppervlakte (m²):
-      <input type="number" id="m2-input" min="1">
-    </label>
-
-    <div style="margin-top:10px;">
-      <button onclick="calculatePrice(1)">1 ruimte</button>
-      <button onclick="calculatePrice(2)">2 ruimtes</button>
-      <button onclick="calculatePrice(3)">3 ruimtes</button>
-    </div>
-
-    <div id="price-output" style="margin-top:15px;"></div>
-  `;
-
+  const resultEl = document.getElementById("result-box");
   resultEl.classList.remove("hidden");
-}
-
-// ======================
-// PRIJS BEREKENEN
-// ======================
-async function calculatePrice(ruimtes) {
-  const m2 = document.getElementById("m2-input").value;
-
-  if (!m2 || m2 <= 0) {
-    alert("Vul een geldige oppervlakte in");
-    return;
-  }
-
-  const res = await fetch(`${API}/api/price`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({
-      m2: m2,
-      ruimtes: ruimtes
-    })
-  });
-
-  const data = await res.json();
-
-  document.getElementById("price-output").innerHTML = `
-    <p><strong>Systeem:</strong> ${data.systeem}</p>
-    <p><strong>Prijs per m²:</strong> €${data.prijs_per_m2}</p>
-    <p><strong>Totaalprijs:</strong> €${data.totaalprijs}</p>
-  `;
-}
-
-// ======================
-// STATUS
-// ======================
-function setStatus(text) {
-  document.getElementById("status-bar").textContent = text;
+  resultEl.textContent = `Gekozen systeem: ${system}`;
 }
