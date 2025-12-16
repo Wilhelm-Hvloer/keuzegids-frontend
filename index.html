@@ -4,8 +4,75 @@
     <meta charset="UTF-8">
     <title>Keuzegids Vloersystemen</title>
 
-    <!-- BELANGRIJK -->
-    <link rel="stylesheet" href="style.css?v=force-css">
+    <!-- INLINE CSS (Render-proof) -->
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background: #f5f5f5;
+            margin: 0;
+            padding: 20px;
+        }
+
+        h1 {
+            text-align: center;
+        }
+
+        /* STATUS / LOG */
+        #status-bar {
+            background: #222;
+            color: white;
+            padding: 12px;
+            border-radius: 8px;
+            margin-bottom: 15px;
+        }
+
+        /* CARDS */
+        .card {
+            background: white;
+            border-radius: 10px;
+            padding: 15px;
+            margin: 15px 0;
+            box-shadow: 0 2px 6px rgba(0,0,0,0.15);
+        }
+
+        /* BUTTONS */
+        button {
+            width: 100%;
+            padding: 15px;
+            margin: 8px 0;
+            font-size: 16px;
+            border: none;
+            border-radius: 8px;
+            background: #BC4C1F; /* Hardeman kleur */
+            color: white;
+            cursor: pointer;
+        }
+
+        button:hover {
+            background: #a3411a;
+        }
+
+        /* OPTIONS */
+        #options-box {
+            display: flex;
+            flex-direction: column;
+        }
+
+        /* INPUT */
+        input[type="number"] {
+            width: 100%;
+            padding: 12px;
+            margin-bottom: 10px;
+            font-size: 16px;
+            border-radius: 8px;
+            border: 1px solid #aaa;
+        }
+
+        /* HIDDEN */
+        .hidden {
+            display: none !important;
+        }
+    </style>
 </head>
 <body>
 
@@ -17,14 +84,22 @@
 <p>Klik op Start om te beginnen</p>
 <button id="start-btn">Start</button>
 
+<!-- ANTWOORD / SYSTEEM -->
 <div id="answer-box" class="card hidden"></div>
+
+<!-- VRAAG -->
 <div id="question-text" class="card"></div>
 
-<!-- KNOPPEN -->
+<!-- KEUZE KNOPPEN -->
 <div id="options-box"></div>
 
+<!-- RESULTAAT / PRIJS -->
 <div id="result-box" class="card hidden"></div>
 
-<script src="app.js?v=force-js"></script>
+<!-- DEBUG: zichtbare testknop -->
+<button>TEST KNOP – MOET ZICHTBAAR ZIJN</button>
+
+<!-- JS -->
+<script src="app.js?v=inline-css-debug"></script>
 </body>
 </html>
