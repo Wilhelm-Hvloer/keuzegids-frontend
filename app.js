@@ -1,19 +1,12 @@
-console.log("APP VERSION 2025-12-16 system-fix");
+console.log("APP VERSION 2025-12-16 auto-node-fix");
 
 const API_BASE = "https://keuzegids-backend.onrender.com";
 let currentNode = null;
 
-// =======================
-// START KNOP
-// =======================
 document.addEventListener("DOMContentLoaded", () => {
-    const startBtn = document.getElementById("start-btn");
-    startBtn.addEventListener("click", startKeuzegids);
+    document.getElementById("start-btn").addEventListener("click", startKeuzegids);
 });
 
-// =======================
-// START
-// =======================
 async function startKeuzegids() {
     console.log("Start keuzegids");
 
@@ -25,9 +18,6 @@ async function startKeuzegids() {
     renderNode(data);
 }
 
-// =======================
-// KEUZE
-// =======================
 async function chooseOption(index) {
     console.log("Keuze:", index, "bij node:", currentNode.id);
 
@@ -44,9 +34,6 @@ async function chooseOption(index) {
     renderNode(data);
 }
 
-// =======================
-// AUTOMATISCH DOOR
-// =======================
 async function autoNext(node) {
     if (!node.next || node.next.length !== 1) return;
 
@@ -59,15 +46,11 @@ async function autoNext(node) {
                 choice: 0
             })
         });
-
         const data = await res.json();
         renderNode(data);
     }, 150);
 }
 
-// =======================
-// RENDER NODE
-// =======================
 function renderNode(node) {
     currentNode = node;
 
@@ -76,34 +59,27 @@ function renderNode(node) {
     const answerBox = document.getElementById("answer-box");
     const resultBox = document.getElementById("result-box");
 
-    // Reset
     questionEl.textContent = "";
     optionsBox.innerHTML = "";
     resultBox.classList.add("hidden");
 
-    // =======================
-    // ANTWOORD
-    // =======================
-    if (node.type === "antwoord") {
-        answerBox.textContent = node.text.replace("Antw:", "").trim();
+    // =========================
+    // AUTOMATISCHE NODE (ANTWOORD / SYSTEM / TUSSENSTAP)
+    // =========================
+    if (node.next?.length === 1 && (!node.answers || node.answers.length === 0)) {
+        answerBox.textContent = node.text
+            .replace("Antw:", "")
+            .replace("Sys:", "")
+            .trim();
+
         answerBox.classList.remove("hidden");
         autoNext(node);
         return;
     }
 
-    // =======================
-    // SYSTEM  ✅ FIX
-    // =======================
-    if (node.type === "system") {
-        answerBox.textContent = node.text.replace("Sys:", "").trim();
-        answerBox.classList.remove("hidden");
-        autoNext(node);
-        return;
-    }
-
-    // =======================
+    // =========================
     // EINDE
-    // =======================
+    // =========================
     if (node.type === "end") {
         answerBox.textContent = node.text;
         answerBox.classList.remove("hidden");
@@ -113,10 +89,10 @@ function renderNode(node) {
         return;
     }
 
-    // =======================
-    // VRAAG
-    // =======================
-    if (node.type === "vraag") {
+    // =========================
+    // VRAAG MET KEUZES
+    // =========================
+    if (node.answers && node.answers.length > 0) {
         questionEl.textContent = node.text.replace("Vrg:", "").trim();
 
         node.answers.forEach((label, index) => {
@@ -126,12 +102,8 @@ function renderNode(node) {
             btn.onclick = () => chooseOption(index);
             optionsBox.appendChild(btn);
         });
-
         return;
     }
 
-    // =======================
-    // FALLBACK
-    // =======================
-    console.warn("Onverwerkt node-type:", node);
+    console.warn("Onverwerkt node:", node);
 }
