@@ -1,14 +1,14 @@
-const API_BASE = "https://keuzegids-backend.onrender.com";
+console.log("APP VERSION 2025-12-16 system-fix");
 
+const API_BASE = "https://keuzegids-backend.onrender.com";
 let currentNode = null;
 
 // =======================
 // START KNOP
 // =======================
 document.addEventListener("DOMContentLoaded", () => {
-    document
-        .getElementById("start-btn")
-        .addEventListener("click", startKeuzegids);
+    const startBtn = document.getElementById("start-btn");
+    startBtn.addEventListener("click", startKeuzegids);
 });
 
 // =======================
@@ -45,7 +45,7 @@ async function chooseOption(index) {
 }
 
 // =======================
-// AUTO DOORLOOP (antwoord / system)
+// AUTOMATISCH DOOR
 // =======================
 async function autoNext(node) {
     if (!node.next || node.next.length !== 1) return;
@@ -59,6 +59,7 @@ async function autoNext(node) {
                 choice: 0
             })
         });
+
         const data = await res.json();
         renderNode(data);
     }, 150);
@@ -75,9 +76,9 @@ function renderNode(node) {
     const answerBox = document.getElementById("answer-box");
     const resultBox = document.getElementById("result-box");
 
-    // reset
-    optionsBox.innerHTML = "";
+    // Reset
     questionEl.textContent = "";
+    optionsBox.innerHTML = "";
     resultBox.classList.add("hidden");
 
     // =======================
@@ -125,8 +126,12 @@ function renderNode(node) {
             btn.onclick = () => chooseOption(index);
             optionsBox.appendChild(btn);
         });
+
         return;
     }
 
+    // =======================
+    // FALLBACK
+    // =======================
     console.warn("Onverwerkt node-type:", node);
 }
