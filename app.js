@@ -1,26 +1,35 @@
-console.log("APP VERSION 2025-12-16 auto-node-fix");
+console.log("FRONTEND MET PRIJSBEREKENING ACTIEF");
 
 const API_BASE = "https://keuzegids-backend.onrender.com";
+
 let currentNode = null;
 
+// 👉 Hier onthouden we alles
+const state = {
+    system: null,
+    oppervlakte: null,
+    ruimtes: null
+};
+
 document.addEventListener("DOMContentLoaded", () => {
-    document.getElementById("start-btn").addEventListener("click", startKeuzegids);
+    document.getElementById("start-btn").onclick = startKeuzegids;
 });
 
+// =======================
+// START
+// =======================
 async function startKeuzegids() {
-    console.log("Start keuzegids");
-
     document.getElementById("start-btn").classList.add("hidden");
     document.getElementById("answer-box").classList.add("hidden");
 
     const res = await fetch(`${API_BASE}/api/start`);
-    const data = await res.json();
-    renderNode(data);
+    renderNode(await res.json());
 }
 
+// =======================
+// KEUZE
+// =======================
 async function chooseOption(index) {
-    console.log("Keuze:", index, "bij node:", currentNode.id);
-
     const res = await fetch(`${API_BASE}/api/next`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -30,80 +39,101 @@ async function chooseOption(index) {
         })
     });
 
-    const data = await res.json();
-    renderNode(data);
+    renderNode(await res.json());
 }
 
-async function autoNext(node) {
-    if (!node.next || node.next.length !== 1) return;
-
-    setTimeout(async () => {
-        const res = await fetch(`${API_BASE}/api/next`, {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({
-                node_id: node.id,
-                choice: 0
-            })
-        });
-        const data = await res.json();
-        renderNode(data);
-    }, 150);
-}
-
+// =======================
+// RENDER NODE
+// =======================
 function renderNode(node) {
     currentNode = node;
 
-    const questionEl = document.getElementById("question-text");
-    const optionsBox = document.getElementById("options-box");
-    const answerBox = document.getElementById("answer-box");
-    const resultBox = document.getElementById("result-box");
+    const q = document.getElementById("question-text");
+    const o = document.getElementById("options-box");
+    const a = document.getElementById("answer-box");
+    const r = document.getElementById("result-box");
 
-    questionEl.textContent = "";
-    optionsBox.innerHTML = "";
-    resultBox.classList.add("hidden");
+    q.textContent = "";
+    o.innerHTML = "";
+    r.classList.add("hidden");
 
-    // =========================
-    // AUTOMATISCHE NODE (ANTWOORD / SYSTEM / TUSSENSTAP)
-    // =========================
+    // =======================
+    // AUTOMATISCHE NODE
+    // (antwoord / systeem / tussenstap)
+    // =======================
     if (node.next?.length === 1 && (!node.answers || node.answers.length === 0)) {
-        answerBox.textContent = node.text
-            .replace("Antw:", "")
+
+        // SYSTEEM onthouden
+        if (node.type === "system") {
+            state.system = node.text.replace("Sys:", "").trim();
+        }
+
+        a.textContent = node.text
             .replace("Sys:", "")
+            .replace("Antw:", "")
             .trim();
+        a.classList.remove("hidden");
 
-        answerBox.classList.remove("hidden");
-        autoNext(node);
+        setTimeout(() => chooseOption(0), 150);
         return;
     }
 
-    // =========================
-    // EINDE
-    // =========================
+    // =======================
+    // EINDE → PRIJS INVOER
+    // =======================
     if (node.type === "end") {
-        answerBox.textContent = node.text;
-        answerBox.classList.remove("hidden");
+        a.textContent = `Gekozen systeem: ${state.system}`;
+        a.classList.remove("hidden");
 
-        resultBox.textContent = "Keuzegids afgerond.";
-        resultBox.classList.remove("hidden");
+        r.innerHTML = `
+            <h3>Prijsberekening</h3>
+            <label>Oppervlakte (m²)</label><br>
+            <input id="opp" type="number"><br><br>
+
+            <label>Aantal ruimtes</label><br>
+            <input id="ruimtes" type="number"><br><br>
+
+            <button id="calc">Bereken prijs</button>
+        `;
+        r.classList.remove("hidden");
+
+        document.getElementById("calc").onclick = calculatePrice;
         return;
     }
 
-    // =========================
+    // =======================
     // VRAAG MET KEUZES
-    // =========================
-    if (node.answers && node.answers.length > 0) {
-        questionEl.textContent = node.text.replace("Vrg:", "").trim();
+    // =======================
+    q.textContent = node.text.replace("Vrg:", "").trim();
 
-        node.answers.forEach((label, index) => {
-            const btn = document.createElement("button");
-            btn.className = "option-btn";
-            btn.textContent = label;
-            btn.onclick = () => chooseOption(index);
-            optionsBox.appendChild(btn);
-        });
-        return;
-    }
+    node.answers.forEach((label, i) => {
+        const btn = document.createElement("button");
+        btn.textContent = label;
+        btn.onclick = () => chooseOption(i);
+        o.appendChild(btn);
+    });
+}
 
-    console.warn("Onverwerkt node:", node);
+// =======================
+// PRIJS OPHALEN
+// =======================
+async function calculatePrice() {
+    state.oppervlakte = Number(document.getElementById("opp").value);
+    state.ruimtes = Number(document.getElementById("ruimtes").value);
+
+    const res = await fetch(`${API_BASE}/api/calculate`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(state)
+    });
+
+    const data = await res.json();
+
+    document.getElementById("result-box").innerHTML = `
+        <h3>Prijsindicatie</h3>
+        <p><strong>Systeem:</strong> ${data.systeem}</p>
+        <p><strong>Staffel:</strong> ${data.staffel}</p>
+        <p><strong>Prijs per m²:</strong> € ${data.prijs_per_m2}</p>
+        <p><strong>Totaalprijs:</strong> € ${data.basisprijs}</p>
+    `;
 }
