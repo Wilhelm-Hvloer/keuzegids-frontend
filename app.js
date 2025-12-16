@@ -3,11 +3,12 @@ const API_BASE = "https://keuzegids-backend.onrender.com";
 let currentNode = null;
 
 // =======================
-// START KNOP KOPPELEN
+// START KNOP
 // =======================
 document.addEventListener("DOMContentLoaded", () => {
-    const startBtn = document.getElementById("start-btn");
-    startBtn.addEventListener("click", startKeuzegids);
+    document
+        .getElementById("start-btn")
+        .addEventListener("click", startKeuzegids);
 });
 
 // =======================
@@ -44,6 +45,26 @@ async function chooseOption(index) {
 }
 
 // =======================
+// AUTO DOORLOOP (antwoord / system)
+// =======================
+async function autoNext(node) {
+    if (!node.next || node.next.length !== 1) return;
+
+    setTimeout(async () => {
+        const res = await fetch(`${API_BASE}/api/next`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+                node_id: node.id,
+                choice: 0
+            })
+        });
+        const data = await res.json();
+        renderNode(data);
+    }, 150);
+}
+
+// =======================
 // RENDER NODE
 // =======================
 function renderNode(node) {
@@ -54,42 +75,36 @@ function renderNode(node) {
     const answerBox = document.getElementById("answer-box");
     const resultBox = document.getElementById("result-box");
 
-    // Reset
+    // reset
     optionsBox.innerHTML = "";
     questionEl.textContent = "";
     resultBox.classList.add("hidden");
 
     // =======================
-    // ANTWOORD NODE
+    // ANTWOORD
     // =======================
     if (node.type === "antwoord") {
         answerBox.textContent = node.text.replace("Antw:", "").trim();
         answerBox.classList.remove("hidden");
-
-        // automatisch door naar volgende node
-        if (node.next && node.next.length === 1) {
-            setTimeout(async () => {
-                const res = await fetch(`${API_BASE}/api/next`, {
-                    method: "POST",
-                    headers: { "Content-Type": "application/json" },
-                    body: JSON.stringify({
-                        node_id: node.id,
-                        choice: 0
-                    })
-                });
-                const data = await res.json();
-                renderNode(data);
-            }, 150);
-        }
-
+        autoNext(node);
         return;
     }
 
     // =======================
-    // SYSTEEM / EINDE
+    // SYSTEM  ✅ FIX
     // =======================
-    if (node.type === "system" || node.type === "end") {
+    if (node.type === "system") {
         answerBox.textContent = node.text.replace("Sys:", "").trim();
+        answerBox.classList.remove("hidden");
+        autoNext(node);
+        return;
+    }
+
+    // =======================
+    // EINDE
+    // =======================
+    if (node.type === "end") {
+        answerBox.textContent = node.text;
         answerBox.classList.remove("hidden");
 
         resultBox.textContent = "Keuzegids afgerond.";
@@ -110,7 +125,6 @@ function renderNode(node) {
             btn.onclick = () => chooseOption(index);
             optionsBox.appendChild(btn);
         });
-
         return;
     }
 
