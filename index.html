@@ -1,105 +1,46 @@
 <!DOCTYPE html>
 <html lang="nl">
 <head>
-    <meta charset="UTF-8">
-    <title>Keuzegids Vloersystemen</title>
-
-    <!-- INLINE CSS (Render-proof) -->
-    <style>
-        body {
-            font-family: Arial, sans-serif;
-            background: #f5f5f5;
-            margin: 0;
-            padding: 20px;
-        }
-
-        h1 {
-            text-align: center;
-        }
-
-        /* STATUS / LOG */
-        #status-bar {
-            background: #222;
-            color: white;
-            padding: 12px;
-            border-radius: 8px;
-            margin-bottom: 15px;
-        }
-
-        /* CARDS */
-        .card {
-            background: white;
-            border-radius: 10px;
-            padding: 15px;
-            margin: 15px 0;
-            box-shadow: 0 2px 6px rgba(0,0,0,0.15);
-        }
-
-        /* BUTTONS */
-        button {
-            width: 100%;
-            padding: 15px;
-            margin: 8px 0;
-            font-size: 16px;
-            border: none;
-            border-radius: 8px;
-            background: #BC4C1F; /* Hardeman kleur */
-            color: white;
-            cursor: pointer;
-        }
-
-        button:hover {
-            background: #a3411a;
-        }
-
-        /* OPTIONS */
-        #options-box {
-            display: flex;
-            flex-direction: column;
-        }
-
-        /* INPUT */
-        input[type="number"] {
-            width: 100%;
-            padding: 12px;
-            margin-bottom: 10px;
-            font-size: 16px;
-            border-radius: 8px;
-            border: 1px solid #aaa;
-        }
-
-        /* HIDDEN */
-        .hidden {
-            display: none !important;
-        }
-    </style>
+  <meta charset="UTF-8" />
+  <title>Keuzegids Hardeman</title>
+  <link rel="stylesheet" href="style.css" />
 </head>
 <body>
 
-<!-- STATUS / LOG -->
-<div id="status-bar">Keuzegids klaar</div>
+  <!-- Bovenbalk -->
+  <div id="status-bar">
+    <img src="Transparant Hardeman-Vloerbewerking-logo.png" alt="Hardeman" height="40">
+    <span id="status-text"></span>
+  </div>
 
-<h1>Keuzegids Vloersystemen</h1>
+  <div id="app">
+    <h2 id="question-text"></h2>
 
-<p>Klik op Start om te beginnen</p>
-<button id="start-btn">Start</button>
+    <div id="options-box"></div>
 
-<!-- ANTWOORD / SYSTEEM -->
-<div id="answer-box" class="card hidden"></div>
+    <div id="result-box"></div>
 
-<!-- VRAAG -->
-<div id="question-text" class="card"></div>
+    <!-- Prijsblok -->
+    <div id="price-box" class="hidden">
+      <h3>Bereken prijs</h3>
 
-<!-- KEUZE KNOPPEN -->
-<div id="options-box"></div>
+      <label>
+        Oppervlakte (m²):
+        <input type="number" id="m2-input" min="1" />
+      </label>
 
-<!-- RESULTAAT / PRIJS -->
-<div id="result-box" class="card hidden"></div>
+      <div class="room-buttons">
+        <button onclick="calculatePrice(1)">1 ruimte</button>
+        <button onclick="calculatePrice(2)">2 ruimtes</button>
+        <button onclick="calculatePrice(3)">3 ruimtes</button>
+      </div>
 
-<!-- DEBUG: zichtbare testknop -->
-<button>TEST KNOP – MOET ZICHTBAAR ZIJN</button>
+      <div id="price-result"></div>
+    </div>
 
-<!-- JS -->
-<script src="app.js?v=inline-css-debug"></script>
+    <button id="start-btn">Start keuzegids</button>
+  </div>
+
+  <script src="app.js"></script>
 </body>
 </html>

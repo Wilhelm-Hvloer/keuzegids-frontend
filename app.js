@@ -1,36 +1,30 @@
-console.log("FRONTEND – stabiele flow (next-nodes direct)");
-
-const API_BASE = "https://keuzegids-backend.onrender.com";
+const API = "https://keuzegids-backend.onrender.com";
 
 let currentNode = null;
 
-document.addEventListener("DOMContentLoaded", () => {
-  const startBtn = document.getElementById("start-btn");
-  if (startBtn) startBtn.onclick = startKeuzegids;
-});
+document.getElementById("start-btn").onclick = startGuide;
 
-// ========================
+function setStatus(text) {
+  document.getElementById("status-text").textContent = text;
+}
+
+// =======================
 // START
-// ========================
-async function startKeuzegids() {
+// =======================
+async function startGuide() {
   setStatus("Keuzegids gestart");
+  document.getElementById("start-btn").style.display = "none";
 
-  const startBtn = document.getElementById("start-btn");
-  if (startBtn) startBtn.classList.add("hidden");
-
-  const res = await fetch(`${API_BASE}/api/start`);
+  const res = await fetch(`${API}/api/start`);
   const node = await res.json();
-
   renderNode(node);
 }
 
-// ========================
-// KEUZE
-// ========================
+// =======================
+// NEXT
+// =======================
 async function chooseOption(index) {
-  if (!currentNode) return;
-
-  const res = await fetch(`${API_BASE}/api/next`, {
+  const res = await fetch(`${API}/api/next`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({
@@ -43,75 +37,83 @@ async function chooseOption(index) {
   renderNode(node);
 }
 
-// ========================
+// =======================
 // RENDER
-// ========================
+// =======================
 function renderNode(node) {
   currentNode = node;
 
-  const questionEl = document.getElementById("question-text");
-  const optionsEl = document.getElementById("options-box");
-  const resultEl   = document.getElementById("result-box");
+  const q = document.getElementById("question-text");
+  const o = document.getElementById("options-box");
+  const r = document.getElementById("result-box");
+  const p = document.getElementById("price-box");
 
-  if (!questionEl || !optionsEl || !resultEl) {
-    console.error("HTML elementen ontbreken");
-    return;
-  }
-
-  questionEl.textContent = "";
-  optionsEl.innerHTML = "";
-  resultEl.innerHTML = "";
+  q.textContent = "";
+  o.innerHTML = "";
+  r.innerHTML = "";
+  p.classList.add("hidden");
 
   // ---------- VRAAG ----------
   if (node.type === "vraag") {
-    questionEl.textContent = node.text;
-
-    if (!Array.isArray(node.next)) {
-      console.error("Vraag zonder next-nodes", node);
-      return;
-    }
+    q.textContent = node.text;
 
     node.next.forEach((nextNode, index) => {
       const btn = document.createElement("button");
-
-      // antwoordtekst uit next-node
-      btn.textContent = nextNode.text
-        ? nextNode.text.replace(/^Antw:\s*/i, "")
-        : `Keuze ${index + 1}`;
-
+      btn.textContent = nextNode.text.replace(/^Antw:\s*/i, "");
       btn.onclick = () => chooseOption(index);
-      optionsEl.appendChild(btn);
+      o.appendChild(btn);
     });
   }
 
   // ---------- ANTWOORD ----------
   else if (node.type === "antwoord") {
-    resultEl.textContent = node.text;
+    r.textContent = node.text;
 
     if (node.next && node.next.length > 0) {
-      // automatisch door
       chooseOption(0);
     }
   }
 
   // ---------- SYSTEEM ----------
   else if (node.type === "systeem") {
-    resultEl.innerHTML = `<strong>${node.text}</strong>`;
+    r.innerHTML = `<strong>${node.text}</strong>`;
 
     if (node.next && node.next.length > 0) {
       chooseOption(0);
     }
   }
 
+  // ---------- EINDE / PRIJS ----------
   else {
-    console.warn("Onbekend node-type:", node);
+    r.textContent = node.text || "Bereken prijs";
+    p.classList.remove("hidden");
   }
 }
 
-// ========================
-// STATUSBALK
-// ========================
-function setStatus(text) {
-  const bar = document.getElementById("status-bar");
-  if (bar) bar.textContent = text;
+// =======================
+// PRIJS
+// =======================
+async function calculatePrice(ruimtes) {
+  const m2 = parseFloat(document.getElementById("m2-input").value);
+  if (!m2 || m2 <= 0) {
+    alert("Vul geldige m² in");
+    return;
+  }
+
+  const res = await fetch(`${API}/api/price`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      m2: m2,
+      ruimtes: ruimtes
+    })
+  });
+
+  const data = await res.json();
+
+  document.getElementById("price-result").innerHTML = `
+    <p><strong>Systeem:</strong> ${data.systeem}</p>
+    <p><strong>Prijs per m²:</strong> €${data.prijs_per_m2}</p>
+    <p><strong>Totaalprijs:</strong> €${data.totaalprijs}</p>
+  `;
 }
