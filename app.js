@@ -1,32 +1,33 @@
-console.log("FRONTEND – definitieve flow met antwoorden uit next-nodes");
+console.log("FRONTEND – stabiele flow met next-nodes");
 
 const API_BASE = "https://keuzegids-backend.onrender.com";
 
 let currentNode = null;
 
-// =========================
-// INIT
-// =========================
 document.addEventListener("DOMContentLoaded", () => {
   document.getElementById("start-btn").onclick = startKeuzegids;
 });
 
-// =========================
+// ========================
 // START
-// =========================
+// ========================
 async function startKeuzegids() {
   setStatus("Keuzegids gestart");
+
   document.getElementById("start-btn").classList.add("hidden");
 
   const res = await fetch(`${API_BASE}/api/start`);
   const node = await res.json();
-  handleNode(node);
+
+  renderNode(node);
 }
 
-// =========================
+// ========================
 // KEUZE
-// =========================
+// ========================
 async function chooseOption(index) {
+  if (!currentNode) return;
+
   const res = await fetch(`${API_BASE}/api/next`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
@@ -37,92 +38,70 @@ async function chooseOption(index) {
   });
 
   const node = await res.json();
-  handleNode(node);
+  renderNode(node);
 }
 
-// =========================
-// NODE HANDLER
-// =========================
-function handleNode(node) {
-  if (!node || !node.type) {
-    console.warn("Onbekende node:", node);
-    return;
-  }
-
-  if (node.type === "vraag") {
-    renderVraag(node);
-  }
-
-  if (node.type === "antwoord") {
-    renderAntwoord(node);
-    autoNext(node);
-  }
-
-  if (node.type === "systeem") {
-    renderSysteem(node);
-    autoNext(node);
-  }
-}
-
-// =========================
-// RENDER: VRAAG
-// =========================
-function renderVraag(node) {
+// ========================
+// RENDER
+// ========================
+function renderNode(node) {
   currentNode = node;
 
   const q = document.getElementById("question-text");
   const o = document.getElementById("options-box");
+  const r = document.getElementById("result-box");
 
-  q.textContent = node.text.replace(/^Vrg:\s*/i, "");
+  // reset
+  q.textContent = "";
   o.innerHTML = "";
+  r.innerHTML = "";
 
-  // Antwoorden komen uit NEXT-nodes
-  node.next.forEach((nextNode, index) => {
-    const btn = document.createElement("button");
-    btn.textContent = nextNode.text.replace(/^Antw:\s*/i, "");
-    btn.onclick = () => chooseOption(index);
-    o.appendChild(btn);
-  });
+  // ----------------
+  // VRAAG
+  // ----------------
+  if (node.type === "vraag") {
+    q.textContent = node.text;
+
+    node.next.forEach((_, index) => {
+      const btn = document.createElement("button");
+      btn.textContent = `Keuze ${index + 1}`;
+      btn.onclick = () => chooseOption(index);
+      o.appendChild(btn);
+    });
+  }
+
+  // ----------------
+  // ANTWOORD
+  // ----------------
+  else if (node.type === "antwoord") {
+    r.textContent = node.text;
+
+    // automatisch door naar volgende vraag
+    if (node.next && node.next.length > 0) {
+      chooseOption(0);
+    }
+  }
+
+  // ----------------
+  // SYSTEEM
+  // ----------------
+  else if (node.type === "systeem") {
+    r.innerHTML = `<strong>${node.text}</strong>`;
+
+    if (node.next && node.next.length > 0) {
+      chooseOption(0);
+    }
+  }
+
+  else {
+    console.warn("Onbekend node-type:", node);
+  }
 }
 
-// =========================
-// RENDER: ANTWOORD
-// =========================
-function renderAntwoord(node) {
-  const q = document.getElementById("question-text");
-  q.textContent = node.text.replace(/^Antw:\s*/i, "");
-}
-
-// =========================
-// RENDER: SYSTEEM
-// =========================
-function renderSysteem(node) {
-  setStatus(`Gekozen systeem: ${node.text.replace(/^Sys:\s*/i, "")}`);
-}
-
-// =========================
-// AUTOMATISCH DOOR
-// =========================
-async function autoNext(node) {
-  if (!node.next || node.next.length === 0) return;
-
-  const res = await fetch(`${API_BASE}/api/next`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({
-      node_id: node.id,
-      choice: 0
-    })
-  });
-
-  const nextNode = await res.json();
-  handleNode(nextNode);
-}
-
-// =========================
-// STATUS / LOG
-// =========================
+// ========================
+// STATUSBALK
+// ========================
 function setStatus(text) {
-  const bar = document.getElementById("status-bar");
-  bar.textContent = text;
+  const el = document.getElementById("status-bar");
+  if (el) el.textContent = text;
 }
