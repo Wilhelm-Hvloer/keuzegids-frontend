@@ -1,4 +1,4 @@
-console.log("FRONTEND – stabiele flow met next-nodes");
+console.log("FRONTEND – flow met antwoorden uit next-nodes");
 
 const API_BASE = "https://keuzegids-backend.onrender.com";
 
@@ -13,12 +13,10 @@ document.addEventListener("DOMContentLoaded", () => {
 // ========================
 async function startKeuzegids() {
   setStatus("Keuzegids gestart");
-
   document.getElementById("start-btn").classList.add("hidden");
 
   const res = await fetch(`${API_BASE}/api/start`);
   const node = await res.json();
-
   renderNode(node);
 }
 
@@ -44,14 +42,13 @@ async function chooseOption(index) {
 // ========================
 // RENDER
 // ========================
-function renderNode(node) {
+async function renderNode(node) {
   currentNode = node;
 
   const q = document.getElementById("question-text");
   const o = document.getElementById("options-box");
   const r = document.getElementById("result-box");
 
-  // reset
   q.textContent = "";
   o.innerHTML = "";
   r.innerHTML = "";
@@ -62,12 +59,16 @@ function renderNode(node) {
   if (node.type === "vraag") {
     q.textContent = node.text;
 
-    node.next.forEach((_, index) => {
+    for (let i = 0; i < node.next.length; i++) {
+      // haal antwoord-node op
+      const res = await fetch(`${API_BASE}/api/node/${node.next[i]}`);
+      const nextNode = await res.json();
+
       const btn = document.createElement("button");
-      btn.textContent = `Keuze ${index + 1}`;
-      btn.onclick = () => chooseOption(index);
+      btn.textContent = nextNode.text.replace(/^Antw:\s*/i, "");
+      btn.onclick = () => chooseOption(i);
       o.appendChild(btn);
-    });
+    }
   }
 
   // ----------------
@@ -76,7 +77,6 @@ function renderNode(node) {
   else if (node.type === "antwoord") {
     r.textContent = node.text;
 
-    // automatisch door naar volgende vraag
     if (node.next && node.next.length > 0) {
       chooseOption(0);
     }
