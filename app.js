@@ -1,10 +1,9 @@
-console.log("FRONTEND – definitieve flow + prijsberekening");
+console.log("FRONTEND – flow met antwoorden uit next-nodes");
 
 const API_BASE = "https://keuzegids-backend.onrender.com";
 
 let currentNode = null;
 
-// Centrale state
 const state = {
     system: null,
     oppervlakte: null,
@@ -19,7 +18,8 @@ document.addEventListener("DOMContentLoaded", () => {
 // STATUS
 // =======================
 function setStatus(text) {
-    document.getElementById("status-bar").textContent = text;
+    const bar = document.getElementById("status-bar");
+    if (bar) bar.textContent = text;
 }
 
 // =======================
@@ -73,28 +73,29 @@ function renderNode(node) {
     // =======================
     if (!node.answers || node.answers.length === 0) {
 
-        // systeem onthouden
         if (node.type === "system") {
             state.system = node.text.replace("Sys:", "").trim();
             setStatus(`Systeem gekozen: ${state.system}`);
         }
 
-        a.textContent = node.text
-            .replace("Sys:", "")
-            .replace("Antw:", "")
-            .trim();
-        a.classList.remove("hidden");
-
-        // automatisch door als er exact 1 volgende is
-        if (node.next && node.next.length === 1) {
-            setTimeout(() => chooseOption(0), 150);
+        if (node.text) {
+            a.textContent = node.text
+                .replace("Sys:", "")
+                .replace("Antw:", "")
+                .trim();
+            a.classList.remove("hidden");
         }
 
-        return;
+        if (node.next && node.next.length === 1) {
+            setTimeout(() => chooseOption(0), 200);
+        }
+
+        // Let op: nog niet returnen als er meerdere next-nodes zijn
+        if (!node.next || node.next.length <= 1) return;
     }
 
     // =======================
-    // EINDE → PRIJS INVOER
+    // EINDE → PRIJS
     // =======================
     if (node.type === "end") {
         setStatus("Prijsberekening");
@@ -104,7 +105,6 @@ function renderNode(node) {
 
         r.innerHTML = `
             <h3>Prijsberekening</h3>
-
             <label>Oppervlakte (m²)</label><br>
             <input id="opp" type="number" min="1"><br><br>
 
@@ -124,16 +124,33 @@ function renderNode(node) {
 
     q.textContent = node.text.replace("Vrg:", "").trim();
 
-    node.answers.forEach((label, i) => {
-        const btn = document.createElement("button");
-        btn.textContent = label;
-        btn.onclick = () => chooseOption(i);
-        o.appendChild(btn);
-    });
+    // CASE 1: expliciete answers
+    if (node.answers && node.answers.length > 0) {
+        node.answers.forEach((label, i) => {
+            const btn = document.createElement("button");
+            btn.textContent = label;
+            btn.onclick = () => chooseOption(i);
+            o.appendChild(btn);
+        });
+        return;
+    }
+
+    // CASE 2: answers zitten in next-nodes
+    if (node.next && node.next.length > 1) {
+        node.next.forEach((_, i) => {
+            const btn = document.createElement("button");
+            btn.textContent = `Keuze ${i + 1}`;
+            btn.onclick = () => chooseOption(i);
+            o.appendChild(btn);
+        });
+        return;
+    }
+
+    console.warn("Onverwerkte vraag-node:", node);
 }
 
 // =======================
-// RUIMTES → PRIJS
+// PRIJS
 // =======================
 async function setRuimtes(aantal) {
     state.oppervlakte = Number(document.getElementById("opp").value);
