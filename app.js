@@ -1,11 +1,12 @@
-console.log("FRONTEND – stabiele flow met next-nodes (zonder extra fetch)");
+console.log("FRONTEND – stabiele flow (next-nodes direct)");
 
 const API_BASE = "https://keuzegids-backend.onrender.com";
 
 let currentNode = null;
 
 document.addEventListener("DOMContentLoaded", () => {
-  document.getElementById("start-btn").onclick = startKeuzegids;
+  const startBtn = document.getElementById("start-btn");
+  if (startBtn) startBtn.onclick = startKeuzegids;
 });
 
 // ========================
@@ -13,10 +14,13 @@ document.addEventListener("DOMContentLoaded", () => {
 // ========================
 async function startKeuzegids() {
   setStatus("Keuzegids gestart");
-  document.getElementById("start-btn").classList.add("hidden");
+
+  const startBtn = document.getElementById("start-btn");
+  if (startBtn) startBtn.classList.add("hidden");
 
   const res = await fetch(`${API_BASE}/api/start`);
   const node = await res.json();
+
   renderNode(node);
 }
 
@@ -45,48 +49,54 @@ async function chooseOption(index) {
 function renderNode(node) {
   currentNode = node;
 
-  const q = document.getElementById("question-text");
-  const o = document.getElementById("options-box");
-  const r = document.getElementById("result-box");
+  const questionEl = document.getElementById("question-text");
+  const optionsEl = document.getElementById("options-box");
+  const resultEl   = document.getElementById("result-box");
 
-  q.textContent = "";
-  o.innerHTML = "";
-  r.innerHTML = "";
+  if (!questionEl || !optionsEl || !resultEl) {
+    console.error("HTML elementen ontbreken");
+    return;
+  }
 
-  // ----------------
-  // VRAAG
-  // ----------------
+  questionEl.textContent = "";
+  optionsEl.innerHTML = "";
+  resultEl.innerHTML = "";
+
+  // ---------- VRAAG ----------
   if (node.type === "vraag") {
-    q.textContent = node.text;
+    questionEl.textContent = node.text;
+
+    if (!Array.isArray(node.next)) {
+      console.error("Vraag zonder next-nodes", node);
+      return;
+    }
 
     node.next.forEach((nextNode, index) => {
       const btn = document.createElement("button");
 
-      // gebruik tekst uit antwoord-node
-      btn.textContent = nextNode.text.replace(/^Antw:\s*/i, "");
-      btn.onclick = () => chooseOption(index);
+      // antwoordtekst uit next-node
+      btn.textContent = nextNode.text
+        ? nextNode.text.replace(/^Antw:\s*/i, "")
+        : `Keuze ${index + 1}`;
 
-      o.appendChild(btn);
+      btn.onclick = () => chooseOption(index);
+      optionsEl.appendChild(btn);
     });
   }
 
-  // ----------------
-  // ANTWOORD
-  // ----------------
+  // ---------- ANTWOORD ----------
   else if (node.type === "antwoord") {
-    r.textContent = node.text;
+    resultEl.textContent = node.text;
 
-    // automatisch door
     if (node.next && node.next.length > 0) {
+      // automatisch door
       chooseOption(0);
     }
   }
 
-  // ----------------
-  // SYSTEEM
-  // ----------------
+  // ---------- SYSTEEM ----------
   else if (node.type === "systeem") {
-    r.innerHTML = `<strong>${node.text}</strong>`;
+    resultEl.innerHTML = `<strong>${node.text}</strong>`;
 
     if (node.next && node.next.length > 0) {
       chooseOption(0);
@@ -102,6 +112,6 @@ function renderNode(node) {
 // STATUSBALK
 // ========================
 function setStatus(text) {
-  const el = document.getElementById("status-bar");
-  if (el) el.textContent = text;
+  const bar = document.getElementById("status-bar");
+  if (bar) bar.textContent = text;
 }
