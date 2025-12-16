@@ -1,4 +1,4 @@
-console.log("FRONTEND – flow met antwoorden uit next-nodes");
+console.log("FRONTEND – stabiele flow met next-nodes (zonder extra fetch)");
 
 const API_BASE = "https://keuzegids-backend.onrender.com";
 
@@ -42,7 +42,7 @@ async function chooseOption(index) {
 // ========================
 // RENDER
 // ========================
-async function renderNode(node) {
+function renderNode(node) {
   currentNode = node;
 
   const q = document.getElementById("question-text");
@@ -59,16 +59,15 @@ async function renderNode(node) {
   if (node.type === "vraag") {
     q.textContent = node.text;
 
-    for (let i = 0; i < node.next.length; i++) {
-      // haal antwoord-node op
-      const res = await fetch(`${API_BASE}/api/node/${node.next[i]}`);
-      const nextNode = await res.json();
-
+    node.next.forEach((nextNode, index) => {
       const btn = document.createElement("button");
+
+      // gebruik tekst uit antwoord-node
       btn.textContent = nextNode.text.replace(/^Antw:\s*/i, "");
-      btn.onclick = () => chooseOption(i);
+      btn.onclick = () => chooseOption(index);
+
       o.appendChild(btn);
-    }
+    });
   }
 
   // ----------------
@@ -77,6 +76,7 @@ async function renderNode(node) {
   else if (node.type === "antwoord") {
     r.textContent = node.text;
 
+    // automatisch door
     if (node.next && node.next.length > 0) {
       chooseOption(0);
     }
