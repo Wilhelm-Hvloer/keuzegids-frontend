@@ -7,24 +7,26 @@
 </head>
 <body>
 
-    <h1>Keuzegids Vloersystemen</h1>
+<!-- Status / log -->
+<div id="status-bar">Keuzegids klaar</div>
 
-    <p>Klik op Start om te beginnen</p>
-    <button id="start-btn" class="primary-btn">Start</button>
+<h1>Keuzegids Vloersystemen</h1>
 
-    <!-- Gekozen antwoord / systeem -->
-    <div id="answer-box" class="answer hidden"></div>
+<p>Klik op Start om te beginnen</p>
+<button id="start-btn">Start</button>
 
-    <!-- Vraag -->
-    <div id="question-text" class="question"></div>
+<!-- Laatst gekozen antwoord / systeem -->
+<div id="answer-box" class="card hidden"></div>
 
-    <!-- Antwoordknoppen -->
-    <div id="options-box" class="options"></div>
+<!-- Vraag -->
+<div id="question-text" class="card"></div>
 
-    <!-- Eindresultaat -->
-    <div id="result-box" class="result hidden"></div>
+<!-- Antwoordknoppen -->
+<div id="options-box"></div>
 
-    <!-- ⚠️ CDN CACHE BUST -->
-    <script src="app.js?v=2025-12-16-system-fix"></script>
+<!-- Prijsberekening -->
+<div id="result-box" class="card hidden"></div>
+
+<script src="app.js?v=final-2025-12-16"></script>
 </body>
 </html>

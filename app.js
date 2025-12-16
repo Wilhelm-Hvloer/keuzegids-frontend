@@ -1,10 +1,10 @@
-console.log("FRONTEND FIX – knoppen + prijsberekening");
+console.log("FRONTEND – definitieve flow + prijsberekening");
 
 const API_BASE = "https://keuzegids-backend.onrender.com";
 
 let currentNode = null;
 
-// State voor prijs
+// Centrale state
 const state = {
     system: null,
     oppervlakte: null,
@@ -16,9 +16,17 @@ document.addEventListener("DOMContentLoaded", () => {
 });
 
 // =======================
+// STATUS
+// =======================
+function setStatus(text) {
+    document.getElementById("status-bar").textContent = text;
+}
+
+// =======================
 // START
 // =======================
 async function startKeuzegids() {
+    setStatus("Keuzegids gestart");
     document.getElementById("start-btn").classList.add("hidden");
     document.getElementById("answer-box").classList.add("hidden");
 
@@ -30,6 +38,8 @@ async function startKeuzegids() {
 // KEUZE
 // =======================
 async function chooseOption(index) {
+    setStatus(`Keuze gemaakt (${index + 1})`);
+
     const res = await fetch(`${API_BASE}/api/next`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -66,6 +76,7 @@ function renderNode(node) {
         // systeem onthouden
         if (node.type === "system") {
             state.system = node.text.replace("Sys:", "").trim();
+            setStatus(`Systeem gekozen: ${state.system}`);
         }
 
         a.textContent = node.text
@@ -74,7 +85,7 @@ function renderNode(node) {
             .trim();
         a.classList.remove("hidden");
 
-        // automatisch door als er een volgende is
+        // automatisch door als er exact 1 volgende is
         if (node.next && node.next.length === 1) {
             setTimeout(() => chooseOption(0), 150);
         }
@@ -86,6 +97,8 @@ function renderNode(node) {
     // EINDE → PRIJS INVOER
     // =======================
     if (node.type === "end") {
+        setStatus("Prijsberekening");
+
         a.textContent = `Gekozen systeem: ${state.system}`;
         a.classList.remove("hidden");
 
@@ -107,6 +120,8 @@ function renderNode(node) {
     // =======================
     // VRAAG MET KNOPPEN
     // =======================
+    setStatus("Vraag");
+
     q.textContent = node.text.replace("Vrg:", "").trim();
 
     node.answers.forEach((label, i) => {
@@ -118,7 +133,7 @@ function renderNode(node) {
 }
 
 // =======================
-// RUIMTES KIEZEN → PRIJS
+// RUIMTES → PRIJS
 // =======================
 async function setRuimtes(aantal) {
     state.oppervlakte = Number(document.getElementById("opp").value);
@@ -128,6 +143,8 @@ async function setRuimtes(aantal) {
         alert("Vul eerst een geldige oppervlakte in.");
         return;
     }
+
+    setStatus("Prijs wordt berekend...");
 
     const res = await fetch(`${API_BASE}/api/calculate`, {
         method: "POST",
@@ -144,4 +161,6 @@ async function setRuimtes(aantal) {
         <p><strong>Prijs per m²:</strong> € ${data.prijs_per_m2}</p>
         <p><strong>Totaalprijs:</strong> € ${data.basisprijs}</p>
     `;
+
+    setStatus("Prijs berekend");
 }
