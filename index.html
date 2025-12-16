@@ -1,26 +1,30 @@
 <!DOCTYPE html>
 <html lang="nl">
 <head>
-    <meta charset="UTF-8">
+    <meta charset="UTF-8" />
     <title>Keuzegids Vloersystemen</title>
-    <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="style.css" />
 </head>
 <body>
 
-<div class="app-container">
     <h1>Keuzegids Vloersystemen</h1>
 
-    <div id="question-box">
-        <p id="question-text">Klik op Start om te beginnen</p>
-    </div>
+    <!-- Start -->
+    <p>Klik op Start om te beginnen</p>
+    <button id="start-btn" class="primary-btn">Start</button>
 
-    <div id="options-box"></div>
+    <!-- Gekozen antwoord (auto) -->
+    <div id="answer-box" class="answer hidden"></div>
 
-    <button id="start-btn" class="start-btn">Start</button>
+    <!-- Vraag -->
+    <div id="question-text" class="question"></div>
 
-    <div id="result-box" class="hidden"></div>
-</div>
+    <!-- Opties -->
+    <div id="options-box" class="options"></div>
 
-<script src="app.js"></script>
+    <!-- Resultaat / eind -->
+    <div id="result-box" class="result hidden"></div>
+
+    <script src="app.js"></script>
 </body>
 </html>

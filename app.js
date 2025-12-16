@@ -2,127 +2,117 @@ const API_BASE = "https://keuzegids-backend.onrender.com";
 
 let currentNode = null;
 
-// Wacht tot de pagina geladen is
+// =======================
+// START KNOP KOPPELEN
+// =======================
 document.addEventListener("DOMContentLoaded", () => {
     const startBtn = document.getElementById("start-btn");
-    if (startBtn) {
-        startBtn.addEventListener("click", startKeuzegids);
-    } else {
-        console.error("Start-knop niet gevonden (id='start-btn')");
-    }
+    startBtn.addEventListener("click", startKeuzegids);
 });
 
 // =======================
-// START KEUZEGIDS
+// START
 // =======================
 async function startKeuzegids() {
     console.log("Start keuzegids");
 
-    try {
-        const res = await fetch(`${API_BASE}/api/start`);
-        const data = await res.json();
-        console.log("Start node:", data);
-        renderNode(data);
-    } catch (err) {
-        console.error("Fout bij starten:", err);
-    }
+    document.getElementById("start-btn").classList.add("hidden");
+    document.getElementById("answer-box").classList.add("hidden");
+
+    const res = await fetch(`${API_BASE}/api/start`);
+    const data = await res.json();
+    renderNode(data);
 }
 
 // =======================
-// KEUZE MAKEN
+// KEUZE
 // =======================
 async function chooseOption(index) {
-    if (!currentNode || !currentNode.id) {
-        console.error("Geen geldige currentNode:", currentNode);
-        return;
-    }
-
     console.log("Keuze:", index, "bij node:", currentNode.id);
 
-    try {
-        const res = await fetch(`${API_BASE}/api/next`, {
-            method: "POST",
-            headers: {
-                "Content-Type": "application/json"
-            },
-            body: JSON.stringify({
-                node_id: currentNode.id, // JSON is leidend
-                choice: index
-            })
-        });
+    const res = await fetch(`${API_BASE}/api/next`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+            node_id: currentNode.id,
+            choice: index
+        })
+    });
 
-        const data = await res.json();
-        console.log("Volgende node:", data);
-        renderNode(data);
-    } catch (err) {
-        console.error("Fout bij volgende stap:", err);
-    }
+    const data = await res.json();
+    renderNode(data);
 }
 
 // =======================
-// NODE RENDEREN
+// RENDER NODE
 // =======================
 function renderNode(node) {
     currentNode = node;
 
     const questionEl = document.getElementById("question-text");
     const optionsBox = document.getElementById("options-box");
+    const answerBox = document.getElementById("answer-box");
     const resultBox = document.getElementById("result-box");
-    const startBtn = document.getElementById("start-btn");
 
-    // Startknop verbergen zodra we begonnen zijn
-    if (startBtn) startBtn.classList.add("hidden");
-
-    // Reset UI
-    if (optionsBox) optionsBox.innerHTML = "";
-    if (resultBox) {
-        resultBox.innerHTML = "";
-        resultBox.classList.add("hidden");
-    }
-
-    // Vraagtekst
-    if (questionEl) {
-        questionEl.textContent = node.text || "";
-    }
+    // Reset
+    optionsBox.innerHTML = "";
+    questionEl.textContent = "";
+    resultBox.classList.add("hidden");
 
     // =======================
-    // EINDE
+    // ANTWOORD NODE
     // =======================
-    if (node.type === "end") {
-        if (resultBox) {
-            resultBox.textContent = "Einde van de keuzegids.";
-            resultBox.classList.remove("hidden");
+    if (node.type === "antwoord") {
+        answerBox.textContent = node.text.replace("Antw:", "").trim();
+        answerBox.classList.remove("hidden");
+
+        // automatisch door naar volgende node
+        if (node.next && node.next.length === 1) {
+            setTimeout(async () => {
+                const res = await fetch(`${API_BASE}/api/next`, {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({
+                        node_id: node.id,
+                        choice: 0
+                    })
+                });
+                const data = await res.json();
+                renderNode(data);
+            }, 150);
         }
+
         return;
     }
 
     // =======================
-    // MEERKEUZE (JSON next[])
+    // SYSTEEM / EINDE
     // =======================
-    if (node.next && node.next.length > 0) {
-        const labels = node.answers || node.options || [];
+    if (node.type === "system" || node.type === "end") {
+        answerBox.textContent = node.text.replace("Sys:", "").trim();
+        answerBox.classList.remove("hidden");
 
-        node.next.forEach((_, index) => {
+        resultBox.textContent = "Keuzegids afgerond.";
+        resultBox.classList.remove("hidden");
+        return;
+    }
+
+    // =======================
+    // VRAAG
+    // =======================
+    if (node.type === "vraag") {
+        questionEl.textContent = node.text.replace("Vrg:", "").trim();
+
+        node.answers.forEach((label, index) => {
             const btn = document.createElement("button");
             btn.className = "option-btn";
-            btn.textContent = labels[index] || `Keuze ${index + 1}`;
-            btn.addEventListener("click", () => chooseOption(index));
+            btn.textContent = label;
+            btn.onclick = () => chooseOption(index);
             optionsBox.appendChild(btn);
         });
 
         return;
     }
 
-    // =======================
-    // RESULTAAT / ANTWOORD
-    // =======================
-    if (node.answer || node.system) {
-        if (resultBox) {
-            resultBox.textContent = node.answer || `Gekozen systeem: ${node.system}`;
-            resultBox.classList.remove("hidden");
-        }
-        return;
-    }
-
-    console.warn("Onverwerkte node:", node);
+    console.warn("Onverwerkt node-type:", node);
 }
