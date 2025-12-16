@@ -1,10 +1,10 @@
-console.log("FRONTEND MET PRIJSBEREKENING ACTIEF");
+console.log("FRONTEND FIX – knoppen + prijsberekening");
 
 const API_BASE = "https://keuzegids-backend.onrender.com";
 
 let currentNode = null;
 
-// 👉 Hier onthouden we alles
+// State voor prijs
 const state = {
     system: null,
     oppervlakte: null,
@@ -59,11 +59,11 @@ function renderNode(node) {
 
     // =======================
     // AUTOMATISCHE NODE
-    // (antwoord / systeem / tussenstap)
+    // (antwoord / system)
     // =======================
-    if (node.next?.length === 1 && (!node.answers || node.answers.length === 0)) {
+    if (!node.answers || node.answers.length === 0) {
 
-        // SYSTEEM onthouden
+        // systeem onthouden
         if (node.type === "system") {
             state.system = node.text.replace("Sys:", "").trim();
         }
@@ -74,7 +74,11 @@ function renderNode(node) {
             .trim();
         a.classList.remove("hidden");
 
-        setTimeout(() => chooseOption(0), 150);
+        // automatisch door als er een volgende is
+        if (node.next && node.next.length === 1) {
+            setTimeout(() => chooseOption(0), 150);
+        }
+
         return;
     }
 
@@ -87,22 +91,21 @@ function renderNode(node) {
 
         r.innerHTML = `
             <h3>Prijsberekening</h3>
+
             <label>Oppervlakte (m²)</label><br>
-            <input id="opp" type="number"><br><br>
+            <input id="opp" type="number" min="1"><br><br>
 
             <label>Aantal ruimtes</label><br>
-            <input id="ruimtes" type="number"><br><br>
-
-            <button id="calc">Bereken prijs</button>
+            <button onclick="setRuimtes(1)">1 ruimte</button>
+            <button onclick="setRuimtes(2)">2 ruimtes</button>
+            <button onclick="setRuimtes(3)">3+ ruimtes</button>
         `;
         r.classList.remove("hidden");
-
-        document.getElementById("calc").onclick = calculatePrice;
         return;
     }
 
     // =======================
-    // VRAAG MET KEUZES
+    // VRAAG MET KNOPPEN
     // =======================
     q.textContent = node.text.replace("Vrg:", "").trim();
 
@@ -115,11 +118,16 @@ function renderNode(node) {
 }
 
 // =======================
-// PRIJS OPHALEN
+// RUIMTES KIEZEN → PRIJS
 // =======================
-async function calculatePrice() {
+async function setRuimtes(aantal) {
     state.oppervlakte = Number(document.getElementById("opp").value);
-    state.ruimtes = Number(document.getElementById("ruimtes").value);
+    state.ruimtes = aantal;
+
+    if (!state.oppervlakte || state.oppervlakte <= 0) {
+        alert("Vul eerst een geldige oppervlakte in.");
+        return;
+    }
 
     const res = await fetch(`${API_BASE}/api/calculate`, {
         method: "POST",
