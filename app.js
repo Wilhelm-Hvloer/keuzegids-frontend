@@ -71,13 +71,7 @@ async function chooseOption(index) {
     });
   }
 
-  // ========================
-  // XTR → MEERWERK (INLINE)
-  // ========================
-  if (gekozenOptie.type === "xtr") {
-    toonMeerwerkInvoer(stripPrefix(gekozenOptie.text), index);
-    return;
-  }
+
 
   // ========================
   // EXTRA'S PER M²
@@ -118,6 +112,12 @@ async function chooseOption(index) {
 
 function renderNode(node) {
   currentNode = node;
+  // XTR-node → direct meerwerk invoer, geen extra klik
+  if (node.type === "xtr") {
+    toonMeerwerkInvoer(stripPrefix(node.text));
+    return;
+  }
+
 
   const questionEl = document.getElementById("question-text");
   const optionsEl = document.getElementById("options-box");
@@ -170,30 +170,37 @@ function renderNode(node) {
 // MEERWERK INVOER (INLINE)
 // ========================
 
-function toonMeerwerkInvoer(omschrijving, choiceIndex) {
+function toonMeerwerkInvoer(omschrijving) {
   const questionEl = document.getElementById("question-text");
   const optionsEl = document.getElementById("options-box");
 
   questionEl.innerHTML = `
     <strong>${omschrijving}</strong><br>
-    Hoeveel uur meerwerk? (€${MEERWERK_TARIEF} per uur)
+    Aantal uren meerwerk (€${MEERWERK_TARIEF} per uur)
   `;
 
   optionsEl.innerHTML = `
     <label>
-      Aantal uren:<br>
-      <input type="number" id="meerwerk-uren" min="0" step="0.5">
+      Uren:<br>
+      <input
+        type="number"
+        id="meerwerk-uren"
+        min="0"
+        step="0.5"
+        onblur="verwerkMeerwerk()"
+      >
     </label>
-
-    <div style="margin-top:15px;">
-      <button onclick="bevestigMeerwerk(${choiceIndex})">Bevestigen</button>
-      <button onclick="renderNode(currentNode)">Annuleren</button>
-    </div>
   `;
 }
 
-async function bevestigMeerwerk(choiceIndex) {
+// ========================
+// MEERWERK VERWERKEN + FLOW HERVATTEN
+// ========================
+
+async function verwerkMeerwerk() {
   const input = document.getElementById("meerwerk-uren");
+  if (!input) return;
+
   const uren = parseFloat(input.value);
 
   if (!uren || uren <= 0) {
@@ -201,23 +208,27 @@ async function bevestigMeerwerk(choiceIndex) {
     return;
   }
 
+  // meerwerk opslaan
   meerwerkUren += uren;
   gekozenExtras.push(`Meerwerk: ${uren} uur`);
 
-  totaalPrijs = (totaalPrijs || 0) + uren * MEERWERK_TARIEF;
+  // prijs herberekenen (incl. backend extras)
+  await herberekenPrijs();
 
+  // keuzeboom hervatten (xtr = altijd 1 pad)
   const res = await fetch(`${API_BASE}/api/next`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({
       node_id: currentNode.id,
-      choice: choiceIndex
+      choice: 0
     })
   });
 
   const node = await res.json();
   renderNode(node);
 }
+
 
 // ========================
 // PRIJS CONTEXT
