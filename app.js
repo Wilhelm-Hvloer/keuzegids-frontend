@@ -6,26 +6,15 @@ const API_BASE = "https://keuzegids-backend.onrender.com";
 // STATE
 // ========================
 
-// huidige positie in keuzeboom
 let currentNode = null;
-
-// gekozen systeem
 let gekozenSysteem = null;
-
-// antwoorden & keuzes
-let gekozenAntwoorden = [];   // { vraag, antwoord }
-let gekozenExtras = [];       // strings (ADD 250, DecoFlakes, Meerwerk: x uur)
-
-// prijsgegevens
+let gekozenAntwoorden = [];
+let gekozenExtras = [];
 let basisPrijs = null;
 let totaalPrijs = null;
-let backendExtras = [];       // vanuit backend berekende extra’s
-
-// flow control
+let backendExtras = [];
 let vervolgNodeNaBasis = null;
 let inOptieFase = false;
-
-// prijsinput
 let gekozenOppervlakte = null;
 let gekozenRuimtes = null;
 
@@ -45,6 +34,7 @@ document.addEventListener("DOMContentLoaded", () => {
 // ========================
 // START KEUZEGIDS
 // ========================
+
 async function startKeuzegids() {
   gekozenSysteem = null;
   gekozenAntwoorden = [];
@@ -56,6 +46,7 @@ async function startKeuzegids() {
   inOptieFase = false;
   gekozenOppervlakte = null;
   gekozenRuimtes = null;
+  meerwerkUren = 0;
 
   const res = await fetch(`${API_BASE}/api/start`);
   const node = await res.json();
@@ -65,15 +56,14 @@ async function startKeuzegids() {
 // ========================
 // KEUZE MAKEN
 // ========================
+
 async function chooseOption(index) {
   if (!currentNode) return;
 
   const gekozenOptie = currentNode.next[index];
   const cleanText = stripPrefix(gekozenOptie?.text || "");
 
-  // ========================
-  // ANTWOORD LOGGEN (alleen bij echte vraag)
-  // ========================
+  // antwoord loggen
   if (currentNode.type === "vraag") {
     gekozenAntwoorden.push({
       vraag: stripPrefix(currentNode.text),
@@ -82,27 +72,21 @@ async function chooseOption(index) {
   }
 
   // ========================
-  // 🛠 XTR → MEERWERK (uren invoeren)
+  // XTR → MEERWERK
   // ========================
   if (gekozenOptie.type === "xtr") {
     let uren = prompt("Hoeveel uur meerwerk? (€120 per uur)");
-
     uren = parseFloat(uren);
 
     if (isNaN(uren) || uren <= 0) {
       alert("Vul een geldig aantal uren in");
-      return; // ❌ niet verder in de boom
+      return;
     }
 
-    // opslaan
     meerwerkUren += uren;
-
     gekozenExtras.push(`Meerwerk: ${uren} uur`);
+    totaalPrijs = (totaalPrijs || 0) + uren * MEERWERK_TARIEF;
 
-    // prijs aanpassen (frontend)
-    totaalPrijs += uren * 120;
-
-    // 🔥 BELANGRIJK: boom pas NU vervolgen
     const res = await fetch(`${API_BASE}/api/next`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -114,11 +98,11 @@ async function chooseOption(index) {
 
     const node = await res.json();
     renderNode(node);
-    return; // ⛔ stop hier
+    return;
   }
 
   // ========================
-  // NORMALE EXTRA'S (ADD250, DecoFlakes, etc.)
+  // EXTRA'S PER M²
   // ========================
   const EXTRA_KEYS = ["ADD 250", "DecoFlakes", "Durakorrel"];
   let extraGevonden = false;
@@ -135,7 +119,7 @@ async function chooseOption(index) {
   }
 
   // ========================
-  // BOOM NORMAAL VERVOLGEN
+  // BOOM VERVOLGEN
   // ========================
   const res = await fetch(`${API_BASE}/api/next`, {
     method: "POST",
@@ -149,60 +133,22 @@ async function chooseOption(index) {
   const node = await res.json();
   renderNode(node);
 }
-
-
-  // ========================
-  // M² EXTRA'S HERKENNEN
-  // ========================
-  const EXTRA_KEYS = ["ADD 250", "DecoFlakes", "Durakorrel"];
-  let extraGevonden = false;
-
-  EXTRA_KEYS.forEach(extra => {
-    if (cleanText.includes(extra) && !gekozenExtras.includes(extra)) {
-      gekozenExtras.push(extra);
-      extraGevonden = true;
-    }
-  });
-
-  if (extraGevonden) {
-    await herberekenPrijs();
-  }
-
-  // ========================
-  // VOLGENDE NODE OPHALEN
-  // ========================
-  const res = await fetch(`${API_BASE}/api/next`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({
-      node_id: currentNode.id,
-      choice: index
-    })
-  });
-
-  const node = await res.json();
-  renderNode(node);
-}
-
-
 
 // ========================
 // NODE RENDEREN
 // ========================
+
 function renderNode(node) {
   currentNode = node;
 
   const questionEl = document.getElementById("question-text");
   const optionsEl = document.getElementById("options-box");
 
-  // EINDE BOOM → SAMENVATTING
+  // EINDE
   if (Array.isArray(node.next) && node.next.length === 0) {
-  herberekenPrijs().then(() => {
-    toonSamenvatting();
-  });
-  return;
-}
-
+    herberekenPrijs().then(toonSamenvatting);
+    return;
+  }
 
   questionEl.innerHTML = inOptieFase ? toonPrijsContext() : "";
   optionsEl.innerHTML = "";
@@ -226,12 +172,10 @@ function renderNode(node) {
     return;
   }
 
-  // vraag tonen
   if (node.type === "vraag" && node.text) {
     questionEl.innerHTML += `<strong>${stripPrefix(node.text)}</strong>`;
   }
 
-  // knoppen
   if (!Array.isArray(node.next)) return;
 
   node.next.forEach((nextNode, index) => {
@@ -247,6 +191,7 @@ function renderNode(node) {
 // ========================
 // PRIJS CONTEXT
 // ========================
+
 function toonPrijsContext() {
   if (!basisPrijs) return "";
 
@@ -267,6 +212,7 @@ function toonPrijsContext() {
 // ========================
 // PRIJSINVOER
 // ========================
+
 function toonPrijsInvoer() {
   const questionEl = document.getElementById("question-text");
   const optionsEl = document.getElementById("options-box");
@@ -294,52 +240,9 @@ function toonPrijsInvoer() {
 }
 
 // ========================
-// MEERWERK INVOER (XTR)
+// PRIJS BEREKENEN
 // ========================
-function toonMeerwerkInvoer(omschrijving) {
-  const questionEl = document.getElementById("question-text");
-  const optionsEl = document.getElementById("options-box");
 
-  questionEl.innerHTML = `<strong>${omschrijving}</strong><br>Hoeveel uur meerwerk?`;
-  optionsEl.innerHTML = `
-    <input type="number" id="meerwerk-uren" min="0" step="0.5" placeholder="Aantal uren">
-    <button onclick="bevestigMeerwerk()">Bevestigen</button>
-  `;
-}
-
-async function bevestigMeerwerk() {
-  const input = document.getElementById("meerwerk-uren");
-  const uren = parseFloat(input.value);
-
-  if (!uren || uren <= 0) {
-    alert("Vul een geldig aantal uren in");
-    return;
-  }
-
-  // meerwerk opslaan
-  meerwerkUren += uren;
-  gekozenExtras.push(`Meerwerk: ${uren} uur`);
-
-  // meerwerkprijs toevoegen (niet aan basisprijs)
-  totaalPrijs += uren * MEERWERK_TARIEF;
-
-  // boom hervatten
-  const res = await fetch(`${API_BASE}/api/next`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({
-      node_id: currentNode.id,
-      choice: 0
-    })
-  });
-
-  const node = await res.json();
-  renderNode(node);
-}
-
-// ========================
-// PRIJS BEREKENEN (INITIEEL)
-// ========================
 async function berekenPrijs(ruimtes) {
   const m2Input = document.getElementById("input-m2");
   const resultaatEl = document.getElementById("prijs-resultaat");
@@ -361,8 +264,9 @@ async function berekenPrijs(ruimtes) {
 }
 
 // ========================
-// PRIJS HERBEREKENEN (BIJ EXTRA'S)
+// PRIJS HERBEREKENEN
 // ========================
+
 async function herberekenPrijs() {
   if (!gekozenSysteem || !gekozenOppervlakte || !gekozenRuimtes) return;
 
@@ -383,7 +287,6 @@ async function herberekenPrijs() {
   basisPrijs = data.basisprijs;
   backendExtras = data.extras || [];
 
-  // totaal = basis + backend extras + meerwerk
   totaalPrijs = basisPrijs;
   backendExtras.forEach(extra => {
     totaalPrijs += extra.totaal;
@@ -394,6 +297,7 @@ async function herberekenPrijs() {
 // ========================
 // VERDER MET OPTIES
 // ========================
+
 async function gaVerderMetOpties() {
   const res = await fetch(`${API_BASE}/api/next`, {
     method: "POST",
@@ -408,10 +312,10 @@ async function gaVerderMetOpties() {
   renderNode(node);
 }
 
-
 // ========================
 // SAMENVATTING
 // ========================
+
 function toonSamenvatting() {
   const questionEl = document.getElementById("question-text");
   const optionsEl = document.getElementById("options-box");
@@ -427,9 +331,6 @@ function toonSamenvatting() {
     <p><strong>Basisprijs:</strong> € ${basisPrijs},-</p>
   `;
 
-  // ========================
-  // M² EXTRA OPTIES
-  // ========================
   if (backendExtras.length) {
     html += "<p><strong>Extra opties:</strong></p><ul>";
     backendExtras.forEach(extra => {
@@ -438,19 +339,10 @@ function toonSamenvatting() {
     html += "</ul>";
   }
 
-  // ========================
-  // MEERWERK (XTR)
-  // ========================
   if (meerwerkUren > 0) {
-    const meerwerkBedrag = meerwerkUren * MEERWERK_TARIEF;
-    html += `
-      <p><strong>Meerwerk:</strong> ${meerwerkUren} uur × €${MEERWERK_TARIEF} = €${meerwerkBedrag},-</p>
-    `;
+    html += `<p><strong>Meerwerk:</strong> ${meerwerkUren} uur × €${MEERWERK_TARIEF}</p>`;
   }
 
-  // ========================
-  // TOTAAL
-  // ========================
   html += `
     <p><strong>Totaalprijs: € ${totaalPrijs},-</strong></p>
     <button onclick="startKeuzegids()">Opnieuw starten</button>
@@ -460,10 +352,10 @@ function toonSamenvatting() {
   optionsEl.innerHTML = html;
 }
 
-
 // ========================
 // HELPERS
 // ========================
+
 function stripPrefix(text = "") {
   return text
     .replace(/^Antw:\s*/i, "")
