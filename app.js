@@ -5,6 +5,12 @@ const API_BASE = "https://keuzegids-backend.onrender.com";
 let currentNode = null;
 let gekozenSysteem = null;
 
+// 🆕 state voor uitbreiding
+let gekozenAntwoorden = [];
+let basisPrijs = null;
+let totaalPrijs = null;
+let vervolgNodeNaBasis = null;
+
 // ========================
 // INIT
 // ========================
@@ -20,6 +26,10 @@ document.addEventListener("DOMContentLoaded", () => {
 // ========================
 async function startKeuzegids() {
   gekozenSysteem = null;
+  gekozenAntwoorden = [];
+  basisPrijs = null;
+  totaalPrijs = null;
+  vervolgNodeNaBasis = null;
 
   const res = await fetch(`${API_BASE}/api/start`);
   const node = await res.json();
@@ -31,6 +41,22 @@ async function startKeuzegids() {
 // ========================
 async function chooseOption(index) {
   if (!currentNode) return;
+
+  const gekozenOptie = currentNode.next[index];
+
+  // 🆕 keuze onthouden
+  if (currentNode.text && gekozenOptie?.text) {
+    gekozenAntwoorden.push({
+      vraag: stripPrefix(currentNode.text),
+      antwoord: stripPrefix(gekozenOptie.text),
+      type: gekozenOptie.type,
+      meerprijs: gekozenOptie.meerprijs || 0
+    });
+
+    if (gekozenOptie.meerprijs) {
+      totaalPrijs += gekozenOptie.meerprijs;
+    }
+  }
 
   const res = await fetch(`${API_BASE}/api/next`, {
     method: "POST",
@@ -46,7 +72,7 @@ async function chooseOption(index) {
 }
 
 // ========================
-// NODE RENDEREN (BELANGRIJK)
+// NODE RENDEREN
 // ========================
 function renderNode(node) {
   currentNode = node;
@@ -54,56 +80,43 @@ function renderNode(node) {
   const questionEl = document.getElementById("question-text");
   const optionsEl = document.getElementById("options-box");
 
-  // reset UI
   questionEl.textContent = "";
   optionsEl.innerHTML = "";
 
-// ========================
-// ANTWOORD → VRAAG (via backend)
-// ========================
-if (
-  node.type === "antwoord" &&
-  Array.isArray(node.next) &&
-  node.next.length === 1 &&
-  node.next[0].type === "vraag"
-) {
-  chooseOption(0);
-  return;
-}
+  // antwoord → vraag
+  if (
+    node.type === "antwoord" &&
+    node.next?.length === 1 &&
+    node.next[0].type === "vraag"
+  ) {
+    chooseOption(0);
+    return;
+  }
 
-// ========================
-// ANTWOORD → SYSTEEM (via backend)
-// ========================
-if (
-  node.type === "antwoord" &&
-  Array.isArray(node.next) &&
-  node.next.length === 1 &&
-  node.next[0].type === "systeem"
-) {
-  chooseOption(0);
-  return;
-}
+  // antwoord → systeem
+  if (
+    node.type === "antwoord" &&
+    node.next?.length === 1 &&
+    node.next[0].type === "systeem"
+  ) {
+    chooseOption(0);
+    return;
+  }
 
-
-  // ========================
-  // PRIJSFASE (alleen backend beslist)
-  // ========================
+  // 🆕 prijsfase
   if (node.price_ready === true) {
     gekozenSysteem = stripPrefix(node.system);
+    vervolgNodeNaBasis = node.id;
     toonPrijsInvoer();
     return;
   }
 
-  // ========================
-  // VRAAG TONEN
-  // ========================
+  // vraag tonen
   if (node.type === "vraag" && node.text) {
     questionEl.textContent = stripPrefix(node.text);
   }
 
-  // ========================
-  // ANTWOORD KNOPPEN
-  // ========================
+  // antwoordknoppen
   if (!Array.isArray(node.next)) return;
 
   node.next.forEach((nextNode, index) => {
@@ -111,31 +124,36 @@ if (
 
     const btn = document.createElement("button");
     btn.textContent = stripPrefix(nextNode.text);
-    btn.onclick = () => chooseOption(index);
 
+    if (nextNode.meerprijs) {
+      btn.textContent += ` (+€${nextNode.meerprijs})`;
+    }
+
+    btn.onclick = () => chooseOption(index);
     optionsEl.appendChild(btn);
   });
+
+  // einde boom → samenvatting
+  if (node.type === "einde") {
+    toonSamenvatting();
+  }
 }
 
 // ========================
-// PRIJSINVOER TONEN
+// PRIJSINVOER
 // ========================
 function toonPrijsInvoer() {
   const questionEl = document.getElementById("question-text");
   const optionsEl = document.getElementById("options-box");
 
-  questionEl.innerHTML = `
-    <strong>${gekozenSysteem}</strong><br>
-    Bereken de prijs
-  `;
+  questionEl.innerHTML = `<strong>${gekozenSysteem}</strong><br>Bereken de prijs`;
 
   optionsEl.innerHTML = `
-    <label>
-      Oppervlakte (m²):<br>
+    <label>Oppervlakte (m²):<br>
       <input type="number" id="input-m2" min="1">
     </label>
 
-    <div style="margin-top: 10px;">
+    <div style="margin-top:10px;">
       <strong>Aantal ruimtes:</strong><br>
       <button onclick="berekenPrijs(1)">1 ruimte</button>
       <button onclick="berekenPrijs(2)">2 ruimtes</button>
@@ -145,7 +163,7 @@ function toonPrijsInvoer() {
     <div id="prijs-resultaat" style="margin-top:15px;"></div>
 
     <div style="margin-top:15px;">
-      <button onclick="startKeuzegids()">Opnieuw starten</button>
+      <button onclick="gaVerderMetOpties()">Verder met opties</button>
     </div>
   `;
 }
@@ -158,7 +176,6 @@ async function berekenPrijs(ruimtes) {
   const resultaatEl = document.getElementById("prijs-resultaat");
 
   const oppervlakte = parseFloat(m2Input.value);
-
   if (!oppervlakte || oppervlakte <= 0) {
     resultaatEl.textContent = "Vul een geldige oppervlakte in.";
     return;
@@ -169,23 +186,67 @@ async function berekenPrijs(ruimtes) {
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({
       systeem: gekozenSysteem,
-      oppervlakte: oppervlakte,
-      ruimtes: ruimtes
+      oppervlakte,
+      ruimtes
     })
   });
 
   const data = await res.json();
-
   if (data.error) {
     resultaatEl.textContent = data.error;
     return;
   }
 
+  basisPrijs = data.totaalprijs;
+  totaalPrijs = basisPrijs;
+
   resultaatEl.innerHTML = `
-    <strong>Prijsberekening</strong><br>
-    € ${data.prijs_per_m2.toFixed(2)} per m² × ${oppervlakte} m²<br>
-    <strong>Totaal: € ${data.totaalprijs},-</strong>
+    <strong>Basisprijs</strong><br>
+    € ${data.prijs_per_m2.toFixed(2)} × ${oppervlakte} m²<br>
+    <strong>€ ${basisPrijs},-</strong>
   `;
+}
+
+// ========================
+// VERDER MET OPTIES
+// ========================
+async function gaVerderMetOpties() {
+  const res = await fetch(`${API_BASE}/api/next`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      node_id: vervolgNodeNaBasis,
+      choice: 0
+    })
+  });
+
+  const node = await res.json();
+  renderNode(node);
+}
+
+// ========================
+// SAMENVATTING
+// ========================
+function toonSamenvatting() {
+  const questionEl = document.getElementById("question-text");
+  const optionsEl = document.getElementById("options-box");
+
+  let html = "<h3>Samenvatting</h3><ul>";
+
+  gekozenAntwoorden.forEach(item => {
+    html += `<li><strong>${item.vraag}</strong>: ${item.antwoord}`;
+    if (item.meerprijs) html += ` (+€${item.meerprijs})`;
+    html += "</li>";
+  });
+
+  html += `</ul>
+    <p>Basisprijs: € ${basisPrijs},-</p>
+    <p><strong>Totaalprijs: € ${totaalPrijs},-</strong></p>
+    <button onclick="startKeuzegids()">Opnieuw starten</button>
+  `;
+
+  questionEl.textContent = "";
+  optionsEl.innerHTML = html;
 }
 
 // ========================
