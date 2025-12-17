@@ -54,7 +54,7 @@ async function chooseOption(index) {
 }
 
 // ========================
-// RENDER NODE (OPTIE 2)
+// RENDER NODE (GEFIXT)
 // ========================
 function renderNode(node) {
   currentNode = node;
@@ -67,7 +67,7 @@ function renderNode(node) {
   optionsEl.innerHTML = "";
 
   // ========================
-  // AUTO DOORSCHAKELEN NAAR VRAAG
+  // AUTO DOORSCHAKELEN NAAR VRAAG VIA API
   // ========================
   if (
     node.type !== "vraag" &&
@@ -75,7 +75,8 @@ function renderNode(node) {
     node.next.length === 1 &&
     node.next[0].type === "vraag"
   ) {
-    renderNode(node.next[0]);
+    // volg de flow: haal de vraag + antwoorden via backend op
+    chooseOption(0);
     return;
   }
 
