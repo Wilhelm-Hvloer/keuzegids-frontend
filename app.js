@@ -79,6 +79,19 @@ function renderNode(node) {
     chooseOption(0);
     return;
   }
+// ========================
+// START PRIJS CALCULATOR BIJ SYSTEEM
+// ========================
+if (
+  Array.isArray(node.next) &&
+  node.next.length === 1 &&
+  node.next[0].type === "systeem"
+) {
+  gekozenSysteem = stripPrefix(node.next[0].text);
+  toonPrijsInvoer();
+  return;
+}
+
 
   // ========================
   // PRIJSFASE
