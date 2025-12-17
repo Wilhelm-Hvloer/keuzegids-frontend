@@ -14,6 +14,10 @@ let backendExtras = [];
 let vervolgNodeNaBasis = null;
 let inOptieFase = false;
 
+// 🆕 nodig voor herberekening
+let gekozenOppervlakte = null;
+let gekozenRuimtes = null;
+
 // ========================
 // INIT
 // ========================
@@ -34,6 +38,8 @@ async function startKeuzegids() {
   backendExtras = [];
   vervolgNodeNaBasis = null;
   inOptieFase = false;
+  gekozenOppervlakte = null;
+  gekozenRuimtes = null;
 
   const res = await fetch(`${API_BASE}/api/start`);
   const node = await res.json();
@@ -55,9 +61,10 @@ async function chooseOption(index) {
       type: gekozenOptie.type
     });
 
-    // 🆕 extra onthouden (alleen naam)
+    // 🆕 extra onthouden + prijs herberekenen
     if (gekozenOptie.type === "xtr") {
       gekozenExtras.push(stripPrefix(gekozenOptie.text));
+      await herberekenPrijs(); // 🔥 DE FIX
     }
   }
 
@@ -89,25 +96,14 @@ function renderNode(node) {
     return;
   }
 
-  // reset UI (met prijscontext)
   questionEl.innerHTML = inOptieFase ? toonPrijsContext() : "";
   optionsEl.innerHTML = "";
 
-  // antwoord → vraag
+  // automatische doorloop
   if (
     node.type === "antwoord" &&
     node.next?.length === 1 &&
-    node.next[0].type === "vraag"
-  ) {
-    chooseOption(0);
-    return;
-  }
-
-  // antwoord → systeem
-  if (
-    node.type === "antwoord" &&
-    node.next?.length === 1 &&
-    node.next[0].type === "systeem"
+    ["vraag", "systeem"].includes(node.next[0].type)
   ) {
     chooseOption(0);
     return;
@@ -127,7 +123,7 @@ function renderNode(node) {
     questionEl.innerHTML += `<strong>${stripPrefix(node.text)}</strong>`;
   }
 
-  // antwoordknoppen
+  // knoppen
   if (!Array.isArray(node.next)) return;
 
   node.next.forEach((nextNode, index) => {
@@ -152,11 +148,9 @@ function toonPrijsContext() {
       Basisprijs: € ${basisPrijs},-<br>
   `;
 
-  if (backendExtras.length) {
-    backendExtras.forEach(extra => {
-      html += `${extra.naam}: € ${extra.totaal},-<br>`;
-    });
-  }
+  backendExtras.forEach(extra => {
+    html += `${extra.naam}: € ${extra.totaal},-<br>`;
+  });
 
   html += `<strong>Totaal tot nu toe: € ${totaalPrijs},-</strong><hr></div>`;
   return html;
@@ -192,43 +186,51 @@ function toonPrijsInvoer() {
 }
 
 // ========================
-// PRIJS BEREKENEN (BACKEND)
+// PRIJS BEREKENEN (INITIEEL)
 // ========================
 async function berekenPrijs(ruimtes) {
   const m2Input = document.getElementById("input-m2");
   const resultaatEl = document.getElementById("prijs-resultaat");
 
-  const oppervlakte = parseFloat(m2Input.value);
-  if (!oppervlakte || oppervlakte <= 0) {
+  gekozenOppervlakte = parseFloat(m2Input.value);
+  gekozenRuimtes = ruimtes;
+
+  if (!gekozenOppervlakte || gekozenOppervlakte <= 0) {
     resultaatEl.textContent = "Vul een geldige oppervlakte in.";
     return;
   }
+
+  await herberekenPrijs();
+
+  resultaatEl.innerHTML = `
+    <strong>Basisprijs:</strong> € ${basisPrijs},-<br>
+    <strong>Totaalprijs:</strong> € ${totaalPrijs},-
+  `;
+}
+
+// ========================
+// PRIJS HERBEREKENEN (BIJ EXTRA'S)
+// ========================
+async function herberekenPrijs() {
+  if (!gekozenSysteem || !gekozenOppervlakte || !gekozenRuimtes) return;
 
   const res = await fetch(`${API_BASE}/api/price`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({
       systeem: gekozenSysteem,
-      oppervlakte,
-      ruimtes,
+      oppervlakte: gekozenOppervlakte,
+      ruimtes: gekozenRuimtes,
       extras: gekozenExtras
     })
   });
 
   const data = await res.json();
-  if (data.error) {
-    resultaatEl.textContent = data.error;
-    return;
-  }
+  if (data.error) return;
 
   basisPrijs = data.basisprijs;
   totaalPrijs = data.totaalprijs;
   backendExtras = data.extras || [];
-
-  resultaatEl.innerHTML = `
-    <strong>Basisprijs:</strong> € ${basisPrijs},-<br>
-    <strong>Totaalprijs:</strong> € ${totaalPrijs},-
-  `;
 }
 
 // ========================
