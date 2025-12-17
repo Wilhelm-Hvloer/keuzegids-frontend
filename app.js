@@ -63,14 +63,11 @@ async function chooseOption(index) {
   const gekozenOptie = currentNode.next[index];
   const cleanText = stripPrefix(gekozenOptie?.text || "");
 
-  // ALLE vragen + antwoorden loggen
-if (currentNode.type === "vraag" && currentNode.text) {
-  gekozenAntwoorden.push({
-    vraag: stripPrefix(currentNode.text),
-    antwoord: cleanText
-  });
-}
-
+  // 👉 antwoord koppelen aan laatst gelogde vraag
+  const laatsteVraag = gekozenAntwoorden[gekozenAntwoorden.length - 1];
+  if (laatsteVraag && laatsteVraag.antwoord === null) {
+    laatsteVraag.antwoord = cleanText;
+  }
 
   // ========================
   // EXTRA'S PER M²
@@ -114,14 +111,14 @@ async function renderNode(node) {
 
   // XTR-node → direct meerwerk invoer
   if (node.type === "xtr") {
-    toonMeerwerkInvoer(stripPrefix(node.text));
+    toonMeerwerkInvoer();
     return;
   }
 
   const questionEl = document.getElementById("question-text");
   const optionsEl = document.getElementById("options-box");
 
-  // EINDE → ALTIJD eerst herberekenen
+  // EINDE → altijd herberekenen
   if (Array.isArray(node.next) && node.next.length === 0) {
     await herberekenPrijs();
     toonSamenvatting();
@@ -131,7 +128,7 @@ async function renderNode(node) {
   questionEl.innerHTML = inOptieFase ? toonPrijsContext() : "";
   optionsEl.innerHTML = "";
 
-  // automatische doorloop
+  // automatische doorloop (incl. xtr)
   if (
     node.type === "antwoord" &&
     node.next?.length === 1 &&
@@ -150,8 +147,22 @@ async function renderNode(node) {
     return;
   }
 
+  // 👉 VRAAG LOGGEN BIJ TONEN
   if (node.type === "vraag" && node.text) {
-    questionEl.innerHTML += `<strong>${stripPrefix(node.text)}</strong>`;
+    const vraag = stripPrefix(node.text);
+
+    const bestaatAl = gekozenAntwoorden.some(
+      item => item.vraag === vraag
+    );
+
+    if (!bestaatAl) {
+      gekozenAntwoorden.push({
+        vraag,
+        antwoord: null
+      });
+    }
+
+    questionEl.innerHTML += `<strong>${vraag}</strong>`;
   }
 
   if (!Array.isArray(node.next)) return;
@@ -170,7 +181,7 @@ async function renderNode(node) {
 // MEERWERK INVOER (INLINE)
 // ========================
 
-function toonMeerwerkInvoer(omschrijving) {
+function toonMeerwerkInvoer() {
   const questionEl = document.getElementById("question-text");
   const optionsEl = document.getElementById("options-box");
 
@@ -361,7 +372,9 @@ function toonSamenvatting() {
   let html = "<h3>Samenvatting</h3><ul>";
 
   gekozenAntwoorden.forEach(item => {
-    html += `<li><strong>${item.vraag}</strong>: ${item.antwoord}</li>`;
+    if (item.antwoord) {
+      html += `<li><strong>${item.vraag}</strong>: ${item.antwoord}</li>`;
+    }
   });
 
   html += `</ul>
@@ -378,7 +391,7 @@ function toonSamenvatting() {
 
     if (meerwerkUren > 0) {
       const bedrag = meerwerkUren * MEERWERK_TARIEF;
-      html += `<li>Meerwerk: ${meerwerkUren} uur × €${MEERWERK_TARIEF} = € ${bedrag},-</li>`;
+      html += `<li>Meerwerk verwijderen bestaande coating: ${meerwerkUren} uur × €${MEERWERK_TARIEF} = € ${bedrag},-</li>`;
     }
 
     html += "</ul>";
