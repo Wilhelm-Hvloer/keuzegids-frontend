@@ -55,12 +55,14 @@ async function chooseOption(index) {
   const gekozenOptie = currentNode.next[index];
   const cleanText = stripPrefix(gekozenOptie?.text || "");
 
-  if (currentNode.text && gekozenOptie?.text) {
-    gekozenAntwoorden.push({
-      vraag: stripPrefix(currentNode.text),
-      antwoord: cleanText,
-      type: gekozenOptie.type
-    });
+  // alleen echte vragen loggen
+if (currentNode.type === "vraag") {
+  gekozenAntwoorden.push({
+    vraag: stripPrefix(currentNode.text),
+    antwoord: cleanText
+  });
+}
+
 
     // ========================
     // EXTRA'S HERKENNEN
