@@ -128,15 +128,34 @@ async function renderNode(node) {
   questionEl.innerHTML = inOptieFase ? toonPrijsContext() : "";
   optionsEl.innerHTML = "";
 
-  // automatische doorloop (incl. xtr)
-  if (
-    node.type === "antwoord" &&
-    node.next?.length === 1 &&
-    ["vraag", "systeem", "xtr"].includes(node.next[0].type)
-  ) {
-    chooseOption(0);
-    return;
+  // automatische doorloop, maar eerst SCHONE vraag vastleggen
+if (
+  node.type === "antwoord" &&
+  node.next?.length === 1 &&
+  ["vraag", "xtr"].includes(node.next[0].type)
+) {
+  const volgendeNode = node.next[0];
+
+  // alleen échte vragen loggen, nooit antwoord/xtr
+  if (volgendeNode.type === "vraag" && volgendeNode.text) {
+    const vraag = stripPrefix(volgendeNode.text);
+
+    const bestaatAl = gekozenAntwoorden.some(
+      item => item.vraag === vraag
+    );
+
+    if (!bestaatAl) {
+      gekozenAntwoorden.push({
+        vraag,
+        antwoord: null
+      });
+    }
   }
+
+  chooseOption(0);
+  return;
+}
+
 
   // PRIJSFASE
   if (node.price_ready === true) {
