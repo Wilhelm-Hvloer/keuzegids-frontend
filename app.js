@@ -10,7 +10,9 @@ let gekozenSysteem = null;
 // ========================
 document.addEventListener("DOMContentLoaded", () => {
   const startBtn = document.getElementById("start-btn");
-  startBtn.addEventListener("click", startKeuzegids);
+  if (startBtn) {
+    startBtn.addEventListener("click", startKeuzegids);
+  }
 });
 
 // ========================
@@ -52,7 +54,7 @@ async function chooseOption(index) {
 }
 
 // ========================
-// RENDER NODE  (BESTAAND + UITGEBREID)
+// RENDER NODE (OPTIE 2)
 // ========================
 function renderNode(node) {
   currentNode = node;
@@ -65,34 +67,59 @@ function renderNode(node) {
   optionsEl.innerHTML = "";
 
   // ========================
-  // 🆕 PRIJSFASE
+  // PRIJSFASE
   // ========================
   if (node.price_ready === true || node.type === "systeem") {
-    gekozenSysteem = (node.system || node.text || "").replace("Sys:", "").trim();
+    gekozenSysteem = (node.system || node.text || "")
+      .replace("Sys:", "")
+      .trim();
     toonPrijsInvoer();
     return;
   }
 
   // ========================
-  // BESTAAND GEDRAG
+  // VRAAGTEKST
   // ========================
-  if (node.text) {
-    questionEl.textContent = node.text;
+  if (node.type === "vraag" && node.text) {
+    questionEl.textContent = stripPrefix(node.text);
   }
 
-  if (Array.isArray(node.next) && node.next.length > 0) {
-    node.next.forEach((nextNode, index) => {
-      const btn = document.createElement("button");
-      btn.textContent = nextNode.text;
-      btn.onclick = () => chooseOption(index);
-      optionsEl.appendChild(btn);
-    });
-  }
+  // ========================
+  // KNOPPEN
+  // ========================
+  if (!Array.isArray(node.next)) return;
+
+  node.next.forEach((nextNode, index) => {
+    if (!isClickableType(nextNode.type)) return;
+
+    const btn = document.createElement("button");
+    btn.textContent = stripPrefix(nextNode.text);
+    btn.onclick = () => chooseOption(index);
+
+    optionsEl.appendChild(btn);
+  });
 }
 
-// ==================================================
-// 🆕 PRIJSINVOER TONEN
-// ==================================================
+// ========================
+// HELPERS
+// ========================
+function isClickableType(type) {
+  return ["antwoord", "xtr", "afw"].includes(type);
+}
+
+function stripPrefix(text = "") {
+  return text
+    .replace(/^Antw:\s*/i, "")
+    .replace(/^Vrg:\s*/i, "")
+    .replace(/^Sys:\s*/i, "")
+    .replace(/^Xtr:\s*/i, "")
+    .replace(/^Afw:\s*/i, "")
+    .trim();
+}
+
+// ========================
+// PRIJSINVOER TONEN
+// ========================
 function toonPrijsInvoer() {
   const questionEl = document.getElementById("question-text");
   const optionsEl = document.getElementById("options-box");
@@ -123,9 +150,9 @@ function toonPrijsInvoer() {
   `;
 }
 
-// ==================================================
-// 🆕 PRIJS BEREKENEN
-// ==================================================
+// ========================
+// PRIJS BEREKENEN
+// ========================
 async function berekenPrijs(ruimtes) {
   const m2Input = document.getElementById("input-m2");
   const resultaatEl = document.getElementById("prijs-resultaat");
