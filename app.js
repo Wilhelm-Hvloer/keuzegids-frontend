@@ -64,12 +64,13 @@ async function chooseOption(index) {
   const cleanText = stripPrefix(gekozenOptie?.text || "");
 
   // ALLE vragen + antwoorden loggen
-  if (currentNode.text && cleanText) {
-    gekozenAntwoorden.push({
-      vraag: stripPrefix(currentNode.text),
-      antwoord: cleanText
-    });
-  }
+if (currentNode.type === "vraag" && currentNode.text) {
+  gekozenAntwoorden.push({
+    vraag: stripPrefix(currentNode.text),
+    antwoord: cleanText
+  });
+}
+
 
   // ========================
   // EXTRA'S PER M²
@@ -134,7 +135,7 @@ async function renderNode(node) {
   if (
     node.type === "antwoord" &&
     node.next?.length === 1 &&
-    ["vraag", "systeem"].includes(node.next[0].type)
+    ["vraag", "systeem", "xtr"].includes(node.next[0].type)
   ) {
     chooseOption(0);
     return;
@@ -174,8 +175,8 @@ function toonMeerwerkInvoer(omschrijving) {
   const optionsEl = document.getElementById("options-box");
 
   questionEl.innerHTML = `
-    <strong>${omschrijving}</strong><br>
-    Aantal uren meerwerk (€${MEERWERK_TARIEF} per uur)
+    <strong>Verwijderen bestaande coating</strong><br>
+    Hoeveel uur meerwerk is hiervoor nodig? (€${MEERWERK_TARIEF} per uur)
   `;
 
   optionsEl.innerHTML = `
@@ -208,7 +209,7 @@ async function verwerkMeerwerk() {
   }
 
   meerwerkUren += uren;
-  gekozenExtras.push(`Meerwerk: ${uren} uur`);
+  gekozenExtras.push(`Meerwerk verwijderen bestaande coating: ${uren} uur`);
 
   await herberekenPrijs();
 
