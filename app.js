@@ -63,11 +63,14 @@ async function chooseOption(index) {
   const gekozenOptie = currentNode.next[index];
   const cleanText = stripPrefix(gekozenOptie?.text || "");
 
-  // 👉 antwoord koppelen aan laatst gelogde vraag
-  const laatsteVraag = gekozenAntwoorden[gekozenAntwoorden.length - 1];
-  if (laatsteVraag && laatsteVraag.antwoord === null) {
-    laatsteVraag.antwoord = cleanText;
-  }
+  // ALLE vragen + antwoorden loggen
+if (currentNode.type === "vraag" && currentNode.text) {
+  gekozenAntwoorden.push({
+    vraag: stripPrefix(currentNode.text),
+    antwoord: cleanText
+  });
+}
+
 
   // ========================
   // EXTRA'S PER M²
@@ -111,14 +114,14 @@ async function renderNode(node) {
 
   // XTR-node → direct meerwerk invoer
   if (node.type === "xtr") {
-    toonMeerwerkInvoer();
+    toonMeerwerkInvoer(stripPrefix(node.text));
     return;
   }
 
   const questionEl = document.getElementById("question-text");
   const optionsEl = document.getElementById("options-box");
 
-  // EINDE → altijd herberekenen
+  // EINDE → ALTIJD eerst herberekenen
   if (Array.isArray(node.next) && node.next.length === 0) {
     await herberekenPrijs();
     toonSamenvatting();
@@ -128,34 +131,15 @@ async function renderNode(node) {
   questionEl.innerHTML = inOptieFase ? toonPrijsContext() : "";
   optionsEl.innerHTML = "";
 
-  // automatische doorloop, maar eerst SCHONE vraag vastleggen
-if (
-  node.type === "antwoord" &&
-  node.next?.length === 1 &&
-  ["vraag", "xtr"].includes(node.next[0].type)
-) {
-  const volgendeNode = node.next[0];
-
-  // alleen échte vragen loggen, nooit antwoord/xtr
-  if (volgendeNode.type === "vraag" && volgendeNode.text) {
-    const vraag = stripPrefix(volgendeNode.text);
-
-    const bestaatAl = gekozenAntwoorden.some(
-      item => item.vraag === vraag
-    );
-
-    if (!bestaatAl) {
-      gekozenAntwoorden.push({
-        vraag,
-        antwoord: null
-      });
-    }
+  // automatische doorloop
+  if (
+    node.type === "antwoord" &&
+    node.next?.length === 1 &&
+    ["vraag", "systeem", "xtr"].includes(node.next[0].type)
+  ) {
+    chooseOption(0);
+    return;
   }
-
-  chooseOption(0);
-  return;
-}
-
 
   // PRIJSFASE
   if (node.price_ready === true) {
@@ -166,22 +150,8 @@ if (
     return;
   }
 
-  // 👉 VRAAG LOGGEN BIJ TONEN
   if (node.type === "vraag" && node.text) {
-    const vraag = stripPrefix(node.text);
-
-    const bestaatAl = gekozenAntwoorden.some(
-      item => item.vraag === vraag
-    );
-
-    if (!bestaatAl) {
-      gekozenAntwoorden.push({
-        vraag,
-        antwoord: null
-      });
-    }
-
-    questionEl.innerHTML += `<strong>${vraag}</strong>`;
+    questionEl.innerHTML += `<strong>${stripPrefix(node.text)}</strong>`;
   }
 
   if (!Array.isArray(node.next)) return;
@@ -200,7 +170,7 @@ if (
 // MEERWERK INVOER (INLINE)
 // ========================
 
-function toonMeerwerkInvoer() {
+function toonMeerwerkInvoer(omschrijving) {
   const questionEl = document.getElementById("question-text");
   const optionsEl = document.getElementById("options-box");
 
@@ -391,9 +361,7 @@ function toonSamenvatting() {
   let html = "<h3>Samenvatting</h3><ul>";
 
   gekozenAntwoorden.forEach(item => {
-    if (item.antwoord) {
-      html += `<li><strong>${item.vraag}</strong>: ${item.antwoord}</li>`;
-    }
+    html += `<li><strong>${item.vraag}</strong>: ${item.antwoord}</li>`;
   });
 
   html += `</ul>
@@ -410,7 +378,7 @@ function toonSamenvatting() {
 
     if (meerwerkUren > 0) {
       const bedrag = meerwerkUren * MEERWERK_TARIEF;
-      html += `<li>Meerwerk verwijderen bestaande coating: ${meerwerkUren} uur × €${MEERWERK_TARIEF} = € ${bedrag},-</li>`;
+      html += `<li>Meerwerk: ${meerwerkUren} uur × €${MEERWERK_TARIEF} = € ${bedrag},-</li>`;
     }
 
     html += "</ul>";
