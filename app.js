@@ -58,31 +58,32 @@ function renderNode(node) {
   questionEl.textContent = "";
   optionsEl.innerHTML = "";
 
-  // ========================
-  // ANTWOORD → VRAAG (via backend)
-  // ========================
-  if (
-    node.type !== "vraag" &&
-    Array.isArray(node.next) &&
-    node.next.length === 1 &&
-    node.next[0].type === "vraag"
-  ) {
-    chooseOption(0);
-    return;
-  }
+// ========================
+// ANTWOORD → VRAAG (via backend)
+// ========================
+if (
+  node.type === "antwoord" &&
+  Array.isArray(node.next) &&
+  node.next.length === 1 &&
+  node.next[0].type === "vraag"
+) {
+  chooseOption(0);
+  return;
+}
 
-  // ========================
-  // ANTWOORD → SYSTEEM (via backend)
-  // ========================
-  if (
-    node.type !== "vraag" &&
-    Array.isArray(node.next) &&
-    node.next.length === 1 &&
-    node.next[0].type === "systeem"
-  ) {
-    chooseOption(0);
-    return;
-  }
+// ========================
+// ANTWOORD → SYSTEEM (via backend)
+// ========================
+if (
+  node.type === "antwoord" &&
+  Array.isArray(node.next) &&
+  node.next.length === 1 &&
+  node.next[0].type === "systeem"
+) {
+  chooseOption(0);
+  return;
+}
+
 
   // ========================
   // PRIJSFASE (alleen backend beslist)
