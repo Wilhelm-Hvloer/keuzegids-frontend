@@ -186,6 +186,11 @@ async function berekenPrijs(ruimtes) {
 
   const oppervlakte = parseFloat(m2Input.value);
 
+  if (!gekozenSysteem) {
+    resultaatEl.textContent = "Geen systeem gekozen.";
+    return;
+  }
+
   if (!oppervlakte || oppervlakte <= 0) {
     resultaatEl.textContent = "Vul een geldige oppervlakte in.";
     return;
@@ -196,6 +201,7 @@ async function berekenPrijs(ruimtes) {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
+        systeem: gekozenSysteem,
         oppervlakte: oppervlakte,
         ruimtes: ruimtes
       })
@@ -210,7 +216,8 @@ async function berekenPrijs(ruimtes) {
 
     resultaatEl.innerHTML = `
       <strong>Prijsberekening</strong><br>
-      € ${data.prijs_per_m2.toFixed(2)} per m² × ${data.oppervlakte} m²<br>
+      Systeem: ${gekozenSysteem}<br>
+      € ${data.prijs_per_m2.toFixed(2)} per m² × ${oppervlakte} m²<br>
       <strong>Totaal: € ${data.totaalprijs},-</strong>
     `;
   } catch (err) {
