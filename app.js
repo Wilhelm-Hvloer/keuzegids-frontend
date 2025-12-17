@@ -92,9 +92,12 @@ function renderNode(node) {
 
   // EINDE BOOM → SAMENVATTING
   if (Array.isArray(node.next) && node.next.length === 0) {
+  herberekenPrijs().then(() => {
     toonSamenvatting();
-    return;
-  }
+  });
+  return;
+}
+
 
   questionEl.innerHTML = inOptieFase ? toonPrijsContext() : "";
   optionsEl.innerHTML = "";
