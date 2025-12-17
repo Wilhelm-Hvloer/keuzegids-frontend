@@ -5,11 +5,12 @@ const API_BASE = "https://keuzegids-backend.onrender.com";
 let currentNode = null;
 let gekozenSysteem = null;
 
-// 🆕 state voor uitbreiding
+// state
 let gekozenAntwoorden = [];
 let basisPrijs = null;
 let totaalPrijs = null;
 let vervolgNodeNaBasis = null;
+let inOptieFase = false;
 
 // ========================
 // INIT
@@ -30,6 +31,7 @@ async function startKeuzegids() {
   basisPrijs = null;
   totaalPrijs = null;
   vervolgNodeNaBasis = null;
+  inOptieFase = false;
 
   const res = await fetch(`${API_BASE}/api/start`);
   const node = await res.json();
@@ -44,7 +46,6 @@ async function chooseOption(index) {
 
   const gekozenOptie = currentNode.next[index];
 
-  // 🆕 keuze onthouden
   if (currentNode.text && gekozenOptie?.text) {
     gekozenAntwoorden.push({
       vraag: stripPrefix(currentNode.text),
@@ -80,7 +81,14 @@ function renderNode(node) {
   const questionEl = document.getElementById("question-text");
   const optionsEl = document.getElementById("options-box");
 
-  questionEl.textContent = "";
+  // EINDE BOOM → SAMENVATTING
+  if (Array.isArray(node.next) && node.next.length === 0) {
+    toonSamenvatting();
+    return;
+  }
+
+  // reset UI (met prijscontext)
+  questionEl.innerHTML = inOptieFase ? toonPrijsContext() : "";
   optionsEl.innerHTML = "";
 
   // antwoord → vraag
@@ -103,17 +111,18 @@ function renderNode(node) {
     return;
   }
 
-  // 🆕 prijsfase
+  // PRIJSFASE
   if (node.price_ready === true) {
     gekozenSysteem = stripPrefix(node.system);
     vervolgNodeNaBasis = node.id;
+    inOptieFase = true;
     toonPrijsInvoer();
     return;
   }
 
   // vraag tonen
   if (node.type === "vraag" && node.text) {
-    questionEl.textContent = stripPrefix(node.text);
+    questionEl.innerHTML += `<strong>${stripPrefix(node.text)}</strong>`;
   }
 
   // antwoordknoppen
@@ -132,11 +141,22 @@ function renderNode(node) {
     btn.onclick = () => chooseOption(index);
     optionsEl.appendChild(btn);
   });
+}
 
-  // einde boom → samenvatting
-  if (node.type === "einde") {
-    toonSamenvatting();
-  }
+// ========================
+// PRIJS CONTEXT
+// ========================
+function toonPrijsContext() {
+  if (!basisPrijs) return "";
+
+  return `
+    <div style="margin-bottom:10px;">
+      <strong>${gekozenSysteem}</strong><br>
+      Basisprijs: € ${basisPrijs},-<br>
+      <strong>Totaal tot nu toe: € ${totaalPrijs},-</strong>
+      <hr>
+    </div>
+  `;
 }
 
 // ========================
@@ -240,12 +260,13 @@ function toonSamenvatting() {
   });
 
   html += `</ul>
+    <p><strong>Systeem:</strong> ${gekozenSysteem}</p>
     <p>Basisprijs: € ${basisPrijs},-</p>
     <p><strong>Totaalprijs: € ${totaalPrijs},-</strong></p>
     <button onclick="startKeuzegids()">Opnieuw starten</button>
   `;
 
-  questionEl.textContent = "";
+  questionEl.innerHTML = "";
   optionsEl.innerHTML = html;
 }
 
