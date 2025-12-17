@@ -63,15 +63,13 @@ async function chooseOption(index) {
   const gekozenOptie = currentNode.next[index];
   const cleanText = stripPrefix(gekozenOptie?.text || "");
 
-  // antwoord loggen
-  if (currentNode.type === "vraag") {
+  // ALLE vragen + antwoorden loggen
+  if (currentNode.text && cleanText) {
     gekozenAntwoorden.push({
       vraag: stripPrefix(currentNode.text),
       antwoord: cleanText
     });
   }
-
-
 
   // ========================
   // EXTRA'S PER M²
@@ -110,21 +108,22 @@ async function chooseOption(index) {
 // NODE RENDEREN
 // ========================
 
-function renderNode(node) {
+async function renderNode(node) {
   currentNode = node;
-  // XTR-node → direct meerwerk invoer, geen extra klik
+
+  // XTR-node → direct meerwerk invoer
   if (node.type === "xtr") {
     toonMeerwerkInvoer(stripPrefix(node.text));
     return;
   }
 
-
   const questionEl = document.getElementById("question-text");
   const optionsEl = document.getElementById("options-box");
 
-  // EINDE
+  // EINDE → ALTIJD eerst herberekenen
   if (Array.isArray(node.next) && node.next.length === 0) {
-    herberekenPrijs().then(toonSamenvatting);
+    await herberekenPrijs();
+    toonSamenvatting();
     return;
   }
 
@@ -208,14 +207,11 @@ async function verwerkMeerwerk() {
     return;
   }
 
-  // meerwerk opslaan
   meerwerkUren += uren;
   gekozenExtras.push(`Meerwerk: ${uren} uur`);
 
-  // prijs herberekenen (incl. backend extras)
   await herberekenPrijs();
 
-  // keuzeboom hervatten (xtr = altijd 1 pad)
   const res = await fetch(`${API_BASE}/api/next`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
@@ -228,7 +224,6 @@ async function verwerkMeerwerk() {
   const node = await res.json();
   renderNode(node);
 }
-
 
 // ========================
 // PRIJS CONTEXT
@@ -373,16 +368,19 @@ function toonSamenvatting() {
     <p><strong>Basisprijs:</strong> € ${basisPrijs},-</p>
   `;
 
-  if (backendExtras.length) {
+  if (backendExtras.length || meerwerkUren > 0) {
     html += "<p><strong>Extra opties:</strong></p><ul>";
+
     backendExtras.forEach(extra => {
       html += `<li>${extra.naam}: € ${extra.totaal},-</li>`;
     });
-    html += "</ul>";
-  }
 
-  if (meerwerkUren > 0) {
-    html += `<p><strong>Meerwerk:</strong> ${meerwerkUren} uur × €${MEERWERK_TARIEF}</p>`;
+    if (meerwerkUren > 0) {
+      const bedrag = meerwerkUren * MEERWERK_TARIEF;
+      html += `<li>Meerwerk: ${meerwerkUren} uur × €${MEERWERK_TARIEF} = € ${bedrag},-</li>`;
+    }
+
+    html += "</ul>";
   }
 
   html += `
