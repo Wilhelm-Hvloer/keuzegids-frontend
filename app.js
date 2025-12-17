@@ -67,6 +67,19 @@ function renderNode(node) {
   optionsEl.innerHTML = "";
 
   // ========================
+  // AUTO DOORSCHAKELEN NAAR VRAAG
+  // ========================
+  if (
+    node.type !== "vraag" &&
+    Array.isArray(node.next) &&
+    node.next.length === 1 &&
+    node.next[0].type === "vraag"
+  ) {
+    renderNode(node.next[0]);
+    return;
+  }
+
+  // ========================
   // PRIJSFASE
   // ========================
   if (node.price_ready === true || node.type === "systeem") {
