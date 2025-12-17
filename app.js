@@ -18,7 +18,7 @@ let inOptieFase = false;
 let gekozenOppervlakte = null;
 let gekozenRuimtes = null;
 
-// 🆕 meerwerk (xtr)
+// meerwerk (xtr)
 let meerwerkUren = 0;
 const MEERWERK_TARIEF = 120;
 
@@ -72,32 +72,10 @@ async function chooseOption(index) {
   }
 
   // ========================
-  // XTR → MEERWERK
+  // XTR → MEERWERK (INLINE)
   // ========================
   if (gekozenOptie.type === "xtr") {
-    let uren = prompt("Hoeveel uur meerwerk? (€120 per uur)");
-    uren = parseFloat(uren);
-
-    if (isNaN(uren) || uren <= 0) {
-      alert("Vul een geldig aantal uren in");
-      return;
-    }
-
-    meerwerkUren += uren;
-    gekozenExtras.push(`Meerwerk: ${uren} uur`);
-    totaalPrijs = (totaalPrijs || 0) + uren * MEERWERK_TARIEF;
-
-    const res = await fetch(`${API_BASE}/api/next`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        node_id: currentNode.id,
-        choice: index
-      })
-    });
-
-    const node = await res.json();
-    renderNode(node);
+    toonMeerwerkInvoer(stripPrefix(gekozenOptie.text), index);
     return;
   }
 
@@ -186,6 +164,59 @@ function renderNode(node) {
     btn.onclick = () => chooseOption(index);
     optionsEl.appendChild(btn);
   });
+}
+
+// ========================
+// MEERWERK INVOER (INLINE)
+// ========================
+
+function toonMeerwerkInvoer(omschrijving, choiceIndex) {
+  const questionEl = document.getElementById("question-text");
+  const optionsEl = document.getElementById("options-box");
+
+  questionEl.innerHTML = `
+    <strong>${omschrijving}</strong><br>
+    Hoeveel uur meerwerk? (€${MEERWERK_TARIEF} per uur)
+  `;
+
+  optionsEl.innerHTML = `
+    <label>
+      Aantal uren:<br>
+      <input type="number" id="meerwerk-uren" min="0" step="0.5">
+    </label>
+
+    <div style="margin-top:15px;">
+      <button onclick="bevestigMeerwerk(${choiceIndex})">Bevestigen</button>
+      <button onclick="renderNode(currentNode)">Annuleren</button>
+    </div>
+  `;
+}
+
+async function bevestigMeerwerk(choiceIndex) {
+  const input = document.getElementById("meerwerk-uren");
+  const uren = parseFloat(input.value);
+
+  if (!uren || uren <= 0) {
+    alert("Vul een geldig aantal uren in");
+    return;
+  }
+
+  meerwerkUren += uren;
+  gekozenExtras.push(`Meerwerk: ${uren} uur`);
+
+  totaalPrijs = (totaalPrijs || 0) + uren * MEERWERK_TARIEF;
+
+  const res = await fetch(`${API_BASE}/api/next`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      node_id: currentNode.id,
+      choice: choiceIndex
+    })
+  });
+
+  const node = await res.json();
+  renderNode(node);
 }
 
 // ========================
