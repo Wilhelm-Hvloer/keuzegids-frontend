@@ -53,18 +53,47 @@ async function chooseOption(index) {
   if (!currentNode) return;
 
   const gekozenOptie = currentNode.next[index];
+  const cleanText = stripPrefix(gekozenOptie?.text || "");
 
   if (currentNode.text && gekozenOptie?.text) {
     gekozenAntwoorden.push({
       vraag: stripPrefix(currentNode.text),
-      antwoord: stripPrefix(gekozenOptie.text),
+      antwoord: cleanText,
       type: gekozenOptie.type
     });
 
-    // 🆕 extra onthouden + prijs herberekenen
+    // ========================
+    // EXTRA'S HERKENNEN
+    // ========================
+
+    // bekende extra's (moet overeenkomen met backend prijslijst)
+    const EXTRA_KEYS = ["ADD 250", "DecoFlakes", "Durakorrel"];
+
+    let extraGevonden = false;
+
+    // 1️⃣ Toekomst: expliciet type = xtr
     if (gekozenOptie.type === "xtr") {
-      gekozenExtras.push(stripPrefix(gekozenOptie.text));
-      await herberekenPrijs(); // 🔥 DE FIX
+      EXTRA_KEYS.forEach(extra => {
+        if (cleanText.includes(extra) && !gekozenExtras.includes(extra)) {
+          gekozenExtras.push(extra);
+          extraGevonden = true;
+        }
+      });
+    }
+
+    // 2️⃣ Huidige situatie: antwoord-tekst bevat extra
+    if (gekozenOptie.type === "antwoord") {
+      EXTRA_KEYS.forEach(extra => {
+        if (cleanText.includes(extra) && !gekozenExtras.includes(extra)) {
+          gekozenExtras.push(extra);
+          extraGevonden = true;
+        }
+      });
+    }
+
+    // 🔥 prijs opnieuw berekenen zodra er een extra is toegevoegd
+    if (extraGevonden) {
+      await herberekenPrijs();
     }
   }
 
