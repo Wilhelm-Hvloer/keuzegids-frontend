@@ -7,8 +7,10 @@ let gekozenSysteem = null;
 
 // state
 let gekozenAntwoorden = [];
+let gekozenExtras = [];
 let basisPrijs = null;
 let totaalPrijs = null;
+let backendExtras = [];
 let vervolgNodeNaBasis = null;
 let inOptieFase = false;
 
@@ -17,9 +19,7 @@ let inOptieFase = false;
 // ========================
 document.addEventListener("DOMContentLoaded", () => {
   const startBtn = document.getElementById("start-btn");
-  if (startBtn) {
-    startBtn.addEventListener("click", startKeuzegids);
-  }
+  if (startBtn) startBtn.addEventListener("click", startKeuzegids);
 });
 
 // ========================
@@ -28,8 +28,10 @@ document.addEventListener("DOMContentLoaded", () => {
 async function startKeuzegids() {
   gekozenSysteem = null;
   gekozenAntwoorden = [];
+  gekozenExtras = [];
   basisPrijs = null;
   totaalPrijs = null;
+  backendExtras = [];
   vervolgNodeNaBasis = null;
   inOptieFase = false;
 
@@ -50,12 +52,12 @@ async function chooseOption(index) {
     gekozenAntwoorden.push({
       vraag: stripPrefix(currentNode.text),
       antwoord: stripPrefix(gekozenOptie.text),
-      type: gekozenOptie.type,
-      meerprijs: gekozenOptie.meerprijs || 0
+      type: gekozenOptie.type
     });
 
-    if (gekozenOptie.meerprijs) {
-      totaalPrijs += gekozenOptie.meerprijs;
+    // 🆕 extra onthouden (alleen naam)
+    if (gekozenOptie.type === "xtr") {
+      gekozenExtras.push(stripPrefix(gekozenOptie.text));
     }
   }
 
@@ -133,11 +135,6 @@ function renderNode(node) {
 
     const btn = document.createElement("button");
     btn.textContent = stripPrefix(nextNode.text);
-
-    if (nextNode.meerprijs) {
-      btn.textContent += ` (+€${nextNode.meerprijs})`;
-    }
-
     btn.onclick = () => chooseOption(index);
     optionsEl.appendChild(btn);
   });
@@ -149,14 +146,20 @@ function renderNode(node) {
 function toonPrijsContext() {
   if (!basisPrijs) return "";
 
-  return `
+  let html = `
     <div style="margin-bottom:10px;">
       <strong>${gekozenSysteem}</strong><br>
       Basisprijs: € ${basisPrijs},-<br>
-      <strong>Totaal tot nu toe: € ${totaalPrijs},-</strong>
-      <hr>
-    </div>
   `;
+
+  if (backendExtras.length) {
+    backendExtras.forEach(extra => {
+      html += `${extra.naam}: € ${extra.totaal},-<br>`;
+    });
+  }
+
+  html += `<strong>Totaal tot nu toe: € ${totaalPrijs},-</strong><hr></div>`;
+  return html;
 }
 
 // ========================
@@ -189,7 +192,7 @@ function toonPrijsInvoer() {
 }
 
 // ========================
-// PRIJS BEREKENEN
+// PRIJS BEREKENEN (BACKEND)
 // ========================
 async function berekenPrijs(ruimtes) {
   const m2Input = document.getElementById("input-m2");
@@ -207,7 +210,8 @@ async function berekenPrijs(ruimtes) {
     body: JSON.stringify({
       systeem: gekozenSysteem,
       oppervlakte,
-      ruimtes
+      ruimtes,
+      extras: gekozenExtras
     })
   });
 
@@ -217,13 +221,13 @@ async function berekenPrijs(ruimtes) {
     return;
   }
 
-  basisPrijs = data.totaalprijs;
-  totaalPrijs = basisPrijs;
+  basisPrijs = data.basisprijs;
+  totaalPrijs = data.totaalprijs;
+  backendExtras = data.extras || [];
 
   resultaatEl.innerHTML = `
-    <strong>Basisprijs</strong><br>
-    € ${data.prijs_per_m2.toFixed(2)} × ${oppervlakte} m²<br>
-    <strong>€ ${basisPrijs},-</strong>
+    <strong>Basisprijs:</strong> € ${basisPrijs},-<br>
+    <strong>Totaalprijs:</strong> € ${totaalPrijs},-
   `;
 }
 
@@ -254,14 +258,23 @@ function toonSamenvatting() {
   let html = "<h3>Samenvatting</h3><ul>";
 
   gekozenAntwoorden.forEach(item => {
-    html += `<li><strong>${item.vraag}</strong>: ${item.antwoord}`;
-    if (item.meerprijs) html += ` (+€${item.meerprijs})`;
-    html += "</li>";
+    html += `<li><strong>${item.vraag}</strong>: ${item.antwoord}</li>`;
   });
 
   html += `</ul>
     <p><strong>Systeem:</strong> ${gekozenSysteem}</p>
     <p>Basisprijs: € ${basisPrijs},-</p>
+  `;
+
+  if (backendExtras.length) {
+    html += "<p><strong>Extra opties:</strong></p><ul>";
+    backendExtras.forEach(extra => {
+      html += `<li>${extra.naam}: € ${extra.totaal},-</li>`;
+    });
+    html += "</ul>";
+  }
+
+  html += `
     <p><strong>Totaalprijs: € ${totaalPrijs},-</strong></p>
     <button onclick="startKeuzegids()">Opnieuw starten</button>
   `;
