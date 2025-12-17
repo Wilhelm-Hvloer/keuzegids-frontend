@@ -56,49 +56,31 @@ async function chooseOption(index) {
   const cleanText = stripPrefix(gekozenOptie?.text || "");
 
   // alleen echte vragen loggen
-if (currentNode.type === "vraag") {
-  gekozenAntwoorden.push({
-    vraag: stripPrefix(currentNode.text),
-    antwoord: cleanText
-  });
-}
-
-
-    // ========================
-    // EXTRA'S HERKENNEN
-    // ========================
-
-    // bekende extra's (moet overeenkomen met backend prijslijst)
-    const EXTRA_KEYS = ["ADD 250", "DecoFlakes", "Durakorrel"];
-
-    let extraGevonden = false;
-
-    // 1️⃣ Toekomst: expliciet type = xtr
-    if (gekozenOptie.type === "xtr") {
-      EXTRA_KEYS.forEach(extra => {
-        if (cleanText.includes(extra) && !gekozenExtras.includes(extra)) {
-          gekozenExtras.push(extra);
-          extraGevonden = true;
-        }
-      });
-    }
-
-    // 2️⃣ Huidige situatie: antwoord-tekst bevat extra
-    if (gekozenOptie.type === "antwoord") {
-      EXTRA_KEYS.forEach(extra => {
-        if (cleanText.includes(extra) && !gekozenExtras.includes(extra)) {
-          gekozenExtras.push(extra);
-          extraGevonden = true;
-        }
-      });
-    }
-
-    // 🔥 prijs opnieuw berekenen zodra er een extra is toegevoegd
-    if (extraGevonden) {
-      await herberekenPrijs();
-    }
+  if (currentNode.type === "vraag") {
+    gekozenAntwoorden.push({
+      vraag: stripPrefix(currentNode.text),
+      antwoord: cleanText
+    });
   }
 
+  // ========================
+  // EXTRA'S HERKENNEN
+  // ========================
+  const EXTRA_KEYS = ["ADD 250", "DecoFlakes", "Durakorrel"];
+  let extraGevonden = false;
+
+  EXTRA_KEYS.forEach(extra => {
+    if (cleanText.includes(extra) && !gekozenExtras.includes(extra)) {
+      gekozenExtras.push(extra);
+      extraGevonden = true;
+    }
+  });
+
+  if (extraGevonden) {
+    await herberekenPrijs();
+  }
+
+  // ⬅️ HIER ZITTEN WE NOG STEEDS IN async function
   const res = await fetch(`${API_BASE}/api/next`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
@@ -111,6 +93,7 @@ if (currentNode.type === "vraag") {
   const node = await res.json();
   renderNode(node);
 }
+
 
 // ========================
 // NODE RENDEREN
