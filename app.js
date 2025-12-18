@@ -23,8 +23,22 @@ let meerwerkUren = 0;
 const MEERWERK_TARIEF = 120;
 
 // ========================
+// AFWEGING (PRIJSVERGELIJKING)
+// ========================
+
+// true zolang we wachten op m² + ruimtes vóór afweging
+let inAfwegingPrijs = false;
+
+// tijdelijke opslag van systeem + berekende prijs
+let afwegingResultaten = [];
+
+// actieve afweging-node
+let afwegingNode = null;
+
+// ========================
 // INIT
 // ========================
+
 
 document.addEventListener("DOMContentLoaded", () => {
   const startBtn = document.getElementById("start-btn");
@@ -110,35 +124,43 @@ if (currentNode.type === "vraag" && currentNode.text) {
 // ========================
 
 async function renderNode(node) {
-currentNode = node;
-console.log("▶ renderNode aangeroepen:", node?.type, node);
+  currentNode = node;
+  console.log("▶ renderNode aangeroepen:", node?.type, node);
 
-const questionEl = document.getElementById("question-text");
-const optionsEl = document.getElementById("options-box");
+  const questionEl = document.getElementById("question-text");
+  const optionsEl = document.getElementById("options-box");
 
-// XTR-node → direct meerwerk invoer
-if (node.type === "xtr") {
-  toonMeerwerkInvoer(stripPrefix(node.text));
-  return;
-}
+  // XTR-node → direct meerwerk invoer
+  if (node.type === "xtr") {
+    toonMeerwerkInvoer(stripPrefix(node.text));
+    return;
+  }
 
-// AFW → afweging starten (nog geen berekening)
-if (node.type === "afw") {
-  afwegingNode = node;
-  inAfweging = true;
-  toonPrijsInvoerVoorAfweging();
-  return;
-}
+  // AFW → afweging starten (prijsvergelijking)
+  if (node.type === "afw") {
+    afwegingNode = node;
 
-// EINDE → ALTIJD eerst herberekenen
-if (Array.isArray(node.next) && node.next.length === 0) {
-  await herberekenPrijs();
-  toonSamenvatting();
-  return;
-}
+    // m² / ruimtes nog niet ingevuld → eerst prijsinvoer
+    if (!gekozenOppervlakte || !gekozenRuimtes) {
+      inAfwegingPrijs = true;
+      toonPrijsInvoer();
+      return;
+    }
 
-questionEl.innerHTML = inOptieFase ? toonPrijsContext() : "";
-optionsEl.innerHTML = "";
+    // m² & ruimtes bekend → prijsvergelijking tonen
+    toonAfwegingMetPrijzen();
+    return;
+  }
+
+  // EINDE → ALTIJD eerst herberekenen
+  if (Array.isArray(node.next) && node.next.length === 0) {
+    await herberekenPrijs();
+    toonSamenvatting();
+    return;
+  }
+
+  questionEl.innerHTML = inOptieFase ? toonPrijsContext() : "";
+  optionsEl.innerHTML = "";
 
   // automatische doorloop
   if (
@@ -164,6 +186,65 @@ optionsEl.innerHTML = "";
   }
 
   if (!Array.isArray(node.next)) return;
+}
+
+// ========================
+// AFWEGING MET PRIJSVERGELIJKING
+// ========================
+
+async function toonAfwegingMetPrijzen() {
+  const questionEl = document.getElementById("question-text");
+  const optionsEl = document.getElementById("options-box");
+
+  if (!afwegingNode || !Array.isArray(afwegingNode.next)) return;
+
+  questionEl.innerHTML = `<strong>${stripPrefix(afwegingNode.text)}</strong>`;
+  optionsEl.innerHTML = "";
+
+  afwegingResultaten = [];
+
+  for (const systeemNode of afwegingNode.next) {
+    if (systeemNode.type !== "systeem") continue;
+
+    const systeemNaam = stripPrefix(systeemNode.text);
+
+    const prijs = await berekenBasisPrijsVoorSysteem(
+      systeemNaam,
+      gekozenOppervlakte,
+      gekozenRuimtes
+    );
+
+    afwegingResultaten.push({
+      systeem: systeemNaam,
+      prijs,
+      nodeId: systeemNode.id
+    });
+
+    const btn = document.createElement("button");
+    btn.innerHTML = `
+      <strong>${systeemNaam}</strong><br>
+      € ${prijs},-
+    `;
+
+    btn.onclick = () => {
+      gekozenSysteem = systeemNaam;
+      basisPrijs = prijs;
+      totaalPrijs = prijs;
+
+      inAfwegingPrijs = false;
+      inOptieFase = true;
+
+      const index = afwegingNode.next.findIndex(
+        n => n.id === systeemNode.id
+      );
+
+      chooseOption(index);
+    };
+
+    optionsEl.appendChild(btn);
+  }
+}
+
 
 // ========================
 // AFWEGING UI
@@ -173,7 +254,7 @@ function toonPrijsInvoerVoorAfweging() {
   const questionEl = document.getElementById("question-text");
   const optionsEl = document.getElementById("options-box");
 
-  if (!afwegingNode || !Array.isArray(afwegingNode.next)) {
+  if (!afwegingNode || !Array.isArray(afwegingNode.next)) {  
     console.error("Afweging node ontbreekt of heeft geen next-nodes");
     return;
   }
@@ -488,6 +569,28 @@ async function herberekenPrijs() {
 }
 
 // ========================
+// HULPFUNCTIE – BASISPRIJS PER SYSTEEM (AFWEGING)
+// ========================
+
+async function berekenBasisPrijsVoorSysteem(systeemNaam, m2, ruimtes) {
+  const res = await fetch(`${API_BASE}/api/price`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      systeem: systeemNaam,
+      oppervlakte: m2,
+      ruimtes: ruimtes,
+      extras: [] // bewust leeg: alleen basisprijs vergelijken
+    })
+  });
+
+  const data = await res.json();
+  if (data.error) return 0;
+
+  return data.basisprijs;
+}
+
+// ========================
 // VERDER MET OPTIES
 // ========================
 
@@ -504,6 +607,7 @@ async function gaVerderMetOpties() {
   const node = await res.json();
   renderNode(node);
 }
+
 
 // ========================
 // SAMENVATTING
