@@ -1,3 +1,11 @@
+console.log("Keuzegids frontend gestart");
+
+// ========================
+// CONFIG
+// ========================
+
+const API_BASE = "https://keuzegids-backend.onrender.com";
+
 // ========================
 // STATE
 // ========================
@@ -22,13 +30,11 @@ const MEERWERK_TARIEF = 120;
 let afwegingNode = null;
 let afwegingResultaten = [];
 let inAfwegingPrijs = false;
-let afwegingAfgerond = false; // 👈 NIEUW: voorkomt oneindige afwegings-loop
-
+let afwegingAfgerond = false; // voorkomt oneindige afwegings-loop
 
 // ========================
 // INIT
 // ========================
-
 
 document.addEventListener("DOMContentLoaded", () => {
   const startBtn = document.getElementById("start-btn");
@@ -38,6 +44,7 @@ document.addEventListener("DOMContentLoaded", () => {
 // ========================
 // START KEUZEGIDS
 // ========================
+
 
 async function startKeuzegids() {
   gekozenSysteem = null;
