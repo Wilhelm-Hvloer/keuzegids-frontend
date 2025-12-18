@@ -186,6 +186,16 @@ async function renderNode(node) {
   }
 
   if (!Array.isArray(node.next)) return;
+
+node.next.forEach((nextNode, index) => {
+  if (nextNode.type !== "antwoord") return;
+
+  const btn = document.createElement("button");
+  btn.textContent = stripPrefix(nextNode.text);
+  btn.onclick = () => chooseOption(index);
+  optionsEl.appendChild(btn);
+});
+
 }
 
 // ========================
