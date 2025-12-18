@@ -110,35 +110,34 @@ if (currentNode.type === "vraag" && currentNode.text) {
 // ========================
 
 async function renderNode(node) {
-  currentNode = node;
+currentNode = node;
 
-  // XTR-node → direct meerwerk invoer
-  if (node.type === "xtr") {
-    toonMeerwerkInvoer(stripPrefix(node.text));
-    return;
-  }
+const questionEl = document.getElementById("question-text");
+const optionsEl = document.getElementById("options-box");
 
-  // AFW → afweging starten (nog geen berekening)
-  if (node.type === "afw") {
-    afwegingNode = node;
-    inAfweging = true;
-    toonPrijsInvoerVoorAfweging();
-    return;
-  }
+// XTR-node → direct meerwerk invoer
+if (node.type === "xtr") {
+  toonMeerwerkInvoer(stripPrefix(node.text));
+  return;
+}
 
+// AFW → afweging starten (nog geen berekening)
+if (node.type === "afw") {
+  afwegingNode = node;
+  inAfweging = true;
+  toonPrijsInvoerVoorAfweging();
+  return;
+}
 
-  const questionEl = document.getElementById("question-text");
-  const optionsEl = document.getElementById("options-box");
+// EINDE → ALTIJD eerst herberekenen
+if (Array.isArray(node.next) && node.next.length === 0) {
+  await herberekenPrijs();
+  toonSamenvatting();
+  return;
+}
 
-  // EINDE → ALTIJD eerst herberekenen
-  if (Array.isArray(node.next) && node.next.length === 0) {
-    await herberekenPrijs();
-    toonSamenvatting();
-    return;
-  }
-
-  questionEl.innerHTML = inOptieFase ? toonPrijsContext() : "";
-  optionsEl.innerHTML = "";
+questionEl.innerHTML = inOptieFase ? toonPrijsContext() : "";
+optionsEl.innerHTML = "";
 
   // automatische doorloop
   if (
