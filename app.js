@@ -144,7 +144,7 @@ async function renderNode(node) {
   if (
     node.type === "antwoord" &&
     node.next?.length === 1 &&
-    ["vraag", "systeem", "xtr"].includes(node.next[0].type)
+    ["vraag", "systeem", "xtr", "afw"].includes(node.next[0].type)
   ) {
     chooseOption(0);
     return;
