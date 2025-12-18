@@ -166,6 +166,38 @@ optionsEl.innerHTML = "";
   if (!Array.isArray(node.next)) return;
 
 // ========================
+// AFWEGING UI
+// ========================
+
+function toonPrijsInvoerVoorAfweging() {
+  const questionEl = document.getElementById("question-text");
+  const optionsEl = document.getElementById("options-box");
+
+  if (!afwegingNode || !Array.isArray(afwegingNode.next)) {
+    console.error("Afweging node ontbreekt of heeft geen next-nodes");
+    return;
+  }
+
+  questionEl.innerHTML = `<strong>${stripPrefix(afwegingNode.text)}</strong>`;
+  optionsEl.innerHTML = "";
+
+  afwegingNode.next.forEach((nextNode, index) => {
+    if (nextNode.type !== "systeem") return;
+
+    const btn = document.createElement("button");
+    btn.textContent = stripPrefix(nextNode.text);
+
+    btn.onclick = () => {
+      inAfweging = false;
+      chooseOption(index);
+    };
+
+    optionsEl.appendChild(btn);
+  });
+}
+
+
+// ========================
 // OPTIES RENDEREN
 // ========================
 
