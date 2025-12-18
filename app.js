@@ -118,6 +118,15 @@ async function renderNode(node) {
     return;
   }
 
+  // AFW → afweging starten (nog geen berekening)
+  if (node.type === "afw") {
+    afwegingNode = node;
+    inAfweging = true;
+    toonPrijsInvoerVoorAfweging();
+    return;
+  }
+
+
   const questionEl = document.getElementById("question-text");
   const optionsEl = document.getElementById("options-box");
 
@@ -300,6 +309,93 @@ async function berekenPrijs(ruimtes) {
     <strong>Totaalprijs:</strong> € ${totaalPrijs},-
   `;
 }
+
+// ========================
+// AFWEGING – PRIJS BEREKENEN (2 SYSTEMEN)
+// ========================
+
+async function berekenAfweging(ruimtes) {
+  const m2Input = document.getElementById("input-m2");
+  const oppervlakte = parseFloat(m2Input?.value);
+
+  if (!oppervlakte || oppervlakte <= 0) {
+    alert("Vul een geldige oppervlakte in.");
+    return;
+  }
+
+  gekozenOppervlakte = oppervlakte;
+  gekozenRuimtes = ruimtes;
+
+  afwegingResultaten = [];
+
+  for (const sysNode of afwegingNode.next) {
+    const systeemNaam = stripPrefix(sysNode.system);
+
+    const res = await fetch(`${API_BASE}/api/price`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        systeem: systeemNaam,
+        oppervlakte,
+        ruimtes,
+        extras: [] // bewust leeg: alleen basisvergelijking
+      })
+    });
+
+    const data = await res.json();
+    if (!data.error) {
+      afwegingResultaten.push({
+        systeem: systeemNaam,
+        prijs: data.basisprijs
+      });
+    }
+  }
+
+  toonAfwegingResultaten();
+}
+
+function toonAfwegingResultaten() {
+  const resultEl = document.getElementById("afweging-resultaat");
+  if (!resultEl) return;
+
+  let html = "<strong>Kies een systeem:</strong><br>";
+
+  afwegingResultaten.forEach((res, index) => {
+    html += `
+      <div style="margin-top:8px;">
+        <button onclick="kiesAfgewogenSysteem(${index})">
+          ${res.systeem} — € ${res.prijs},-
+        </button>
+      </div>
+    `;
+  });
+
+  resultEl.innerHTML = html;
+}
+
+async function kiesAfgewogenSysteem(index) {
+  const gekozen = afwegingResultaten[index];
+
+  gekozenSysteem = gekozen.systeem;
+  basisPrijs = gekozen.prijs;
+  totaalPrijs = basisPrijs;
+
+  inAfweging = false;
+
+  // vervolg de keuzeboom NA de afweging
+  const res = await fetch(`${API_BASE}/api/next`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      node_id: afwegingNode.id,
+      choice: index
+    })
+  });
+
+  const node = await res.json();
+  renderNode(node);
+}
+
 
 // ========================
 // PRIJS HERBEREKENEN
