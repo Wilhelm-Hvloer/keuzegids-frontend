@@ -379,7 +379,11 @@ function toonPrijsInvoer() {
   const questionEl = document.getElementById("question-text");
   const optionsEl = document.getElementById("options-box");
 
-  questionEl.innerHTML = `<strong>${gekozenSysteem}</strong><br>Bereken de prijs`;
+  const titel = inAfwegingPrijs
+    ? "Bereken de prijs (vergelijk systemen)"
+    : `${gekozenSysteem}<br>Bereken de prijs`;
+
+  questionEl.innerHTML = `<strong>${titel}</strong>`;
 
   optionsEl.innerHTML = `
     <label>Oppervlakte (m²):<br>
@@ -388,18 +392,23 @@ function toonPrijsInvoer() {
 
     <div style="margin-top:10px;">
       <strong>Aantal ruimtes:</strong><br>
-      <button onclick="berekenPrijs(1)">1 ruimte</button>
-      <button onclick="berekenPrijs(2)">2 ruimtes</button>
-      <button onclick="berekenPrijs(3)">3 ruimtes</button>
+      <button onclick="${inAfwegingPrijs ? "berekenAfweging" : "berekenPrijs"}(1)">1 ruimte</button>
+      <button onclick="${inAfwegingPrijs ? "berekenAfweging" : "berekenPrijs"}(2)">2 ruimtes</button>
+      <button onclick="${inAfwegingPrijs ? "berekenAfweging" : "berekenPrijs"}(3)">3 ruimtes</button>
     </div>
 
     <div id="prijs-resultaat" style="margin-top:15px;"></div>
 
-    <div style="margin-top:15px;">
-      <button onclick="gaVerderMetOpties()">Verder met opties</button>
-    </div>
+    ${inAfwegingPrijs ? `
+      <div id="afweging-resultaat" style="margin-top:15px;"></div>
+    ` : `
+      <div style="margin-top:15px;">
+        <button onclick="gaVerderMetOpties()">Verder met opties</button>
+      </div>
+    `}
   `;
 }
+
 
 // ========================
 // PRIJS BEREKENEN
