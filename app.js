@@ -453,7 +453,7 @@ async function berekenAfweging(ruimtes) {
   afwegingResultaten = [];
 
   for (const sysNode of afwegingNode.next) {
-    const systeemNaam = stripPrefix(sysNode.system);
+    const systeemNaam = stripPrefix(sysNode.text);
 
     const res = await fetch(`${API_BASE}/api/price`, {
       method: "POST",
