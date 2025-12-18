@@ -9,36 +9,29 @@
 
   <!-- Bovenbalk -->
   <div id="status-bar">
-    <img src="Transparant Hardeman-Vloerbewerking-logo.png" alt="Hardeman" height="40">
+    <img
+      src="Transparant Hardeman-Vloerbewerking-logo.png"
+      alt="Hardeman"
+      height="40"
+    >
     <span id="status-text"></span>
   </div>
 
+  <!-- App container -->
   <div id="app">
+
+    <!-- Vraag / titel -->
     <h2 id="question-text"></h2>
 
+    <!-- Antwoorden / knoppen / afweging / meerwerk -->
     <div id="options-box"></div>
 
+    <!-- Samenvatting / resultaten -->
     <div id="result-box"></div>
 
-    <!-- Prijsblok -->
-    <div id="price-box" class="hidden">
-      <h3>Bereken prijs</h3>
-
-      <label>
-        Oppervlakte (m²):
-        <input type="number" id="m2-input" min="1" />
-      </label>
-
-      <div class="room-buttons">
-        <button onclick="calculatePrice(1)">1 ruimte</button>
-        <button onclick="calculatePrice(2)">2 ruimtes</button>
-        <button onclick="calculatePrice(3)">3 ruimtes</button>
-      </div>
-
-      <div id="price-result"></div>
-    </div>
-
+    <!-- Startknop -->
     <button id="start-btn">Start keuzegids</button>
+
   </div>
 
   <script src="app.js"></script>
