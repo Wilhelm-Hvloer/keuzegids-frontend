@@ -134,13 +134,8 @@ async function renderNode(node) {
   }
 
 // AFW → afweging starten (prijsvergelijking)
-if (node.type === "afw") {
+if (node.type === "afw" && !afwegingAfgerond) {
   afwegingNode = node;
-
-  // afweging al gedaan → gewoon door met gekozen systeem
-  if (afwegingAfgerond === true) {
-    return;
-  }
 
   // m² / ruimtes nog niet ingevuld → eerst prijsinvoer
   if (!gekozenOppervlakte || !gekozenRuimtes) {
@@ -153,6 +148,7 @@ if (node.type === "afw") {
   toonAfwegingMetPrijzen();
   return;
 }
+
 
 
   // EINDE → ALTIJD eerst herberekenen
@@ -500,13 +496,17 @@ function toonAfwegingResultaten() {
 }
 
 async function kiesAfgewogenSysteem(index) {
-  afwegingAfgerond = true;
+  afwegingAfgerond = true;        // ⛔ voorkomt nieuwe afweging
+  inAfwegingPrijs = false;        // ⛔ voorkomt opnieuw m² vragen
 
   const gekozen = afwegingResultaten[index];
   gekozenSysteem = gekozen.systeem;
   basisPrijs = gekozen.prijs;
   totaalPrijs = basisPrijs;
 
+  gekozenExtras = [];             // reset extras voor nieuw basissysteem
+  backendExtras = [];
+  inOptieFase = true;             // ✅ vanaf hier: normale opties
   inAfweging = false;
 
   // vervolg de keuzeboom NA de afweging
@@ -522,6 +522,7 @@ async function kiesAfgewogenSysteem(index) {
   const node = await res.json();
   renderNode(node);
 }
+
 
 
 // ========================
