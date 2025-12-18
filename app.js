@@ -147,7 +147,8 @@ async function renderNode(node) {
       return;
     }
 
-    // m² & ruimtes bekend → prijsvergelijking tonen
+    // m² & ruimtes bekend → EERST prijzen berekenen, DAN tonen
+    await berekenAfweging(gekozenRuimtes);
     toonAfwegingMetPrijzen();
     return;
   }
@@ -172,7 +173,7 @@ async function renderNode(node) {
     return;
   }
 
-  // PRIJSFASE
+  // PRIJSFASE (normale flow, geen afweging)
   if (node.price_ready === true) {
     gekozenSysteem = stripPrefix(node.system);
     vervolgNodeNaBasis = node.id;
@@ -187,16 +188,16 @@ async function renderNode(node) {
 
   if (!Array.isArray(node.next)) return;
 
-node.next.forEach((nextNode, index) => {
-  if (nextNode.type !== "antwoord") return;
+  node.next.forEach((nextNode, index) => {
+    if (nextNode.type !== "antwoord") return;
 
-  const btn = document.createElement("button");
-  btn.textContent = stripPrefix(nextNode.text);
-  btn.onclick = () => chooseOption(index);
-  optionsEl.appendChild(btn);
-});
-
+    const btn = document.createElement("button");
+    btn.textContent = stripPrefix(nextNode.text);
+    btn.onclick = () => chooseOption(index);
+    optionsEl.appendChild(btn);
+  });
 }
+
 
 // ========================
 // AFWEGING MET PRIJSVERGELIJKING
