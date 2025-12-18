@@ -165,14 +165,41 @@ async function renderNode(node) {
 
   if (!Array.isArray(node.next)) return;
 
-  node.next.forEach((nextNode, index) => {
-    if (!["antwoord", "xtr", "afw"].includes(nextNode.type)) return;
+// ========================
+// OPTIES RENDEREN
+// ========================
 
+node.next.forEach((nextNode, index) => {
+
+  // AFW → toon systeemkeuze knoppen
+  if (node.type === "afw" && nextNode.type === "systeem") {
+    const btn = document.createElement("button");
+    btn.textContent = stripPrefix(nextNode.text);
+
+    btn.onclick = async () => {
+      // systeem instellen als basis
+      gekozenSysteem = stripPrefix(nextNode.text);
+      huidigeSysteemNode = nextNode;
+
+      // basisprijs opnieuw bepalen
+      await herberekenPrijs();
+
+      // verder met flow vanaf dit systeem
+      renderNode(nextNode);
+    };
+
+    optionsEl.appendChild(btn);
+    return;
+  }
+
+  // NORMALE antwoorden
+  if (nextNode.type === "antwoord") {
     const btn = document.createElement("button");
     btn.textContent = stripPrefix(nextNode.text);
     btn.onclick = () => chooseOption(index);
     optionsEl.appendChild(btn);
-  });
+  }
+});
 }
 
 // ========================
