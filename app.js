@@ -111,6 +111,7 @@ if (currentNode.type === "vraag" && currentNode.text) {
 
 async function renderNode(node) {
 currentNode = node;
+console.log("▶ renderNode aangeroepen:", node?.type, node);
 
 const questionEl = document.getElementById("question-text");
 const optionsEl = document.getElementById("options-box");
