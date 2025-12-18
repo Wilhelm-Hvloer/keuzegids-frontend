@@ -1,7 +1,3 @@
-console.log("Keuzegids frontend gestart");
-
-const API_BASE = "https://keuzegids-backend.onrender.com";
-
 // ========================
 // STATE
 // ========================
@@ -22,18 +18,12 @@ let gekozenRuimtes = null;
 let meerwerkUren = 0;
 const MEERWERK_TARIEF = 120;
 
-// ========================
-// AFWEGING (PRIJSVERGELIJKING)
-// ========================
-
-// true zolang we wachten op m² + ruimtes vóór afweging
-let inAfwegingPrijs = false;
-
-// tijdelijke opslag van systeem + berekende prijs
-let afwegingResultaten = [];
-
-// actieve afweging-node
+// afweging (afw)
 let afwegingNode = null;
+let afwegingResultaten = [];
+let inAfwegingPrijs = false;
+let afwegingAfgerond = false; // 👈 NIEUW: voorkomt oneindige afwegings-loop
+
 
 // ========================
 // INIT
@@ -136,22 +126,27 @@ async function renderNode(node) {
     return;
   }
 
-  // AFW → afweging starten (prijsvergelijking)
-  if (node.type === "afw") {
-    afwegingNode = node;
+// AFW → afweging starten (prijsvergelijking)
+if (node.type === "afw") {
+  afwegingNode = node;
 
-    // m² / ruimtes nog niet ingevuld → eerst prijsinvoer
-    if (!gekozenOppervlakte || !gekozenRuimtes) {
-      inAfwegingPrijs = true;
-      toonPrijsInvoer();
-      return;
-    }
-
-    // m² & ruimtes bekend → EERST prijzen berekenen, DAN tonen
-    await berekenAfweging(gekozenRuimtes);
-    toonAfwegingMetPrijzen();
+  // afweging al gedaan → gewoon door met gekozen systeem
+  if (afwegingAfgerond === true) {
     return;
   }
+
+  // m² / ruimtes nog niet ingevuld → eerst prijsinvoer
+  if (!gekozenOppervlakte || !gekozenRuimtes) {
+    inAfwegingPrijs = true;
+    toonPrijsInvoer();
+    return;
+  }
+
+  // m² & ruimtes bekend → prijsvergelijking tonen
+  toonAfwegingMetPrijzen();
+  return;
+}
+
 
   // EINDE → ALTIJD eerst herberekenen
   if (Array.isArray(node.next) && node.next.length === 0) {
@@ -498,8 +493,9 @@ function toonAfwegingResultaten() {
 }
 
 async function kiesAfgewogenSysteem(index) {
-  const gekozen = afwegingResultaten[index];
+  afwegingAfgerond = true;
 
+  const gekozen = afwegingResultaten[index];
   gekozenSysteem = gekozen.systeem;
   basisPrijs = gekozen.prijs;
   totaalPrijs = basisPrijs;
