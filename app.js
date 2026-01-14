@@ -352,28 +352,34 @@ async function toonAfwegingMetPrijzen() {
 
     const systeemNaam = stripPrefix(systeemNode.text);
 
-    const prijs = await berekenBasisPrijsVoorSysteem(
+    // 🔹 nieuwe return-structuur
+    const resultaat = await berekenBasisPrijsVoorSysteem(
       systeemNaam,
       gekozenOppervlakte,
       gekozenRuimtes
     );
 
+    if (!resultaat) continue;
+
     afwegingResultaten.push({
       systeem: systeemNaam,
-      prijs,
+      prijs: resultaat.totaal,
+      prijsPerM2: resultaat.prijsPerM2,
       nodeId: systeemNode.id
     });
 
     const btn = document.createElement("button");
     btn.innerHTML = `
       <strong>${systeemNaam}</strong><br>
-      € ${prijs},-
+      € ${resultaat.prijsPerM2} / m²<br>
+      € ${resultaat.totaal},-
     `;
 
     btn.onclick = () => {
       gekozenSysteem = systeemNaam;
-      basisPrijs = prijs;
-      totaalPrijs = prijs;
+      basisPrijs = resultaat.totaal;
+      prijsPerM2 = resultaat.prijsPerM2;
+      totaalPrijs = resultaat.totaal;
 
       inAfwegingPrijs = false;
       inOptieFase = true;
@@ -388,6 +394,7 @@ async function toonAfwegingMetPrijzen() {
     optionsEl.appendChild(btn);
   }
 }
+
 
 
 // ========================
@@ -490,13 +497,15 @@ async function verwerkMeerwerk() {
 function toonPrijsContext() {
   if (!basisPrijs) return "";
 
-  const prijsM2 =
-    prijsPerM2 !== null ? `€ ${prijsPerM2},-` : "—";
+  const prijsM2Tekst =
+    prijsPerM2 !== null && prijsPerM2 !== undefined
+      ? `€ ${prijsPerM2},-`
+      : "—";
 
   let html = `
     <div style="margin-bottom:10px;">
       <strong>${gekozenSysteem}</strong><br>
-      Prijs per m²: ${prijsM2}<br>
+      Prijs per m²: ${prijsM2Tekst}<br>
       Basisprijs: € ${basisPrijs},-<br>
   `;
 
@@ -507,6 +516,7 @@ function toonPrijsContext() {
   html += `<strong>Totaalprijs: € ${totaalPrijs},-</strong><hr></div>`;
   return html;
 }
+
 
 
 
@@ -609,13 +619,15 @@ async function berekenAfweging(ruimtes) {
     if (!data.error) {
       afwegingResultaten.push({
         systeem: systeemNaam,
-        prijs: data.basisprijs
+        prijs: data.basisprijs,
+        prijsPerM2: data.prijs_per_m2
       });
     }
   }
 
   toonAfwegingResultaten();
 }
+
 
 function toonAfwegingResultaten() {
   const resultEl = document.getElementById("afweging-resultaat");
@@ -643,6 +655,7 @@ async function kiesAfgewogenSysteem(index) {
   const gekozen = afwegingResultaten[index];
   gekozenSysteem = gekozen.systeem;
   basisPrijs = gekozen.prijs;
+  prijsPerM2 = gekozen.prijsPerM2;
   totaalPrijs = basisPrijs;
 
   gekozenExtras = [];             // reset extras voor nieuw basissysteem
@@ -715,10 +728,14 @@ async function berekenBasisPrijsVoorSysteem(systeemNaam, m2, ruimtes) {
   });
 
   const data = await res.json();
-  if (data.error) return 0;
+  if (data.error) return null;
 
-  return data.basisprijs;
+  return {
+    totaal: data.basisprijs,
+    prijsPerM2: data.prijs_per_m2
+  };
 }
+
 
 // ========================
 // VERDER MET OPTIES
