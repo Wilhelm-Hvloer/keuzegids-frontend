@@ -176,6 +176,26 @@ function toonGeefPrijsKnop() {
   optionsEl.appendChild(btn);
 }
 
+// ========================
+// PRIJSLIJST – VERGELIJKING START
+// ========================
+
+function toonPrijsInvoerVergelijk() {
+  // zet app in vergelijk-modus
+  inAfwegingPrijs = true;
+
+  // definieer de systemen die vergeleken worden
+  afwegingNode = {
+    next: vergelijkSystemen.map((systeem, index) => ({
+      id: index,
+      type: "systeem",
+      text: systeem
+    }))
+  };
+
+  // start dezelfde m² / ruimtes flow als bij 1 systeem
+  toonPrijsInvoer();
+}
 
 
 // ========================
