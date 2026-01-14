@@ -97,19 +97,28 @@ function startPrijslijst() {
 // PRIJSLIJST – SYSTEEMSELECTIE
 // ========================
 
-async function toonSysteemSelectie() {
+function toonSysteemSelectie() {
   const questionEl = document.getElementById("question-text");
   const optionsEl = document.getElementById("options-box");
 
   questionEl.innerHTML = "<strong>Kies een coatingsysteem</strong>";
   optionsEl.innerHTML = "";
 
-  const res = await fetch("Prijstabellen coatingsystemen.json");
-  const prijsData = await res.json();
+  const systemen = [
+    "Rolcoating Basic",
+    "Rolcoating Premium",
+    "Gietcoating Basic",
+    "Gietcoating Premium",
+    "Gietcoating Optimum",
+    "Gietcoating Optimum met schraplaag",
+    "Gietcoating Extreme",
+    "Gietcoating Extreme met schraplaag",
+    "Flakecoating",
+    "DOS Basic",
+    "DOS Premium"
+  ];
 
-  Object.keys(prijsData).forEach(systeem => {
-    if (systeem === "extras") return;
-
+  systemen.forEach(systeem => {
     const btn = document.createElement("button");
     btn.textContent = systeem;
 
