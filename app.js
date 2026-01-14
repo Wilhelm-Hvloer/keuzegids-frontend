@@ -49,10 +49,8 @@ function toonFlow() {
 // START KEUZEGIDS
 // ========================
 
-
-
 async function startKeuzegids() {
-  // 👉 STAP 3.3: homescreen uit, flow aan
+  // 👉 homescreen uit, flow aan
   toonFlow();
 
   gekozenSysteem = null;
@@ -71,6 +69,59 @@ async function startKeuzegids() {
   const node = await res.json();
   renderNode(node);
 }
+
+
+// ========================
+// START PRIJSLIJST
+// ========================
+
+function startPrijslijst() {
+  // 👉 homescreen uit, flow aan
+  toonFlow();
+
+  inPrijslijst = true;
+  vergelijkSystemen = [];
+
+  gekozenSysteem = null;
+  gekozenExtras = [];
+  basisPrijs = null;
+  totaalPrijs = null;
+  gekozenOppervlakte = null;
+  gekozenRuimtes = null;
+
+  toonSysteemSelectie();
+}
+
+
+// ========================
+// PRIJSLIJST – SYSTEEMSELECTIE
+// ========================
+
+async function toonSysteemSelectie() {
+  const questionEl = document.getElementById("question-text");
+  const optionsEl = document.getElementById("options-box");
+
+  questionEl.innerHTML = "<strong>Kies een coatingsysteem</strong>";
+  optionsEl.innerHTML = "";
+
+  const res = await fetch("Prijstabellen coatingsystemen.json");
+  const prijsData = await res.json();
+
+  Object.keys(prijsData).forEach(systeem => {
+    if (systeem === "extras") return;
+
+    const btn = document.createElement("button");
+    btn.textContent = systeem;
+
+    btn.onclick = () => {
+      gekozenSysteem = systeem;
+      toonPrijsInvoer(); // bestaande functie
+    };
+
+    optionsEl.appendChild(btn);
+  });
+}
+
 
 
 // ========================
