@@ -102,7 +102,9 @@ function toonSysteemSelectie() {
   const optionsEl = document.getElementById("options-box");
 
   questionEl.innerHTML =
-    "<strong>Kies één of twee coatingsystemen om te vergelijken</strong>";
+    "<strong>Kies één of twee coatingsystemen</strong><br>" +
+    "<small>1 = directe prijs, 2 = vergelijken</small>";
+
   optionsEl.innerHTML = "";
 
   vergelijkSystemen = [];
@@ -128,14 +130,17 @@ function toonSysteemSelectie() {
     btn.onclick = () => {
       if (vergelijkSystemen.includes(systeem)) return;
 
-      if (vergelijkSystemen.length >= 2) {
-        alert("Je kunt maximaal 2 systemen vergelijken");
-        return;
-      }
-
       vergelijkSystemen.push(systeem);
       btn.disabled = true;
 
+      // ✅ 1 systeem → direct prijs
+      if (vergelijkSystemen.length === 1) {
+        gekozenSysteem = systeem;
+        inAfwegingPrijs = false;
+        toonPrijsInvoer();
+      }
+
+      // ✅ 2 systemen → vergelijking
       if (vergelijkSystemen.length === 2) {
         toonPrijsInvoerVergelijk();
       }
@@ -143,20 +148,6 @@ function toonSysteemSelectie() {
 
     optionsEl.appendChild(btn);
   });
-}
-
-function toonPrijsInvoerVergelijk() {
-  inAfwegingPrijs = true;
-
-  afwegingNode = {
-    next: vergelijkSystemen.map((systeem, index) => ({
-      id: index,
-      type: "systeem",
-      text: systeem
-    }))
-  };
-
-  toonPrijsInvoer();
 }
 
 
@@ -452,10 +443,13 @@ async function verwerkMeerwerk() {
 function toonPrijsContext() {
   if (!basisPrijs) return "";
 
+  const prijsM2Tekst =
+    prijsPerM2 !== null ? `€ ${prijsPerM2},-` : "—";
+
   let html = `
     <div style="margin-bottom:10px;">
       <strong>${gekozenSysteem}</strong><br>
-      Prijs per m²: € ${prijsPerM2},-<br>
+      Prijs per m²: ${prijsM2Tekst}<br>
       Basisprijs: € ${basisPrijs},-<br>
   `;
 
@@ -466,6 +460,7 @@ function toonPrijsContext() {
   html += `<strong>Totaal tot nu toe: € ${totaalPrijs},-</strong><hr></div>`;
   return html;
 }
+
 
 // ========================
 // PRIJSINVOER
@@ -645,14 +640,13 @@ async function herberekenPrijs() {
   if (data.error) return;
 
   basisPrijs = data.basisprijs;
+  prijsPerM2 = data.prijs_per_m2;   // 👈 DEZE MOET ERIN
   backendExtras = data.extras || [];
-  prijsPerM2 = data.prijs_per_m2;
 
   totaalPrijs = basisPrijs;
   backendExtras.forEach(extra => {
     totaalPrijs += extra.totaal;
   });
-  totaalPrijs += meerwerkUren * MEERWERK_TARIEF;
 }
 
 // ========================
