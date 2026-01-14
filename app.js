@@ -743,6 +743,16 @@ async function berekenBasisPrijsVoorSysteem(systeemNaam, m2, ruimtes) {
 // ========================
 
 async function gaVerderMetOpties() {
+  // 🔑 borg systeem bij 1-systeem flow
+  if (!gekozenSysteem && vergelijkSystemen?.length === 1) {
+    gekozenSysteem = vergelijkSystemen[0];
+  }
+
+  // 🔑 zorg dat prijs zeker berekend is
+  if (gekozenSysteem && gekozenOppervlakte && gekozenRuimtes) {
+    await herberekenPrijs();
+  }
+
   const res = await fetch(`${API_BASE}/api/next`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
@@ -755,6 +765,7 @@ async function gaVerderMetOpties() {
   const node = await res.json();
   renderNode(node);
 }
+
 
 
 // ========================
@@ -771,8 +782,20 @@ function toonSamenvatting() {
     html += `<li><strong>${item.vraag}</strong>: ${item.antwoord}</li>`;
   });
 
-  html += `</ul>
+  html += "</ul>";
+
+  html += `
     <p><strong>Systeem:</strong> ${gekozenSysteem}</p>
+  `;
+
+  // ✅ prijs per m² (alleen tonen als bekend)
+  if (prijsPerM2 !== null && prijsPerM2 !== undefined) {
+    html += `
+      <p><strong>Prijs per m²:</strong> € ${prijsPerM2},-</p>
+    `;
+  }
+
+  html += `
     <p><strong>Basisprijs:</strong> € ${basisPrijs},-</p>
   `;
 
@@ -785,7 +808,7 @@ function toonSamenvatting() {
 
     if (meerwerkUren > 0) {
       const bedrag = meerwerkUren * MEERWERK_TARIEF;
-      html += `<li>Meerwerk: ${meerwerkUren} uur × €${MEERWERK_TARIEF} = € ${bedrag},-</li>`;
+      html += `<li>Meerwerk: ${meerwerkUren} uur × € ${MEERWERK_TARIEF} = € ${bedrag},-</li>`;
     }
 
     html += "</ul>";
@@ -799,6 +822,7 @@ function toonSamenvatting() {
   questionEl.innerHTML = "";
   optionsEl.innerHTML = html;
 }
+
 
 // ========================
 // HELPERS
