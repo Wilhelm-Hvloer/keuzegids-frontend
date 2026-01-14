@@ -550,12 +550,9 @@ function toonPrijsInvoer() {
     <div id="prijs-resultaat" style="margin-top:15px;"></div>
 
     ${inAfwegingPrijs ? `
-      <div id="afweging-resultaat" style="margin-top:15px;"></div>
-    ` : `
-      <div style="margin-top:15px;">
-        <button onclick="gaVerderMetOpties()">Verder met opties</button>
-      </div>
-    `}
+     <div id="afweging-resultaat" style="margin-top:15px;"></div>
+   ` : ``}
+
   `;
 }
 
@@ -579,10 +576,11 @@ async function berekenPrijs(ruimtes) {
   await herberekenPrijs();
 
   resultaatEl.innerHTML = `
+    <strong>Prijs per m²:</strong> € ${prijsPerM2 ?? "—"},-<br>
     <strong>Basisprijs:</strong> € ${basisPrijs},-<br>
     <strong>Totaalprijs:</strong> € ${totaalPrijs},-
   `;
-}
+
 
 // ========================
 // AFWEGING – PRIJS BEREKENEN (2 SYSTEMEN)
