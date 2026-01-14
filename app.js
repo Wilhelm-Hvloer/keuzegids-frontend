@@ -103,10 +103,9 @@ function toonSysteemSelectie() {
 
   questionEl.innerHTML =
     "<strong>Kies één of twee coatingsystemen</strong><br>" +
-    "<small>1 = directe prijs, 2 = vergelijken</small>";
+    "<small>1 systeem = prijs berekenen · 2 systemen = vergelijken</small>";
 
   optionsEl.innerHTML = "";
-
   vergelijkSystemen = [];
 
   const systemen = [
@@ -129,18 +128,17 @@ function toonSysteemSelectie() {
 
     btn.onclick = () => {
       if (vergelijkSystemen.includes(systeem)) return;
+      if (vergelijkSystemen.length >= 2) return;
 
       vergelijkSystemen.push(systeem);
       btn.disabled = true;
 
-      // ✅ 1 systeem → direct prijs
+      // 🔹 1 systeem → wachten op expliciete actie
       if (vergelijkSystemen.length === 1) {
-        gekozenSysteem = systeem;
-        inAfwegingPrijs = false;
-        toonPrijsInvoer();
+        toonGeefPrijsKnop();
       }
 
-      // ✅ 2 systemen → vergelijking
+      // 🔹 2 systemen → direct vergelijken
       if (vergelijkSystemen.length === 2) {
         toonPrijsInvoerVergelijk();
       }
@@ -151,10 +149,35 @@ function toonSysteemSelectie() {
 }
 
 
+// ========================
+// PRIJSLIJST – GEEF PRIJS KNOP
+// ========================
+
+function toonGeefPrijsKnop() {
+  const optionsEl = document.getElementById("options-box");
+
+  // voorkom dat de knop meerdere keren verschijnt
+  if (document.getElementById("geef-prijs-btn")) return;
+
+  const btn = document.createElement("button");
+  btn.id = "geef-prijs-btn";
+  btn.textContent = "Geef prijs";
+
+  btn.onclick = () => {
+    gekozenSysteem = vergelijkSystemen[0];
+    inAfwegingPrijs = false;
+    toonPrijsInvoer();
+  };
+
+  optionsEl.appendChild(btn);
+}
+
+
 
 // ========================
 // KEUZE MAKEN
 // ========================
+
 
 async function chooseOption(index) {
   if (!currentNode) return;
@@ -443,13 +466,13 @@ async function verwerkMeerwerk() {
 function toonPrijsContext() {
   if (!basisPrijs) return "";
 
-  const prijsM2Tekst =
+  const prijsM2 =
     prijsPerM2 !== null ? `€ ${prijsPerM2},-` : "—";
 
   let html = `
     <div style="margin-bottom:10px;">
       <strong>${gekozenSysteem}</strong><br>
-      Prijs per m²: ${prijsM2Tekst}<br>
+      Prijs per m²: ${prijsM2}<br>
       Basisprijs: € ${basisPrijs},-<br>
   `;
 
@@ -457,9 +480,10 @@ function toonPrijsContext() {
     html += `${extra.naam}: € ${extra.totaal},-<br>`;
   });
 
-  html += `<strong>Totaal tot nu toe: € ${totaalPrijs},-</strong><hr></div>`;
+  html += `<strong>Totaalprijs: € ${totaalPrijs},-</strong><hr></div>`;
   return html;
 }
+
 
 
 // ========================
@@ -640,7 +664,7 @@ async function herberekenPrijs() {
   if (data.error) return;
 
   basisPrijs = data.basisprijs;
-  prijsPerM2 = data.prijs_per_m2;   // 👈 DEZE MOET ERIN
+  prijsPerM2 = data.prijs_per_m2;   // 👈 essentieel
   backendExtras = data.extras || [];
 
   totaalPrijs = basisPrijs;
@@ -648,6 +672,7 @@ async function herberekenPrijs() {
     totaalPrijs += extra.totaal;
   });
 }
+
 
 // ========================
 // HULPFUNCTIE – BASISPRIJS PER SYSTEEM (AFWEGING)
