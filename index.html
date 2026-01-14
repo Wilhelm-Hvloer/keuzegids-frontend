@@ -20,17 +20,29 @@
   <!-- App container -->
   <div id="app">
 
-    <!-- Vraag / titel -->
-    <h2 id="question-text"></h2>
+    <!-- ===================== -->
+    <!-- HOMESCREEN -->
+    <!-- ===================== -->
+    <div id="home-screen">
+      <button onclick="startKeuzegids()">Start keuzegids</button>
+      <button onclick="startPrijslijst()">Start prijslijst</button>
+    </div>
 
-    <!-- Antwoorden / knoppen / afweging / meerwerk -->
-    <div id="options-box"></div>
+    <!-- ===================== -->
+    <!-- FLOW SCREEN (keuzegids / prijslijst) -->
+    <!-- ===================== -->
+    <div id="flow-screen" style="display: none;">
 
-    <!-- Samenvatting / resultaten -->
-    <div id="result-box"></div>
+      <!-- Vraag / titel -->
+      <h2 id="question-text"></h2>
 
-    <!-- Startknop -->
-    <button id="start-btn">Start keuzegids</button>
+      <!-- Antwoorden / knoppen / afweging / meerwerk -->
+      <div id="options-box"></div>
+
+      <!-- Samenvatting / resultaten -->
+      <div id="result-box"></div>
+
+    </div>
 
   </div>
 

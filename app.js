@@ -36,17 +36,25 @@ let afwegingAfgerond = false; // voorkomt oneindige afwegings-loop
 // INIT
 // ========================
 
-document.addEventListener("DOMContentLoaded", () => {
-  const startBtn = document.getElementById("start-btn");
-  if (startBtn) startBtn.addEventListener("click", startKeuzegids);
-});
+// 👉 STAP 3.2 – schermen wisselen (homescreen → flow)
+function toonFlow() {
+  const home = document.getElementById("home-screen");
+  const flow = document.getElementById("flow-screen");
+
+  if (home) home.style.display = "none";
+  if (flow) flow.style.display = "block";
+}
 
 // ========================
 // START KEUZEGIDS
 // ========================
 
 
+
 async function startKeuzegids() {
+  // 👉 STAP 3.3: homescreen uit, flow aan
+  toonFlow();
+
   gekozenSysteem = null;
   gekozenAntwoorden = [];
   gekozenExtras = [];
@@ -63,6 +71,7 @@ async function startKeuzegids() {
   const node = await res.json();
   renderNode(node);
 }
+
 
 // ========================
 // KEUZE MAKEN
