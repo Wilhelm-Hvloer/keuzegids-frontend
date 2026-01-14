@@ -287,11 +287,13 @@ if (node.type === "afw" && !afwegingAfgerond) {
 
 
   // EINDE → ALTIJD eerst herberekenen
-  if (Array.isArray(node.next) && node.next.length === 0) {
+if (Array.isArray(node.next) && node.next.length === 0) {
+  if (gekozenSysteem && gekozenOppervlakte && gekozenRuimtes) {
     await herberekenPrijs();
-    toonSamenvatting();
-    return;
   }
+  toonSamenvatting();
+  return;
+}
 
   questionEl.innerHTML = inOptieFase ? toonPrijsContext() : "";
   optionsEl.innerHTML = "";
@@ -308,8 +310,7 @@ if (node.type === "afw" && !afwegingAfgerond) {
 
   // PRIJSFASE (normale flow, geen afweging)
   if (node.price_ready === true) {
-    gekozenSysteem = stripPrefix(node.system);
-    vervolgNodeNaBasis = node.id;
+    gekozenSysteem = stripPrefix(node.system)
     inOptieFase = true;
     toonPrijsInvoer();
     return;
