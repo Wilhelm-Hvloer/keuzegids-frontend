@@ -9,7 +9,7 @@ const API_BASE = "https://keuzegids-backend.onrender.com";
 // ========================
 // STATE
 // ========================
-
+let prijsPerM2 = null;
 let currentNode = null;
 let gekozenSysteem = null;
 let gekozenAntwoorden = [];
@@ -101,8 +101,11 @@ function toonSysteemSelectie() {
   const questionEl = document.getElementById("question-text");
   const optionsEl = document.getElementById("options-box");
 
-  questionEl.innerHTML = "<strong>Kies een coatingsysteem</strong>";
+  questionEl.innerHTML =
+    "<strong>Kies één of twee coatingsystemen om te vergelijken</strong>";
   optionsEl.innerHTML = "";
+
+  vergelijkSystemen = [];
 
   const systemen = [
     "Rolcoating Basic",
@@ -123,12 +126,37 @@ function toonSysteemSelectie() {
     btn.textContent = systeem;
 
     btn.onclick = () => {
-      gekozenSysteem = systeem;
-      toonPrijsInvoer(); // bestaande functie
+      if (vergelijkSystemen.includes(systeem)) return;
+
+      if (vergelijkSystemen.length >= 2) {
+        alert("Je kunt maximaal 2 systemen vergelijken");
+        return;
+      }
+
+      vergelijkSystemen.push(systeem);
+      btn.disabled = true;
+
+      if (vergelijkSystemen.length === 2) {
+        toonPrijsInvoerVergelijk();
+      }
     };
 
     optionsEl.appendChild(btn);
   });
+}
+
+function toonPrijsInvoerVergelijk() {
+  inAfwegingPrijs = true;
+
+  afwegingNode = {
+    next: vergelijkSystemen.map((systeem, index) => ({
+      id: index,
+      type: "systeem",
+      text: systeem
+    }))
+  };
+
+  toonPrijsInvoer();
 }
 
 
@@ -427,6 +455,7 @@ function toonPrijsContext() {
   let html = `
     <div style="margin-bottom:10px;">
       <strong>${gekozenSysteem}</strong><br>
+      Prijs per m²: € ${prijsPerM2},-<br>
       Basisprijs: € ${basisPrijs},-<br>
   `;
 
@@ -617,6 +646,7 @@ async function herberekenPrijs() {
 
   basisPrijs = data.basisprijs;
   backendExtras = data.extras || [];
+  prijsPerM2 = data.prijs_per_m2;
 
   totaalPrijs = basisPrijs;
   backendExtras.forEach(extra => {
