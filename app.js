@@ -835,3 +835,13 @@ function stripPrefix(text = "") {
     .replace(/^Afw:\s*/i, "")
     .trim();
 }
+
+// ========================
+// HOMESCREEN ACTIES
+// ========================
+
+window.startKeuzegids = startKeuzegids;
+
+window.startPrijslijst = function () {
+  toonSysteemSelectie();
+};
