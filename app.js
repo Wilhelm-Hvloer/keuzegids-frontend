@@ -67,9 +67,13 @@ function toonFlow() {
 // ========================
 
 async function startKeuzegids() {
+  // 🔑 expliciet: we zitten nu in de keuzegids-flow
+  actieveFlow = "keuzegids";
+
   toonFlow();
   resetUI();
 
+  // state resetten
   gekozenSysteem = null;
   gekozenAntwoorden = [];
   gekozenExtras = [];
@@ -82,6 +86,7 @@ async function startKeuzegids() {
   gekozenRuimtes = null;
   meerwerkUren = 0;
 
+  // keuzeboom starten
   const res = await fetch(`${API_BASE}/api/start`);
   const node = await res.json();
   renderNode(node);
@@ -94,15 +99,20 @@ async function startKeuzegids() {
 // ========================
 
 function startPrijslijst() {
+  // 🔑 expliciet: we zitten nu in de prijslijst-flow
+  actieveFlow = "prijslijst";
+
   toonFlow();
   resetUI();
 
+  // state resetten (prijslijst-specifiek)
   inAfwegingPrijs = false;
   vergelijkSystemen = [];
   gekozenSysteem = null;
   gekozenOppervlakte = null;
   gekozenRuimtes = null;
 
+  // géén keuzeboom → alleen systemen kiezen
   toonSysteemSelectie();
 }
 
@@ -387,9 +397,8 @@ async function toonAfwegingMetPrijzen() {
   const questionEl = document.getElementById("question-text");
   const optionsEl = document.getElementById("options-box");
 
-  // 🔴 STAP 3: opties zijn hier nodig
-  optionsEl.style.display = "block";
   optionsEl.innerHTML = "";
+  optionsEl.style.display = "block";
 
   if (!afwegingNode || !Array.isArray(afwegingNode.next)) return;
 
@@ -418,6 +427,8 @@ async function toonAfwegingMetPrijzen() {
     });
 
     const btn = document.createElement("button");
+    btn.classList.add("systeem-knop");
+
     btn.innerHTML = `
       <strong>${systeemNaam}</strong><br>
       <span style="font-size:14px;">
@@ -427,33 +438,32 @@ async function toonAfwegingMetPrijzen() {
     `;
 
     btn.onclick = () => {
-      // systeem definitief kiezen
       gekozenSysteem = systeemNaam;
       basisPrijs = resultaat.totaal;
       prijsPerM2 = resultaat.prijsPerM2;
       totaalPrijs = resultaat.totaal;
 
-      // prijsfase afsluiten
-      inAfwegingPrijs = false;
+      // 🔑 GEDRAG SPLITSEN OP FLOW
+      if (actieveFlow === "keuzegids") {
+        inOptieFase = true;
 
-      // 👉 GA DOOR NAAR OPTIES
-      inOptieFase = true;
+        const index = afwegingNode.next.findIndex(
+          n => n.id === systeemNode.id
+        );
 
-      // zorg dat keuzegids weet waar hij verder moet
-      vervolgNodeNaBasis = systeemNode;
+        chooseOption(index); // 👉 keuzeboom vervolgen
+      }
 
-      // start optiefase
-      toonOpties();
+      if (actieveFlow === "prijslijst") {
+        // ❌ niets doen → prijslijst stopt hier bewust
+        console.log("Prijslijst: systeem geselecteerd, geen vervolgflow");
+      }
     };
 
-    const wrapper = document.createElement("div");
-    wrapper.style.marginBottom = "12px";
-
-    wrapper.appendChild(btn);
-    optionsEl.appendChild(wrapper);
-
+    optionsEl.appendChild(btn);
   }
 }
+
 
 
 
