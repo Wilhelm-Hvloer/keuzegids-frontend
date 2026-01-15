@@ -235,4 +235,23 @@ hr {
   background: #a8441c;
 }
 
+/* =========================
+   VERTICALE SPACING VOOR LOSSE KNOPPEN
+   ========================= */
+
+/* standaard spacing tussen opeenvolgende knoppen */
+button + button {
+  margin-top: 12px;
+}
+
+/* extra rust op homescreen */
+#home-screen button + button {
+  margin-top: 16px;
+}
+
+/* extra rust bij keuze aantal ruimtes */
+#options-box button + button {
+  margin-top: 0; /* gap regelt dit al */
+}
+
 
