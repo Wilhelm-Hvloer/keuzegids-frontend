@@ -644,7 +644,8 @@ async function berekenPrijs(ruimtes) {
     <strong>Basisprijs:</strong> € ${basisPrijs},-<br>
     <strong>Totaalprijs:</strong> € ${totaalPrijs},-
   `;
-}   // 👈 DIT ONTBRAK
+}
+
 
 // ========================
 // AFWEGING – PRIJS BEREKENEN (2 SYSTEMEN)
