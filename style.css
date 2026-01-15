@@ -268,4 +268,31 @@ button + button {
   margin-bottom: 0;
 }
 
+/* =========================
+   VERBERG LOZE KNOPPEN
+   ========================= */
+
+button:empty {
+  display: none;
+}
+
+/* =========================
+   DEFINITIEVE FIX: AANTAL RUIMTES SPACING
+   ========================= */
+
+/* geef elke directe child in het flow-scherm ruimte */
+#flow-screen > * {
+  margin-bottom: 16px;
+}
+
+/* voorkom extra ruimte onder de laatste */
+#flow-screen > *:last-child {
+  margin-bottom: 0;
+}
+
+/* options-box gebruikt al gap, dus daar geen extra marge */
+#options-box > * {
+  margin-bottom: 0;
+}
+
 
