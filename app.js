@@ -1,3 +1,6 @@
+let isPrijslijst = false;
+
+
 console.log("APP LOADED");
 
 function resetUI() {
@@ -94,6 +97,7 @@ async function startKeuzegids() {
 
 
 
+
 // ========================
 // START PRIJSLIJST
 // ========================
@@ -115,6 +119,8 @@ function startPrijslijst() {
   // géén keuzeboom → alleen systemen kiezen
   toonSysteemSelectie();
 }
+
+
 
 
 // ========================
@@ -358,13 +364,15 @@ if (Array.isArray(node.next) && node.next.length === 0) {
     return;
   }
 
-  // PRIJSFASE (normale flow, geen afweging)
-  if (node.price_ready === true) {
-    gekozenSysteem = stripPrefix(node.system)
-    inOptieFase = true;
-    toonPrijsInvoer();
-    return;
-  }
+// PRIJSFASE (normale flow, geen afweging)
+if (node.price_ready === true) {
+  gekozenSysteem = stripPrefix(node.system);
+  inOptieFase = true;
+  gaVerderNaPrijsBerekening();
+  return;
+}
+
+
 
   if (node.type === "vraag" && node.text) {
     questionEl.innerHTML += `<strong>${stripPrefix(node.text)}</strong>`;
@@ -397,6 +405,7 @@ async function toonAfwegingMetPrijzen() {
   const questionEl = document.getElementById("question-text");
   const optionsEl = document.getElementById("options-box");
 
+  // opties tonen en opschonen
   optionsEl.innerHTML = "";
   optionsEl.style.display = "block";
 
@@ -438,12 +447,13 @@ async function toonAfwegingMetPrijzen() {
     `;
 
     btn.onclick = () => {
+      // prijs vastzetten
       gekozenSysteem = systeemNaam;
       basisPrijs = resultaat.totaal;
       prijsPerM2 = resultaat.prijsPerM2;
       totaalPrijs = resultaat.totaal;
 
-      // 🔑 GEDRAG SPLITSEN OP FLOW
+      // 🔑 GEDRAG SPLITSEN OP ACTIEVE FLOW
       if (actieveFlow === "keuzegids") {
         inOptieFase = true;
 
@@ -451,18 +461,22 @@ async function toonAfwegingMetPrijzen() {
           n => n.id === systeemNode.id
         );
 
-        chooseOption(index); // 👉 keuzeboom vervolgen
+        // 👉 keuzeboom vervolgen
+        chooseOption(index);
       }
 
       if (actieveFlow === "prijslijst") {
-        // ❌ niets doen → prijslijst stopt hier bewust
-        console.log("Prijslijst: systeem geselecteerd, geen vervolgflow");
+        // ❌ bewust geen vervolg
+        console.log(
+          "Prijslijst-flow: systeem gekozen, prijzen tonen is eindpunt"
+        );
       }
     };
 
     optionsEl.appendChild(btn);
   }
 }
+
 
 
 
@@ -690,6 +704,29 @@ async function berekenPrijs(ruimtes) {
     <strong>Basisprijs:</strong> € ${basisPrijs},-<br>
     <strong>Totaalprijs:</strong> € ${totaalPrijs},-
   `;
+
+  // 🔑 STAP 3b — alleen in KEUZEGIDS verder
+  gaVerderNaPrijsBerekening();
+}
+
+
+
+function startPrijslijst() {
+  // 🔑 expliciet: we zitten nu in de prijslijst-flow
+  actieveFlow = "prijslijst";
+
+  toonFlow();
+  resetUI();
+
+  // state resetten (prijslijst-specifiek)
+  inAfwegingPrijs = false;
+  vergelijkSystemen = [];
+  gekozenSysteem = null;
+  gekozenOppervlakte = null;
+  gekozenRuimtes = null;
+
+  // géén keuzeboom → alleen systemen kiezen
+  toonSysteemSelectie();
 }
 
 
@@ -999,5 +1036,23 @@ function gaNaarHome() {
   afwegingNode = null;
   afwegingResultaten = [];
   afwegingAfgerond = false;
+}
+
+
+function gaVerderNaPrijsBerekening() {
+  if (actieveFlow !== "keuzegids") return;
+
+  inOptieFase = true;
+
+  // huidige node vervolgen met gekozen systeem
+  const index = currentNode?.next?.findIndex(
+    n => stripPrefix(n.text) === gekozenSysteem
+  );
+
+  if (index !== -1) {
+    chooseOption(index);
+  } else {
+    console.warn("Geen vervolg-node gevonden voor systeem:", gekozenSysteem);
+  }
 }
 
