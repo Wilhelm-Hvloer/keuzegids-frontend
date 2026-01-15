@@ -1,3 +1,20 @@
+console.log("APP LOADED");
+
+function resetUI() {
+  const questionEl = document.getElementById("question-text");
+  const optionsEl = document.getElementById("options-box");
+  const resultEl = document.getElementById("result-box");
+
+  questionEl.innerHTML = "";
+  optionsEl.innerHTML = "";
+  resultEl.innerHTML = "";
+
+  optionsEl.style.display = "none";
+  resultEl.style.display = "none";
+}
+
+
+
 console.log("Keuzegids frontend gestart");
 
 // ========================
@@ -50,8 +67,8 @@ function toonFlow() {
 // ========================
 
 async function startKeuzegids() {
-  // 👉 homescreen uit, flow aan
   toonFlow();
+  resetUI();
 
   gekozenSysteem = null;
   gekozenAntwoorden = [];
@@ -71,21 +88,18 @@ async function startKeuzegids() {
 }
 
 
+
 // ========================
 // START PRIJSLIJST
 // ========================
 
 function startPrijslijst() {
-  // 👉 homescreen uit, flow aan
   toonFlow();
+  resetUI();
 
-  inPrijslijst = true;
+  inAfwegingPrijs = false;
   vergelijkSystemen = [];
-
   gekozenSysteem = null;
-  gekozenExtras = [];
-  basisPrijs = null;
-  totaalPrijs = null;
   gekozenOppervlakte = null;
   gekozenRuimtes = null;
 
@@ -100,15 +114,9 @@ function startPrijslijst() {
 function toonSysteemSelectie() {
   const questionEl = document.getElementById("question-text");
   const optionsEl = document.getElementById("options-box");
-  const resultEl = document.getElementById("result-box");
 
-  // 🔴 opties nodig
+  resetUI();
   optionsEl.style.display = "block";
-  optionsEl.innerHTML = "";
-
-  // 🔴 resultaat hier NIET nodig → verbergen
-  resultEl.innerHTML = "";
-  resultEl.style.display = "none";
 
   vergelijkSystemen = [];
 
@@ -131,6 +139,9 @@ function toonSysteemSelectie() {
   ];
 
   systemen.forEach(naam => {
+    const wrapper = document.createElement("div");
+    wrapper.style.marginBottom = "12px";
+
     const btn = document.createElement("button");
     btn.textContent = naam;
 
@@ -155,14 +166,11 @@ function toonSysteemSelectie() {
       }
     };
 
-    // 🔴 wrapper voor spacing
-    const wrapper = document.createElement("div");
-    wrapper.style.marginBottom = "12px";
     wrapper.appendChild(btn);
-
     optionsEl.appendChild(wrapper);
   });
 }
+
 
 
 
@@ -584,9 +592,12 @@ function toonPrijsContext() {
 function toonPrijsInvoer() {
   const questionEl = document.getElementById("question-text");
   const optionsEl = document.getElementById("options-box");
+  const resultEl = document.getElementById("result-box");
 
-  // 🔴 eerst leegmaken, dan pas tonen
-  optionsEl.innerHTML = "";
+  // 🔴 centrale reset (belangrijk)
+  resetUI();
+
+  // 🔴 prijsinvoer gebruikt options-box
   optionsEl.style.display = "block";
 
   const titel = inAfwegingPrijs
@@ -637,25 +648,22 @@ function toonPrijsInvoer() {
   });
 
   // ===== Resultaat =====
+  resultEl.style.display = "block";
+  resultEl.innerHTML = "";
+
   const resultaat = document.createElement("div");
   resultaat.id = "prijs-resultaat";
   resultaat.style.marginTop = "16px";
-  optionsEl.appendChild(resultaat);
+  resultEl.appendChild(resultaat);
 
   if (inAfwegingPrijs) {
     const afweging = document.createElement("div");
     afweging.id = "afweging-resultaat";
     afweging.style.marginTop = "16px";
-    optionsEl.appendChild(afweging);
+    resultEl.appendChild(afweging);
   }
-
-  // ===== Opruimen loze cards (optioneel, mag blijven) =====
-  document.querySelectorAll(".card").forEach(card => {
-    if (!card.textContent.trim()) {
-      card.remove();
-    }
-  });
 }
+
 
 // ========================
 // PRIJS BEREKENEN
