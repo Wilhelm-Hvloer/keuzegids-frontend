@@ -28,8 +28,8 @@ body {
 
 #status-bar {
   display: flex;
+  justify-content: center;      /* logo in het midden */
   align-items: center;
-  gap: 16px;
   padding: 12px 20px;
   background: #2f3231;
   border-bottom: 2px solid var(--accent);
@@ -40,10 +40,25 @@ body {
   width: auto;
 }
 
+/* =========================
+   LOGO LINK (KLIKBAAR)
+   ========================= */
+
+#status-bar .logo-link {
+  display: inline-flex;
+  align-items: center;
+  cursor: pointer;
+}
+
+#status-bar .logo-link:hover {
+  opacity: 0.85;
+}
+
 #status-text {
   font-size: 14px;
   color: var(--text-muted);
 }
+
 
 /* =========================
    APP CONTAINER
@@ -193,3 +208,17 @@ hr {
     padding: 10px 14px;
   }
 }
+
+/* =========================
+   PRIMAIRE ACTIE – GEEF PRIJS
+   ========================= */
+
+#geef-prijs-btn {
+  background: #BC4C1F;
+  color: #F6F6F6;
+}
+
+#geef-prijs-btn:hover {
+  background: #a8441c;
+}
+
