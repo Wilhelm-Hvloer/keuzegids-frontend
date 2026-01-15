@@ -427,19 +427,23 @@ async function toonAfwegingMetPrijzen() {
     `;
 
     btn.onclick = () => {
+      // systeem definitief kiezen
       gekozenSysteem = systeemNaam;
       basisPrijs = resultaat.totaal;
       prijsPerM2 = resultaat.prijsPerM2;
       totaalPrijs = resultaat.totaal;
 
+      // prijsfase afsluiten
       inAfwegingPrijs = false;
+
+      // 👉 GA DOOR NAAR OPTIES
       inOptieFase = true;
 
-      const index = afwegingNode.next.findIndex(
-        n => n.id === systeemNode.id
-      );
+      // zorg dat keuzegids weet waar hij verder moet
+      vervolgNodeNaBasis = systeemNode;
 
-      chooseOption(index);
+      // start optiefase
+      toonOpties();
     };
 
     const wrapper = document.createElement("div");
