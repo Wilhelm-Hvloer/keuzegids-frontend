@@ -100,10 +100,16 @@ function startPrijslijst() {
 function toonSysteemSelectie() {
   const questionEl = document.getElementById("question-text");
   const optionsEl = document.getElementById("options-box");
+  const resultEl = document.getElementById("result-box");
 
-  // 🔴 STAP 2: opties zijn hier nodig
+  // 🔴 opties nodig
   optionsEl.style.display = "block";
   optionsEl.innerHTML = "";
+
+  // 🔴 resultaat hier NIET nodig → verbergen
+  resultEl.innerHTML = "";
+  resultEl.style.display = "none";
+
   vergelijkSystemen = [];
 
   questionEl.innerHTML =
@@ -123,6 +129,41 @@ function toonSysteemSelectie() {
     "DOS Basic",
     "DOS Premium"
   ];
+
+  systemen.forEach(naam => {
+    const btn = document.createElement("button");
+    btn.textContent = naam;
+
+    btn.onclick = () => {
+      if (vergelijkSystemen.includes(naam)) {
+        vergelijkSystemen = vergelijkSystemen.filter(s => s !== naam);
+        btn.classList.remove("actief");
+      } else {
+        vergelijkSystemen.push(naam);
+        btn.classList.add("actief");
+      }
+
+      if (vergelijkSystemen.length === 1) {
+        gekozenSysteem = vergelijkSystemen[0];
+        inAfwegingPrijs = false;
+        toonPrijsInvoer();
+      }
+
+      if (vergelijkSystemen.length === 2) {
+        inAfwegingPrijs = true;
+        startAfweging();
+      }
+    };
+
+    // 🔴 wrapper voor spacing
+    const wrapper = document.createElement("div");
+    wrapper.style.marginBottom = "12px";
+    wrapper.appendChild(btn);
+
+    optionsEl.appendChild(wrapper);
+  });
+}
+
 
 
   systemen.forEach(systeem => {
