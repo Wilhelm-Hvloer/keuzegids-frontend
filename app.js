@@ -353,7 +353,6 @@ async function toonAfwegingMetPrijzen() {
 
     const systeemNaam = stripPrefix(systeemNode.text);
 
-    // 🔹 nieuwe return-structuur
     const resultaat = await berekenBasisPrijsVoorSysteem(
       systeemNaam,
       gekozenOppervlakte,
@@ -372,8 +371,10 @@ async function toonAfwegingMetPrijzen() {
     const btn = document.createElement("button");
     btn.innerHTML = `
       <strong>${systeemNaam}</strong><br>
-      € ${resultaat.prijsPerM2} / m²<br>
-      € ${resultaat.totaal},-
+      <span style="font-size:14px;">
+        € ${resultaat.prijsPerM2} / m²
+      </span><br>
+      <strong>€ ${resultaat.totaal},-</strong>
     `;
 
     btn.onclick = () => {
@@ -395,6 +396,7 @@ async function toonAfwegingMetPrijzen() {
     optionsEl.appendChild(btn);
   }
 }
+
 
 
 
@@ -638,7 +640,11 @@ function toonAfwegingResultaten() {
     html += `
       <div style="margin-top:8px;">
         <button onclick="kiesAfgewogenSysteem(${index})">
-          ${res.systeem} — € ${res.prijs},-
+          <strong>${res.systeem}</strong><br>
+          <span style="font-size:14px;">
+            € ${res.prijsPerM2} / m²
+          </span><br>
+          <strong>€ ${res.prijs},-</strong>
         </button>
       </div>
     `;
@@ -646,6 +652,7 @@ function toonAfwegingResultaten() {
 
   resultEl.innerHTML = html;
 }
+
 
 async function kiesAfgewogenSysteem(index) {
   afwegingAfgerond = true;        // ⛔ voorkomt nieuwe afweging
