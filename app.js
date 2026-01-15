@@ -174,38 +174,6 @@ function toonSysteemSelectie() {
 
 
 
-  systemen.forEach(systeem => {
-    const btn = document.createElement("button");
-    btn.textContent = systeem;
-
-    btn.onclick = () => {
-      if (vergelijkSystemen.includes(systeem)) return;
-      if (vergelijkSystemen.length >= 2) return;
-
-      vergelijkSystemen.push(systeem);
-      btn.disabled = true;
-
-      // ===== CASE 1: exact 1 systeem =====
-      if (vergelijkSystemen.length === 1) {
-        toonGeefPrijsKnop();
-      }
-
-      // ===== CASE 2: exact 2 systemen =====
-      if (vergelijkSystemen.length === 2) {
-        // verwijder "Geef prijs" knop als die er staat
-        const geefPrijsBtn = document.getElementById("geef-prijs-btn");
-        if (geefPrijsBtn) geefPrijsBtn.remove();
-
-        toonPrijsInvoerVergelijk();
-      }
-    };
-
-    optionsEl.appendChild(btn);
-  });
-}
-
-
-
 // ========================
 // PRIJSLIJST – GEEF PRIJS KNOP
 // ========================
