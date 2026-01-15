@@ -115,8 +115,10 @@ function toonSysteemSelectie() {
   const questionEl = document.getElementById("question-text");
   const optionsEl = document.getElementById("options-box");
 
+  // scherm resetten
   resetUI();
   optionsEl.style.display = "block";
+  optionsEl.innerHTML = "";
 
   vergelijkSystemen = [];
 
@@ -146,23 +148,29 @@ function toonSysteemSelectie() {
     btn.textContent = naam;
 
     btn.onclick = () => {
+      // toggle selectie
       if (vergelijkSystemen.includes(naam)) {
         vergelijkSystemen = vergelijkSystemen.filter(s => s !== naam);
         btn.classList.remove("actief");
       } else {
+        if (vergelijkSystemen.length >= 2) return; // max 2
         vergelijkSystemen.push(naam);
         btn.classList.add("actief");
       }
 
+      // --- UI-logica ---
       if (vergelijkSystemen.length === 1) {
         gekozenSysteem = vergelijkSystemen[0];
-        inAfwegingPrijs = false;
-        toonPrijsInvoer();
+        toonGeefPrijsKnop();
       }
 
       if (vergelijkSystemen.length === 2) {
-        inAfwegingPrijs = true;
-        startAfweging();
+        verwijderGeefPrijsKnop();
+        startVergelijking();
+      }
+
+      if (vergelijkSystemen.length === 0) {
+        verwijderGeefPrijsKnop();
       }
     };
 
@@ -170,6 +178,7 @@ function toonSysteemSelectie() {
     optionsEl.appendChild(wrapper);
   });
 }
+
 
 
 
@@ -183,28 +192,36 @@ function toonGeefPrijsKnop() {
 
   if (document.getElementById("geef-prijs-btn")) return;
 
+  const wrapper = document.createElement("div");
+  wrapper.style.marginTop = "16px";
+  wrapper.id = "geef-prijs-wrapper";
+
   const btn = document.createElement("button");
   btn.id = "geef-prijs-btn";
   btn.textContent = "Geef prijs";
+  btn.classList.add("accent");
 
   btn.onclick = () => {
-    gekozenSysteem = vergelijkSystemen[0];
     inAfwegingPrijs = false;
     toonPrijsInvoer();
   };
 
-  optionsEl.appendChild(btn);
+  wrapper.appendChild(btn);
+  optionsEl.appendChild(wrapper);
+}
+
+function verwijderGeefPrijsKnop() {
+  const wrapper = document.getElementById("geef-prijs-wrapper");
+  if (wrapper) wrapper.remove();
 }
 
 // ========================
 // PRIJSLIJST – VERGELIJKING START
 // ========================
 
-function toonPrijsInvoerVergelijk() {
-  // zet app in vergelijk-modus
+function startVergelijking() {
   inAfwegingPrijs = true;
 
-  // definieer de systemen die vergeleken worden
   afwegingNode = {
     next: vergelijkSystemen.map((systeem, index) => ({
       id: index,
@@ -213,9 +230,9 @@ function toonPrijsInvoerVergelijk() {
     }))
   };
 
-  // start dezelfde m² / ruimtes flow als bij 1 systeem
   toonPrijsInvoer();
 }
+
 
 
 // ========================
@@ -614,22 +631,6 @@ function toonPrijsInvoer() {
     wrapper.appendChild(btn);
     optionsEl.appendChild(wrapper);
   });
-
-  // ===== Resultaat =====
-  resultEl.style.display = "block";
-  resultEl.innerHTML = "";
-
-  const resultaat = document.createElement("div");
-  resultaat.id = "prijs-resultaat";
-  resultaat.style.marginTop = "16px";
-  resultEl.appendChild(resultaat);
-
-  if (inAfwegingPrijs) {
-    const afweging = document.createElement("div");
-    afweging.id = "afweging-resultaat";
-    afweging.style.marginTop = "16px";
-    resultEl.appendChild(afweging);
-  }
 }
 
 
@@ -639,19 +640,21 @@ function toonPrijsInvoer() {
 
 async function berekenPrijs(ruimtes) {
   const m2Input = document.getElementById("input-m2");
-  const resultaatEl = document.getElementById("prijs-resultaat");
+  const resultEl = document.getElementById("result-box");
 
   gekozenOppervlakte = parseFloat(m2Input.value);
   gekozenRuimtes = ruimtes;
 
   if (!gekozenOppervlakte || gekozenOppervlakte <= 0) {
-    resultaatEl.textContent = "Vul een geldige oppervlakte in.";
+    resultEl.style.display = "block";
+    resultEl.innerHTML = "Vul een geldige oppervlakte in.";
     return;
   }
 
   await herberekenPrijs();
 
-  resultaatEl.innerHTML = `
+  resultEl.style.display = "block";
+  resultEl.innerHTML = `
     <strong>Prijs per m²:</strong> € ${prijsPerM2 ?? "—"},-<br>
     <strong>Basisprijs:</strong> € ${basisPrijs},-<br>
     <strong>Totaalprijs:</strong> € ${totaalPrijs},-
@@ -854,7 +857,10 @@ async function gaVerderMetOpties() {
 
 function toonSamenvatting() {
   const questionEl = document.getElementById("question-text");
-  const optionsEl = document.getElementById("options-box");
+  const resultEl = document.getElementById("result-box");
+
+  // centrale reset
+  resetUI();
 
   let html = "<h3>Samenvatting</h3><ul>";
 
@@ -893,8 +899,10 @@ function toonSamenvatting() {
   `;
 
   questionEl.innerHTML = "";
-  optionsEl.innerHTML = html;
+  resultEl.style.display = "block";
+  resultEl.innerHTML = html;
 }
+
 
 
 // ========================
