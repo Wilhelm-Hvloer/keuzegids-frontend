@@ -837,5 +837,13 @@ function stripPrefix(text = "") {
 window.startKeuzegids = startKeuzegids;
 
 window.startPrijslijst = function () {
+  // homescreen weg, flow aan
+  toonFlow();
+
+  // reset eventuele oude staat
+  inAfwegingPrijs = false;
+  vergelijkSystemen = [];
+
+  // start prijslijst
   toonSysteemSelectie();
 };
