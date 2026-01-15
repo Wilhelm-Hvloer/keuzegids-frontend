@@ -536,7 +536,6 @@ function toonPrijsContext() {
 
 
 
-
 // ========================
 // PRIJSINVOER
 // ========================
@@ -595,8 +594,6 @@ function toonPrijsInvoer() {
     wrapper.appendChild(btn);
     optionsEl.appendChild(wrapper);
   });
-}
-
 
   // ===== Resultaat =====
   const resultaat = document.createElement("div");
@@ -611,15 +608,13 @@ function toonPrijsInvoer() {
     optionsEl.appendChild(afweging);
   }
 
-  // ===== Opruimen loze cards =====
+  // ===== Opruimen loze cards (optioneel, mag blijven) =====
   document.querySelectorAll(".card").forEach(card => {
     if (!card.textContent.trim()) {
       card.remove();
     }
   });
 }
-
-
 
 // ========================
 // PRIJS BEREKENEN
