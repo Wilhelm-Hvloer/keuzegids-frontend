@@ -222,3 +222,17 @@ hr {
   background: #a8441c;
 }
 
+/* =========================
+   PRIMAIRE ACTIE – GEEF PRIJS
+   ========================= */
+
+#geef-prijs-btn {
+  background: #BC4C1F !important;
+  color: #F6F6F6;
+}
+
+#geef-prijs-btn:hover {
+  background: #a8441c;
+}
+
+

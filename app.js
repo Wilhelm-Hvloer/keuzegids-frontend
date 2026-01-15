@@ -854,3 +854,31 @@ window.startPrijslijst = function () {
   // start prijslijst
   toonSysteemSelectie();
 };
+
+function gaNaarHome() {
+  // schermen resetten
+  document.getElementById("flow-screen").style.display = "none";
+  document.getElementById("home-screen").style.display = "block";
+
+  // UI leegmaken
+  document.getElementById("question-text").innerHTML = "";
+  document.getElementById("options-box").innerHTML = "";
+  document.getElementById("result-box").innerHTML = "";
+
+  // state resetten (belangrijk!)
+  currentNode = null;
+  gekozenSysteem = null;
+  gekozenAntwoorden = [];
+  gekozenExtras = [];
+  basisPrijs = null;
+  totaalPrijs = null;
+  backendExtras = [];
+  vervolgNodeNaBasis = null;
+  inOptieFase = false;
+  gekozenOppervlakte = null;
+  gekozenRuimtes = null;
+  afwegingNode = null;
+  afwegingResultaten = [];
+  afwegingAfgerond = false;
+}
+
