@@ -579,10 +579,8 @@ function toonPrijsInvoer() {
   const optionsEl = document.getElementById("options-box");
   const resultEl = document.getElementById("result-box");
 
-  // 🔴 centrale reset (belangrijk)
   resetUI();
 
-  // 🔴 prijsinvoer gebruikt options-box
   optionsEl.style.display = "block";
 
   const titel = inAfwegingPrijs
@@ -614,15 +612,11 @@ function toonPrijsInvoer() {
     btn.classList.add("ruimte-knop");
 
     btn.onclick = () => {
-      // reset actieve status
       document.querySelectorAll(".ruimte-knop").forEach(b =>
         b.classList.remove("actief")
       );
-
-      // zet deze knop actief
       btn.classList.add("actief");
 
-      // bereken prijs
       inAfwegingPrijs
         ? berekenAfweging(aantal)
         : berekenPrijs(aantal);
@@ -631,7 +625,16 @@ function toonPrijsInvoer() {
     wrapper.appendChild(btn);
     optionsEl.appendChild(wrapper);
   });
+
+  // 🔴 DIT ONTBRAK — essentieel voor 2 systemen
+  if (inAfwegingPrijs) {
+    const afwegingResultaat = document.createElement("div");
+    afwegingResultaat.id = "afweging-resultaat";
+    afwegingResultaat.style.marginTop = "16px";
+    optionsEl.appendChild(afwegingResultaat);
+  }
 }
+
 
 
 // ========================
@@ -660,6 +663,7 @@ async function berekenPrijs(ruimtes) {
     <strong>Totaalprijs:</strong> € ${totaalPrijs},-
   `;
 }
+
 
 
 // ========================
