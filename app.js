@@ -101,12 +101,14 @@ function toonSysteemSelectie() {
   const questionEl = document.getElementById("question-text");
   const optionsEl = document.getElementById("options-box");
 
+  // 🔴 STAP 2: opties zijn hier nodig
+  optionsEl.style.display = "block";
+  optionsEl.innerHTML = "";
+  vergelijkSystemen = [];
+
   questionEl.innerHTML =
     "<strong>Kies één of twee coatingsystemen</strong><br>" +
     "<small>1 systeem = prijs berekenen · 2 systemen = vergelijken</small>";
-
-  optionsEl.innerHTML = "";
-  vergelijkSystemen = [];
 
   const systemen = [
     "Rolcoating Basic",
@@ -121,6 +123,7 @@ function toonSysteemSelectie() {
     "DOS Basic",
     "DOS Premium"
   ];
+
 
   systemen.forEach(systeem => {
     const btn = document.createElement("button");
@@ -341,10 +344,13 @@ async function toonAfwegingMetPrijzen() {
   const questionEl = document.getElementById("question-text");
   const optionsEl = document.getElementById("options-box");
 
+  // 🔴 STAP 3: opties zijn hier nodig
+  optionsEl.style.display = "block";
+  optionsEl.innerHTML = "";
+
   if (!afwegingNode || !Array.isArray(afwegingNode.next)) return;
 
   questionEl.innerHTML = `<strong>${stripPrefix(afwegingNode.text)}</strong>`;
-  optionsEl.innerHTML = "";
 
   afwegingResultaten = [];
 
@@ -400,6 +406,7 @@ async function toonAfwegingMetPrijzen() {
 
 
 
+
 // ========================
 // AFWEGING UI
 // ========================
@@ -434,30 +441,37 @@ function toonPrijsInvoerVoorAfweging() {
 
 
 // ========================
-// MEERWERK INVOER (INLINE)
+// MEERWERK INVOER
 // ========================
 
 function toonMeerwerkInvoer(omschrijving) {
   const questionEl = document.getElementById("question-text");
   const optionsEl = document.getElementById("options-box");
 
-  questionEl.innerHTML = `
-    <strong>Verwijderen bestaande coating</strong><br>
-    Hoeveel uur meerwerk is hiervoor nodig? (€${MEERWERK_TARIEF} per uur)
-  `;
+  // 🔴 STAP 3C: opties zijn hier nodig
+  optionsEl.innerHTML = "";
+  optionsEl.style.display = "block";
 
-  optionsEl.innerHTML = `
-    <label>
-      Uren:<br>
-      <input
-        type="number"
-        id="meerwerk-uren"
-        min="0"
-        step="0.5"
-        onblur="verwerkMeerwerk()"
-      >
-    </label>
+  questionEl.innerHTML = `<strong>${omschrijving}</strong>`;
+
+  const label = document.createElement("label");
+  label.innerHTML = `
+    Extra meerwerk (optioneel):<br>
+    <input type="number" id="meerwerk-bedrag" min="0" step="1">
   `;
+  optionsEl.appendChild(label);
+
+  const btn = document.createElement("button");
+  btn.textContent = "Ga verder";
+  btn.onclick = () => {
+    const waarde = document.getElementById("meerwerk-bedrag").value;
+    if (waarde) {
+      totaalPrijs += Number(waarde);
+    }
+    toonSamenvatting();
+  };
+
+  optionsEl.appendChild(btn);
 }
 
 // ========================
@@ -531,12 +545,15 @@ function toonPrijsInvoer() {
   const questionEl = document.getElementById("question-text");
   const optionsEl = document.getElementById("options-box");
 
+  // 🔴 eerst leegmaken, dan pas tonen
+  optionsEl.innerHTML = "";
+  optionsEl.style.display = "block";
+
   const titel = inAfwegingPrijs
     ? "Bereken de prijs (vergelijk systemen)"
     : `${gekozenSysteem}<br>Bereken de prijs`;
 
   questionEl.innerHTML = `<strong>${titel}</strong>`;
-  optionsEl.innerHTML = "";
 
   // ===== Oppervlakte =====
   const label = document.createElement("label");
@@ -578,6 +595,8 @@ function toonPrijsInvoer() {
     wrapper.appendChild(btn);
     optionsEl.appendChild(wrapper);
   });
+}
+
 
   // ===== Resultaat =====
   const resultaat = document.createElement("div");
@@ -599,7 +618,6 @@ function toonPrijsInvoer() {
     }
   });
 }
-
 
 
 
@@ -906,7 +924,11 @@ function gaNaarHome() {
 
   // UI leegmaken
   document.getElementById("question-text").innerHTML = "";
-  document.getElementById("options-box").innerHTML = "";
+
+  const optionsEl = document.getElementById("options-box");
+  optionsEl.innerHTML = "";
+  optionsEl.style.display = "none"; // 🔴 BELANGRIJK
+
   document.getElementById("result-box").innerHTML = "";
 
   // state resetten (belangrijk!)
