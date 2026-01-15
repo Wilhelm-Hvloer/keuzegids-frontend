@@ -299,6 +299,9 @@ async function renderNode(node) {
   const questionEl = document.getElementById("question-text");
   const optionsEl = document.getElementById("options-box");
 
+  // 🔑 KEUZEGIDS: opties moeten zichtbaar zijn
+  optionsEl.style.display = "block";
+
   // XTR-node → direct meerwerk invoer
   if (node.type === "xtr") {
     toonMeerwerkInvoer(stripPrefix(node.text));
