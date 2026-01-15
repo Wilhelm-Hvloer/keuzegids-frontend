@@ -254,4 +254,18 @@ button + button {
   margin-top: 0; /* gap regelt dit al */
 }
 
+/* =========================
+   SPACING VOOR FLOW-KNOPPEN (AANTAL RUIMTES FIX)
+   ========================= */
+
+/* algemene verticale spacing binnen flow */
+#flow-screen button {
+  margin-bottom: 12px;
+}
+
+/* voorkom dubbele spacing bij options-box (die gebruikt al gap) */
+#options-box button {
+  margin-bottom: 0;
+}
+
 
