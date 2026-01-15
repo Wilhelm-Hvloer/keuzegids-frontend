@@ -536,27 +536,51 @@ function toonPrijsInvoer() {
     : `${gekozenSysteem}<br>Bereken de prijs`;
 
   questionEl.innerHTML = `<strong>${titel}</strong>`;
+  optionsEl.innerHTML = "";
 
-  optionsEl.innerHTML = `
-    <label>Oppervlakte (m²):<br>
-      <input type="number" id="input-m2" min="1">
-    </label>
-
-    <div style="margin-top:10px;">
-      <strong>Aantal ruimtes:</strong><br>
-      <button onclick="${inAfwegingPrijs ? "berekenAfweging" : "berekenPrijs"}(1)">1 ruimte</button>
-      <button onclick="${inAfwegingPrijs ? "berekenAfweging" : "berekenPrijs"}(2)">2 ruimtes</button>
-      <button onclick="${inAfwegingPrijs ? "berekenAfweging" : "berekenPrijs"}(3)">3 ruimtes</button>
-    </div>
-
-    <div id="prijs-resultaat" style="margin-top:15px;"></div>
-
-    ${inAfwegingPrijs ? `
-     <div id="afweging-resultaat" style="margin-top:15px;"></div>
-   ` : ``}
-
+  // ===== Oppervlakte =====
+  const label = document.createElement("label");
+  label.innerHTML = `
+    Oppervlakte (m²):<br>
+    <input type="number" id="input-m2" min="1">
   `;
+  optionsEl.appendChild(label);
+
+  // ===== Aantal ruimtes =====
+  const ruimteBlok = document.createElement("div");
+  ruimteBlok.style.marginTop = "16px";
+  ruimteBlok.innerHTML = `<strong>Aantal ruimtes:</strong>`;
+  optionsEl.appendChild(ruimteBlok);
+
+  [1, 2, 3].forEach(aantal => {
+    const wrapper = document.createElement("div");
+    wrapper.style.marginTop = "12px";
+
+    const btn = document.createElement("button");
+    btn.textContent = `${aantal} ruimte${aantal > 1 ? "s" : ""}`;
+    btn.onclick = () =>
+      inAfwegingPrijs
+        ? berekenAfweging(aantal)
+        : berekenPrijs(aantal);
+
+    wrapper.appendChild(btn);
+    optionsEl.appendChild(wrapper);
+  });
+
+  // ===== Resultaat =====
+  const resultaat = document.createElement("div");
+  resultaat.id = "prijs-resultaat";
+  resultaat.style.marginTop = "16px";
+  optionsEl.appendChild(resultaat);
+
+  if (inAfwegingPrijs) {
+    const afweging = document.createElement("div");
+    afweging.id = "afweging-resultaat";
+    afweging.style.marginTop = "16px";
+    optionsEl.appendChild(afweging);
+  }
 }
+
 
 
 // ========================
