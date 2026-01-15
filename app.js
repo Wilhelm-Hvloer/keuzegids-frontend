@@ -782,20 +782,13 @@ function toonSamenvatting() {
 
   html += "</ul>";
 
-  html += `
-    <p><strong>Systeem:</strong> ${gekozenSysteem}</p>
-  `;
+  html += `<p><strong>Systeem:</strong> ${gekozenSysteem}</p>`;
 
-  // ✅ prijs per m² (alleen tonen als bekend)
   if (prijsPerM2 !== null && prijsPerM2 !== undefined) {
-    html += `
-      <p><strong>Prijs per m²:</strong> € ${prijsPerM2},-</p>
-    `;
+    html += `<p><strong>Prijs per m²:</strong> € ${prijsPerM2},-</p>`;
   }
 
-  html += `
-    <p><strong>Basisprijs:</strong> € ${basisPrijs},-</p>
-  `;
+  html += `<p><strong>Basisprijs:</strong> € ${basisPrijs},-</p>`;
 
   if (backendExtras.length || meerwerkUren > 0) {
     html += "<p><strong>Extra opties:</strong></p><ul>";
@@ -813,7 +806,7 @@ function toonSamenvatting() {
   }
 
   html += `
-    <p><strong>Totaalprijs: € ${totaalPrijs},-</strong></p>
+    <p><strong>Totaalprijs:</strong> € ${totaalPrijs},-</p>
     <button onclick="startKeuzegids()">Opnieuw starten</button>
   `;
 
@@ -835,6 +828,7 @@ function stripPrefix(text = "") {
     .replace(/^Afw:\s*/i, "")
     .trim();
 }
+
 
 // ========================
 // HOMESCREEN ACTIES
