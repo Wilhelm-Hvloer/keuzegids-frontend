@@ -295,4 +295,16 @@ button:empty {
   margin-bottom: 0;
 }
 
+/* =========================
+   HERSTEL SPACING VOOR CARD-BLOKKEN
+   ========================= */
+
+.card {
+  margin-bottom: 16px;
+}
+
+.card:last-child {
+  margin-bottom: 0;
+}
+
 
