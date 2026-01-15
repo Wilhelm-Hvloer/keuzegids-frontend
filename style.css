@@ -307,4 +307,15 @@ button:empty {
   margin-bottom: 0;
 }
 
+/* =========================
+   ACTIEVE RUIMTE KNOP
+   ========================= */
+
+.ruimte-knop.actief {
+  background: #BC4C1F;
+  color: #F6F6F6;
+  border: 2px solid #BC4C1F;
+}
+
+
 

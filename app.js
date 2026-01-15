@@ -558,10 +558,22 @@ function toonPrijsInvoer() {
 
     const btn = document.createElement("button");
     btn.textContent = `${aantal} ruimte${aantal > 1 ? "s" : ""}`;
-    btn.onclick = () =>
+    btn.classList.add("ruimte-knop");
+
+    btn.onclick = () => {
+      // reset actieve status
+      document.querySelectorAll(".ruimte-knop").forEach(b =>
+        b.classList.remove("actief")
+      );
+
+      // zet deze knop actief
+      btn.classList.add("actief");
+
+      // bereken prijs
       inAfwegingPrijs
         ? berekenAfweging(aantal)
         : berekenPrijs(aantal);
+    };
 
     wrapper.appendChild(btn);
     optionsEl.appendChild(wrapper);
@@ -579,7 +591,15 @@ function toonPrijsInvoer() {
     afweging.style.marginTop = "16px";
     optionsEl.appendChild(afweging);
   }
+
+  // ===== Opruimen loze cards =====
+  document.querySelectorAll(".card").forEach(card => {
+    if (!card.textContent.trim()) {
+      card.remove();
+    }
+  });
 }
+
 
 
 
