@@ -365,11 +365,17 @@ if (Array.isArray(node.next) && node.next.length === 0) {
   node.next.forEach((nextNode, index) => {
     if (nextNode.type !== "antwoord") return;
 
+    const wrapper = document.createElement("div");
+    wrapper.style.marginBottom = "12px";
+
     const btn = document.createElement("button");
     btn.textContent = stripPrefix(nextNode.text);
     btn.onclick = () => chooseOption(index);
-    optionsEl.appendChild(btn);
+
+    wrapper.appendChild(btn);
+    optionsEl.appendChild(wrapper);
   });
+
 }
 
 
@@ -436,7 +442,12 @@ async function toonAfwegingMetPrijzen() {
       chooseOption(index);
     };
 
-    optionsEl.appendChild(btn);
+    const wrapper = document.createElement("div");
+    wrapper.style.marginBottom = "12px";
+
+    wrapper.appendChild(btn);
+    optionsEl.appendChild(wrapper);
+
   }
 }
 
@@ -723,7 +734,7 @@ function toonAfwegingResultaten() {
 
   afwegingResultaten.forEach((res, index) => {
     html += `
-      <div style="margin-top:8px;">
+      <div style="margin-top:12px;">
         <button onclick="kiesAfgewogenSysteem(${index})">
           <strong>${res.systeem}</strong><br>
           <span style="font-size:14px;">
