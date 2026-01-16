@@ -388,7 +388,7 @@ async function renderNode(node) {
 questionEl.textContent = stripPrefix(node.text);
 optionsEl.innerHTML = "";
 
-// antwoorden komen van backend via node.choices
+// 1️⃣ antwoorden via node.choices (nieuwere structuur)
 if (Array.isArray(node.choices)) {
   node.choices.forEach((choice, index) => {
     const btn = document.createElement("button");
@@ -397,6 +397,17 @@ if (Array.isArray(node.choices)) {
     optionsEl.appendChild(btn);
   });
 }
+
+// 2️⃣ antwoorden via node.next (klassieke antwoord-nodes)
+else if (Array.isArray(node.next)) {
+  node.next.forEach((_, index) => {
+    const btn = document.createElement("button");
+    btn.textContent = `Optie ${index + 1}`;
+    btn.onclick = () => chooseOption(index);
+    optionsEl.appendChild(btn);
+  });
+}
+
 
 
 } // ⬅️ DEZE ACCOLADE MOET ER ZIJN — sluit renderNode af
