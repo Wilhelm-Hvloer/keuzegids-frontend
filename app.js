@@ -41,6 +41,8 @@ let vervolgNodeNaBasis = null; // onthoudt boom-positie tijdens prijsfase
 let inOptieFase = false;
 let gekozenOppervlakte = null;
 let gekozenRuimtes = null;
+let actieveFlow = null;
+
 
 // meerwerk (xtr)
 let meerwerkUren = 0;
@@ -402,31 +404,6 @@ async function renderNode(node) {
   });
 }
 
-
-
-
-
-  if (node.type === "vraag" && node.text) {
-    questionEl.innerHTML += `<strong>${stripPrefix(node.text)}</strong>`;
-  }
-
-  if (!Array.isArray(node.next)) return;
-
-  node.next.forEach((nextNode, index) => {
-    if (nextNode.type !== "antwoord") return;
-
-    const wrapper = document.createElement("div");
-    wrapper.style.marginBottom = "12px";
-
-    const btn = document.createElement("button");
-    btn.textContent = stripPrefix(nextNode.text);
-    btn.onclick = () => chooseOption(index);
-
-    wrapper.appendChild(btn);
-    optionsEl.appendChild(wrapper);
-  });
-
-}
 
 
 // ========================
@@ -1035,13 +1012,4 @@ function gaNaarHome() {
   afwegingAfgerond = false;
 }
 
-
-function gaVerderNaPrijsBerekening() {
-  if (!vervolgNodeNaBasis) return;
-
-  const node = vervolgNodeNaBasis;
-  vervolgNodeNaBasis = null;
-
-  renderNode(node);
-}
 
