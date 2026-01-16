@@ -382,11 +382,7 @@ async function renderNode(node) {
 
   optionsEl.innerHTML = "";
 
-// automatische doorloop bij 1 optie
-if (node.type === "antwoord" && Array.isArray(node.next) && node.next.length === 1) {
-  chooseOption(0);
-  return;
-}
+
 
 // === NORMALE RENDER VAN VRAAG + OPTIES ===
 questionEl.textContent = stripPrefix(node.text);
@@ -400,6 +396,9 @@ if (Array.isArray(node.next)) {
     optionsEl.appendChild(btn);
   });
 }
+
+} // ⬅️ DEZE ACCOLADE MOET ER ZIJN — sluit renderNode af
+
 
 
 
@@ -720,24 +719,6 @@ async function berekenPrijs(ruimtes) {
 
 
 
-
-function startPrijslijst() {
-  // 🔑 expliciet: we zitten nu in de prijslijst-flow
-  actieveFlow = "prijslijst";
-
-  toonFlow();
-  resetUI();
-
-  // state resetten (prijslijst-specifiek)
-  inAfwegingPrijs = false;
-  vergelijkSystemen = [];
-  gekozenSysteem = null;
-  gekozenOppervlakte = null;
-  gekozenRuimtes = null;
-
-  // géén keuzeboom → alleen systemen kiezen
-  toonSysteemSelectie();
-}
 
 
 
