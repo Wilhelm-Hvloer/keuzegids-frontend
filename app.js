@@ -363,19 +363,28 @@ async function renderNode(node) {
 
   optionsEl.innerHTML = "";
 
-  // automatische doorloop
-  if (
-    node.type === "antwoord" &&
-    node.next?.length === 1 &&
-    ["vraag", "systeem", "xtr", "afw"].includes(node.next[0].type)
-  ) {
-    chooseOption(0);
-    return;
-  }
-
-  // normale render van vraag / opties
-  renderVraagEnOpties(node);
+// automatische doorloop
+if (
+  node.type === "antwoord" &&
+  node.next?.length === 1 &&
+  ["vraag", "systeem", "xtr", "afw"].includes(node.next[0].type)
+) {
+  chooseOption(0);
+  return;
 }
+
+// === NORMALE RENDER VAN VRAAG + OPTIES ===
+questionEl.textContent = stripPrefix(node.text);
+optionsEl.innerHTML = "";
+
+node.next?.forEach((nextNode, index) => {
+  const btn = document.createElement("button");
+  btn.textContent = stripPrefix(nextNode.text);
+  btn.onclick = () => chooseOption(index);
+  optionsEl.appendChild(btn);
+});
+}
+
 
 
 
