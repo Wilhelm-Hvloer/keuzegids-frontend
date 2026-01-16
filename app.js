@@ -342,14 +342,19 @@ if (node.type === "afw" && !afwegingAfgerond) {
 
 
 
-  // EINDE → ALTIJD eerst herberekenen
-if (Array.isArray(node.next) && node.next.length === 0) {
+// EINDE → alleen samenvatten als we NIET net een systeem hebben gekozen
+if (
+  Array.isArray(node.next) &&
+  node.next.length === 0 &&
+  !node.system_selected
+) {
   if (gekozenSysteem && gekozenOppervlakte && gekozenRuimtes) {
     await herberekenPrijs();
   }
   toonSamenvatting();
   return;
 }
+
 
   questionEl.innerHTML = inOptieFase ? toonPrijsContext() : "";
   optionsEl.innerHTML = "";
