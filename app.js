@@ -356,8 +356,14 @@ if (
 }
 
 
-  questionEl.innerHTML = inOptieFase ? toonPrijsContext() : "";
-  optionsEl.innerHTML = "";
+// prijscontext alleen tonen als we écht aan het einde zijn
+questionEl.innerHTML =
+  inOptieFase && Array.isArray(node.next) && node.next.length === 0
+    ? toonPrijsContext()
+    : "";
+
+optionsEl.innerHTML = "";
+
 
   // automatische doorloop
   if (
