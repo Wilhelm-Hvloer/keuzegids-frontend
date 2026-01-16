@@ -37,7 +37,7 @@ let gekozenExtras = [];
 let basisPrijs = null;
 let totaalPrijs = null;
 let backendExtras = [];
-let vervolgNodeNaBasis = null;
+let vervolgNodeNaBasis = null; // onthoudt boom-positie tijdens prijsfase
 let inOptieFase = false;
 let gekozenOppervlakte = null;
 let gekozenRuimtes = null;
@@ -364,13 +364,22 @@ if (Array.isArray(node.next) && node.next.length === 0) {
     return;
   }
 
-// PRIJSFASE (normale flow, geen afweging)
-if (node.price_ready === true) {
+
+// SYSTEEM GESELECTEERD → PRIJS PAUZEREN, BOOM NIET STOPPEN
+if (node.system_selected) {
   gekozenSysteem = stripPrefix(node.system);
+
+  // m² / ruimtes nog niet bekend → eerst prijs vragen
+  if (!gekozenOppervlakte || !gekozenRuimtes) {
+    vervolgNodeNaBasis = node;   // 🔑 onthoud exact waar we zijn
+    toonPrijsInvoer();
+    return;
+  }
+
+  // prijs al bekend → direct door naar opties
   inOptieFase = true;
-  gaVerderNaPrijsBerekening();
-  return;
 }
+
 
 
 
@@ -705,9 +714,12 @@ async function berekenPrijs(ruimtes) {
     <strong>Totaalprijs:</strong> € ${totaalPrijs},-
   `;
 
-  // 🔑 STAP 3b — alleen in KEUZEGIDS verder
-  gaVerderNaPrijsBerekening();
+  // 🔑 alleen keuzegids mag de keuzeboom hervatten
+  if (actieveFlow === "keuzegids") {
+    gaVerderNaPrijsBerekening();
+  }
 }
+
 
 
 
