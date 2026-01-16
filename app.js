@@ -384,18 +384,20 @@ async function renderNode(node) {
 
 
 
-// === NORMALE RENDER VAN VRAAG + OPTIES ===
+// === NORMALE RENDER VAN VRAAG + ANTWOORDEN ===
 questionEl.textContent = stripPrefix(node.text);
 optionsEl.innerHTML = "";
 
-if (Array.isArray(node.next)) {
-  node.next.forEach((_, index) => {
+// antwoorden komen van backend via node.choices
+if (Array.isArray(node.choices)) {
+  node.choices.forEach((choice, index) => {
     const btn = document.createElement("button");
-    btn.textContent = `Optie ${index + 1}`;
+    btn.textContent = stripPrefix(choice.text);
     btn.onclick = () => chooseOption(index);
     optionsEl.appendChild(btn);
   });
 }
+
 
 } // ⬅️ DEZE ACCOLADE MOET ER ZIJN — sluit renderNode af
 
