@@ -324,46 +324,44 @@ async function renderNode(node) {
     return;
   }
 
-// AFW → afweging starten (prijsvergelijking)
-if (node.type === "afw" && !afwegingAfgerond) {
-  afwegingNode = node;
+  // AFW → afweging starten (prijsvergelijking)
+  if (node.type === "afw" && !afwegingAfgerond) {
+    afwegingNode = node;
 
-  // m² / ruimtes nog niet ingevuld → eerst prijsinvoer
-  if (!gekozenOppervlakte || !gekozenRuimtes) {
-    inAfwegingPrijs = true;
-    toonPrijsInvoer();
+    // m² / ruimtes nog niet ingevuld → eerst prijsinvoer
+    if (!gekozenOppervlakte || !gekozenRuimtes) {
+      inAfwegingPrijs = true;
+      toonPrijsInvoer();
+      return;
+    }
+
+    // m² & ruimtes bekend → prijsvergelijking tonen
+    toonAfwegingMetPrijzen();
     return;
   }
 
-  // m² & ruimtes bekend → prijsvergelijking tonen
-  toonAfwegingMetPrijzen();
-  return;
-}
-
-
-
-// EINDE → alleen samenvatten als we NIET net een systeem hebben gekozen
-if (
-  Array.isArray(node.next) &&
-  node.next.length === 0 &&
-  !node.system_selected
-) {
-  if (gekozenSysteem && gekozenOppervlakte && gekozenRuimtes) {
-    await herberekenPrijs();
+  // EINDE → alleen samenvatten als we NIET net een systeem hebben gekozen
+  if (
+    Array.isArray(node.next) &&
+    node.next.length === 0 &&
+    !node.system_selected
+  ) {
+    // 🔑 prijs ALLEEN hier herberekenen (echt einde)
+    if (gekozenSysteem && gekozenOppervlakte && gekozenRuimtes) {
+      await herberekenPrijs();
+    }
+    toonSamenvatting();
+    return;
   }
-  toonSamenvatting();
-  return;
-}
 
+  // ❗️GEEN prijsberekening meer tijdens optie-vragen
+  // prijscontext alleen tonen bij echt einde
+  questionEl.innerHTML =
+    inOptieFase && Array.isArray(node.next) && node.next.length === 0
+      ? toonPrijsContext()
+      : "";
 
-// prijscontext alleen tonen als we écht aan het einde zijn
-questionEl.innerHTML =
-  inOptieFase && Array.isArray(node.next) && node.next.length === 0
-    ? toonPrijsContext()
-    : "";
-
-optionsEl.innerHTML = "";
-
+  optionsEl.innerHTML = "";
 
   // automatische doorloop
   if (
@@ -374,6 +372,11 @@ optionsEl.innerHTML = "";
     chooseOption(0);
     return;
   }
+
+  // normale render van vraag / opties
+  renderVraagEnOpties(node);
+}
+
 
 
 // SYSTEEM GESELECTEERD → PRIJS PAUZEREN, BOOM NIET STOPPEN
