@@ -405,12 +405,19 @@ if (Array.isArray(node.next)) {
   });
 }
 
+// === AUTOMATISCHE DOORLOOP NA ANTWOORD ===
+if (
+  node.type === "antwoord" &&
+  Array.isArray(node.next) &&
+  node.next.length === 1
+) {
+  setTimeout(() => {
+    chooseOption(0);
+  }, 0);
+  return;
+}
 
-
-
-
-} // ⬅️ DEZE ACCOLADE MOET ER ZIJN — sluit renderNode af
-
+} // sluit renderNode af
 
 
 
