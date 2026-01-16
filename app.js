@@ -402,17 +402,21 @@ if (node.type === "vraag") {
 
 optionsEl.innerHTML = "";
 
-// 2️⃣ Knoppen ALLEEN voor antwoord-nodes
+optionsEl.innerHTML = "";
+
 if (Array.isArray(node.next)) {
   node.next.forEach((nextNode, index) => {
-    if (nextNode.type !== "antwoord") return;
+    if (!["antwoord", "systeem"].includes(nextNode.type)) return;
 
     const btn = document.createElement("button");
-    btn.textContent = stripPrefix(nextNode.text);
+    btn.textContent = stripPrefix(
+      nextNode.text || nextNode.system
+    );
     btn.onclick = () => chooseOption(index);
     optionsEl.appendChild(btn);
   });
 }
+
 
 
 
