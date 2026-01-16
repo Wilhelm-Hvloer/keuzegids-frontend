@@ -1,4 +1,4 @@
-let isPrijslijst = false;
+
 
 
 console.log("APP LOADED");
@@ -369,9 +369,11 @@ if (Array.isArray(node.next) && node.next.length === 0) {
 if (node.system_selected) {
   gekozenSysteem = stripPrefix(node.system);
 
-  // m² / ruimtes nog niet bekend → eerst prijs vragen
+  // 🔑 altijd vastleggen waar de boom verder moet
+  vervolgNodeNaBasis = node.next?.[0] || null;
+
+  // prijs nog niet bekend → eerst berekenen
   if (!gekozenOppervlakte || !gekozenRuimtes) {
-    vervolgNodeNaBasis = node;   // 🔑 onthoud exact waar we zijn
     toonPrijsInvoer();
     return;
   }
@@ -379,6 +381,7 @@ if (node.system_selected) {
   // prijs al bekend → direct door naar opties
   inOptieFase = true;
 }
+
 
 
 
@@ -902,34 +905,6 @@ async function berekenBasisPrijsVoorSysteem(systeemNaam, m2, ruimtes) {
 }
 
 
-// ========================
-// VERDER MET OPTIES
-// ========================
-
-async function gaVerderMetOpties() {
-  // 🔑 borg systeem bij 1-systeem flow
-  if (!gekozenSysteem && vergelijkSystemen?.length === 1) {
-    gekozenSysteem = vergelijkSystemen[0];
-  }
-
-  // 🔑 zorg dat prijs zeker berekend is
-  if (gekozenSysteem && gekozenOppervlakte && gekozenRuimtes) {
-    await herberekenPrijs();
-  }
-
-  const res = await fetch(`${API_BASE}/api/next`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({
-      node_id: vervolgNodeNaBasis,
-      choice: 0
-    })
-  });
-
-  const node = await res.json();
-  renderNode(node);
-}
-
 
 
 // ========================
@@ -1006,18 +981,8 @@ function stripPrefix(text = "") {
 // ========================
 
 window.startKeuzegids = startKeuzegids;
+window.startPrijslijst = startPrijslijst;
 
-window.startPrijslijst = function () {
-  // homescreen weg, flow aan
-  toonFlow();
-
-  // reset eventuele oude staat
-  inAfwegingPrijs = false;
-  vergelijkSystemen = [];
-
-  // start prijslijst
-  toonSysteemSelectie();
-};
 
 function gaNaarHome() {
   // schermen resetten
@@ -1052,19 +1017,11 @@ function gaNaarHome() {
 
 
 function gaVerderNaPrijsBerekening() {
-  if (actieveFlow !== "keuzegids") return;
+  if (!vervolgNodeNaBasis) return;
 
-  inOptieFase = true;
+  const node = vervolgNodeNaBasis;
+  vervolgNodeNaBasis = null;
 
-  // huidige node vervolgen met gekozen systeem
-  const index = currentNode?.next?.findIndex(
-    n => stripPrefix(n.text) === gekozenSysteem
-  );
-
-  if (index !== -1) {
-    chooseOption(index);
-  } else {
-    console.warn("Geen vervolg-node gevonden voor systeem:", gekozenSysteem);
-  }
+  renderNode(node);
 }
 
