@@ -384,19 +384,19 @@ async function renderNode(node) {
 
 
 
-// === NORMALE RENDER VAN VRAAG + ANTWOORDEN (KEUZEGIDS) ===
+// === NORMALE RENDER VAN VRAAG + KEUZES (KEUZEGIDS) ===
 
-// alleen échte vragen tonen als vraag
+// vraagtekst
 if (node.type === "vraag") {
   questionEl.textContent = stripPrefix(node.text);
 }
 
 optionsEl.innerHTML = "";
 
-// alleen antwoord-nodes renderen als knoppen
+// alle vervolgnodes zijn keuzes (behalve afw/xtr)
 if (Array.isArray(node.next)) {
   node.next.forEach((nextNode, index) => {
-    if (nextNode.type !== "antwoord") return;
+    if (["afw", "xtr"].includes(nextNode.type)) return;
 
     const btn = document.createElement("button");
     btn.textContent = stripPrefix(nextNode.text);
@@ -404,6 +404,7 @@ if (Array.isArray(node.next)) {
     optionsEl.appendChild(btn);
   });
 }
+
 
 // === AUTOMATISCHE DOORLOOP NA ANTWOORD ===
 if (
