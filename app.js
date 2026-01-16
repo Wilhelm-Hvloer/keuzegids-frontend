@@ -393,17 +393,27 @@ if (node.type === "vraag") {
 
 optionsEl.innerHTML = "";
 
-// === OPTIES RENDEREN (ALLE TYPES) ===
+// === NORMALE RENDER VAN VRAAG + ANTWOORDEN (KEUZEGIDS) ===
+
+// 1️⃣ Vraagtekst alleen tonen bij echte vraag
+if (node.type === "vraag") {
+  questionEl.textContent = stripPrefix(node.text);
+}
+
 optionsEl.innerHTML = "";
 
+// 2️⃣ Knoppen ALLEEN voor antwoord-nodes
 if (Array.isArray(node.next)) {
   node.next.forEach((nextNode, index) => {
+    if (nextNode.type !== "antwoord") return;
+
     const btn = document.createElement("button");
     btn.textContent = stripPrefix(nextNode.text);
     btn.onclick = () => chooseOption(index);
     optionsEl.appendChild(btn);
   });
 }
+
 
 
 
