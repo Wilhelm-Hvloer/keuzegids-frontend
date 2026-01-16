@@ -384,29 +384,28 @@ async function renderNode(node) {
 
 
 
-// === NORMALE RENDER VAN VRAAG + ANTWOORDEN ===
-questionEl.textContent = stripPrefix(node.text);
+// === NORMALE RENDER VAN VRAAG + ANTWOORDEN (KEUZEGIDS) ===
+
+// alleen échte vragen tonen als vraag
+if (node.type === "vraag") {
+  questionEl.textContent = stripPrefix(node.text);
+}
+
 optionsEl.innerHTML = "";
 
-// 1️⃣ antwoorden via node.choices (nieuwere structuur)
-if (Array.isArray(node.choices)) {
-  node.choices.forEach((choice, index) => {
+// alleen antwoord-nodes renderen als knoppen
+if (Array.isArray(node.next)) {
+  node.next.forEach((nextNode, index) => {
+    if (nextNode.type !== "antwoord") return;
+
     const btn = document.createElement("button");
-    btn.textContent = stripPrefix(choice.text);
+    btn.textContent = stripPrefix(nextNode.text);
     btn.onclick = () => chooseOption(index);
     optionsEl.appendChild(btn);
   });
 }
 
-// 2️⃣ antwoorden via node.next (klassieke antwoord-nodes)
-else if (Array.isArray(node.next)) {
-  node.next.forEach((_, index) => {
-    const btn = document.createElement("button");
-    btn.textContent = `Optie ${index + 1}`;
-    btn.onclick = () => chooseOption(index);
-    optionsEl.appendChild(btn);
-  });
-}
+
 
 
 
