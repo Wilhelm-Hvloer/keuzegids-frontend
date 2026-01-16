@@ -304,6 +304,16 @@ if (currentNode.type === "vraag" && currentNode.text) {
   renderNode(node);
 }
 
+function gaVerderNaPrijsBerekening() {
+  if (!vervolgNodeNaBasis) return;
+
+  const node = vervolgNodeNaBasis;
+  vervolgNodeNaBasis = null;
+
+  renderNode(node);
+}
+
+
 // ========================
 // NODE RENDEREN
 // ========================
@@ -340,17 +350,24 @@ async function renderNode(node) {
     return;
   }
 
-  // EINDE → alleen samenvatten als we NIET net een systeem hebben gekozen
-  if (
-    Array.isArray(node.next) &&
-    node.next.length === 0 &&
-    !node.system_selected
-  ) {
-    // 🔑 prijs ALLEEN hier herberekenen (echt einde)
-    if (gekozenSysteem && gekozenOppervlakte && gekozenRuimtes) {
-      await herberekenPrijs();
+  // ========================
+  // SYSTEEM GEKOZEN (KEUZEGIDS)
+  // ========================
+  if (node.type === "systeem" && actieveFlow === "keuzegids") {
+    gekozenSysteem = stripPrefix(node.system || node.text);
+
+    // onthoud waar de boom verder moet
+    vervolgNodeNaBasis = node.next?.[0] || null;
+
+    // prijs nog niet bekend → eerst prijs invoer
+    if (!gekozenOppervlakte || !gekozenRuimtes) {
+      toonPrijsInvoer();
+      return;
     }
-    toonSamenvatting();
+
+    // prijs al bekend → meteen verder
+    inOptieFase = true;
+    gaVerderNaPrijsBerekening();
     return;
   }
 
@@ -363,27 +380,28 @@ async function renderNode(node) {
 
   optionsEl.innerHTML = "";
 
-// automatische doorloop
-if (
-  node.type === "antwoord" &&
-  node.next?.length === 1 &&
-  ["vraag", "systeem", "xtr", "afw"].includes(node.next[0].type)
-) {
-  chooseOption(0);
-  return;
+  // automatische doorloop
+  if (
+    node.type === "antwoord" &&
+    node.next?.length === 1 &&
+    ["vraag", "systeem", "xtr", "afw"].includes(node.next[0].type)
+  ) {
+    chooseOption(0);
+    return;
+  }
+
+  // === NORMALE RENDER VAN VRAAG + OPTIES ===
+  questionEl.textContent = stripPrefix(node.text);
+  optionsEl.innerHTML = "";
+
+  node.next?.forEach((nextNode, index) => {
+    const btn = document.createElement("button");
+    btn.textContent = stripPrefix(nextNode.text);
+    btn.onclick = () => chooseOption(index);
+    optionsEl.appendChild(btn);
+  });
 }
 
-// === NORMALE RENDER VAN VRAAG + OPTIES ===
-questionEl.textContent = stripPrefix(node.text);
-optionsEl.innerHTML = "";
-
-node.next?.forEach((nextNode, index) => {
-  const btn = document.createElement("button");
-  btn.textContent = stripPrefix(nextNode.text);
-  btn.onclick = () => chooseOption(index);
-  optionsEl.appendChild(btn);
-});
-}
 
 
 
