@@ -393,17 +393,18 @@ if (node.type === "vraag") {
 
 optionsEl.innerHTML = "";
 
-// alle vervolgnodes zijn keuzes (behalve afw/xtr)
+// === OPTIES RENDEREN (ALLE TYPES) ===
+optionsEl.innerHTML = "";
+
 if (Array.isArray(node.next)) {
   node.next.forEach((nextNode, index) => {
-    if (["afw", "xtr"].includes(nextNode.type)) return;
-
     const btn = document.createElement("button");
     btn.textContent = stripPrefix(nextNode.text);
     btn.onclick = () => chooseOption(index);
     optionsEl.appendChild(btn);
   });
 }
+
 
 
 // === AUTOMATISCHE DOORLOOP NA ANTWOORD ===
