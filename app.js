@@ -388,27 +388,6 @@ node.next?.forEach((nextNode, index) => {
 
 
 
-// SYSTEEM GESELECTEERD → PRIJS PAUZEREN, BOOM NIET STOPPEN
-if (node.system_selected) {
-  gekozenSysteem = stripPrefix(node.system);
-
-  // 🔑 altijd vastleggen waar de boom verder moet
-  vervolgNodeNaBasis = node.next?.[0] || null;
-
-  // prijs nog niet bekend → eerst berekenen
-  if (!gekozenOppervlakte || !gekozenRuimtes) {
-    toonPrijsInvoer();
-    return;
-  }
-
-  // prijs al bekend → direct door naar opties
-  inOptieFase = true;
-}
-
-
-
-
-
   if (node.type === "vraag" && node.text) {
     questionEl.innerHTML += `<strong>${stripPrefix(node.text)}</strong>`;
   }
