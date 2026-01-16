@@ -382,27 +382,25 @@ async function renderNode(node) {
 
   optionsEl.innerHTML = "";
 
-  // automatische doorloop
-  if (
-    node.type === "antwoord" &&
-    node.next?.length === 1 &&
-    ["vraag", "systeem", "xtr", "afw"].includes(node.next[0].type)
-  ) {
-    chooseOption(0);
-    return;
-  }
+// automatische doorloop bij 1 optie
+if (node.type === "antwoord" && Array.isArray(node.next) && node.next.length === 1) {
+  chooseOption(0);
+  return;
+}
 
-  // === NORMALE RENDER VAN VRAAG + OPTIES ===
-  questionEl.textContent = stripPrefix(node.text);
-  optionsEl.innerHTML = "";
+// === NORMALE RENDER VAN VRAAG + OPTIES ===
+questionEl.textContent = stripPrefix(node.text);
+optionsEl.innerHTML = "";
 
-  node.next?.forEach((nextNode, index) => {
+if (Array.isArray(node.next)) {
+  node.next.forEach((_, index) => {
     const btn = document.createElement("button");
-    btn.textContent = stripPrefix(nextNode.text);
+    btn.textContent = `Optie ${index + 1}`;
     btn.onclick = () => chooseOption(index);
     optionsEl.appendChild(btn);
   });
 }
+
 
 
 
