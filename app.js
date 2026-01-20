@@ -305,6 +305,9 @@ async function renderNode(node) {
   currentNode = node;
   console.log("▶ renderNode:", node.type, node);
 
+  const questionEl = document.getElementById("question-text");
+  const optionsEl = document.getElementById("options-box");
+
   // ========================
   // VRAAG ONTHOUDEN
   // ========================
@@ -314,13 +317,8 @@ async function renderNode(node) {
 
   // ========================
   // ANTWOORD REGISTREREN
-  // (ook bij auto-doorloop)
   // ========================
-  if (
-    node.type === "antwoord" &&
-    node.text &&
-    lastVraagTekst
-  ) {
+  if (node.type === "antwoord" && node.text && lastVraagTekst) {
     gekozenAntwoorden.push({
       vraag: lastVraagTekst,
       antwoord: stripPrefix(node.text)
@@ -332,9 +330,9 @@ async function renderNode(node) {
   // AUTO-DOORLOPEN BIJ 1 VERVOLG
   // ========================
   if (
+    node.type === "antwoord" &&
     Array.isArray(node.next) &&
-    node.next.length === 1 &&
-    node.type === "antwoord"
+    node.next.length === 1
   ) {
     console.log("⏩ auto-doorgaan via:", node.id);
     chooseOption(0);
@@ -350,10 +348,9 @@ async function renderNode(node) {
     return;
   }
 
-  const questionEl = document.getElementById("question-text");
-  const optionsEl = document.getElementById("options-box");
-
-  // reset UI
+  // ========================
+  // UI RESET
+  // ========================
   optionsEl.style.display = "block";
   optionsEl.innerHTML = "";
   questionEl.innerHTML = "";
@@ -383,76 +380,16 @@ async function renderNode(node) {
   }
 
   // ========================
-  // OPTIES TONEN
+  // VRAAG + OPTIES TONEN
   // ========================
   if (node.type === "vraag") {
     questionEl.textContent = stripPrefix(node.text);
   }
 
-  if (Array.isArray(node.next)) {
-    node.next.forEach((optie, index) => {
-      const btn = document.createElement("button");
-      btn.textContent = stripPrefix(optie.text || "Verder");
-      btn.onclick = () => chooseOption(index);
-      optionsEl.appendChild(btn);
-    });
-  }
-}
-
-
-
-
-// ========================
-// AUTO-DOORLOPEN BIJ 1 VERVOLG
-// ========================
-if (
-  Array.isArray(node.next) &&
-  node.next.length === 1 &&
-  node.type === "antwoord"
-) {
-  console.log("⏩ auto-doorgaan via:", node.id);
-  chooseOption(0);
-  return;
-}
-
-// ========================
-// EINDE KEUZEBOOM → SAMENVATTING
-// ========================
-if (!Array.isArray(node.next) || node.next.length === 0) {
-  console.log("✅ Einde keuzeboom (lege next), toon samenvatting");
-  toonSamenvatting();
-  return;
-}
-
-
-
-  // ========================
-  // VRAAGTEKST
-  // ========================
-  if (node.type === "vraag") {
-    questionEl.textContent = stripPrefix(node.text);
-  }
-
-  // ========================
-  // ANTWOORD-KNOPEN
-  // ========================
-  const opties = Array.isArray(node.next) ? node.next : [];
-
-  opties.forEach((optie, index) => {
+  node.next.forEach((optie, index) => {
     const btn = document.createElement("button");
     btn.textContent = stripPrefix(optie.text || "Verder");
     btn.onclick = () => chooseOption(index);
-    optionsEl.appendChild(btn);
-  });
-
-
-  antwoorden.forEach(antwoordNode => {
-    const index = node.next.indexOf(antwoordNode);
-
-    const btn = document.createElement("button");
-    btn.textContent = stripPrefix(antwoordNode.text);
-    btn.onclick = () => chooseOption(index);
-
     optionsEl.appendChild(btn);
   });
 }
