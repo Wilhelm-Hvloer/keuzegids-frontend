@@ -345,12 +345,27 @@ async function renderNode(node) {
 
 
 // ========================
-// EINDE
+// AUTO-DOORLOPEN BIJ 1 VERVOLG
 // ========================
-if (node.id === "END") {
+if (
+  Array.isArray(node.next) &&
+  node.next.length === 1 &&
+  node.type === "antwoord"
+) {
+  console.log("⏩ auto-doorgaan via:", node.id);
+  chooseOption(0);
+  return;
+}
+
+// ========================
+// EINDE KEUZEBOOM → SAMENVATTING
+// ========================
+if (!Array.isArray(node.next) || node.next.length === 0) {
+  console.log("✅ Einde keuzeboom (lege next), toon samenvatting");
   toonSamenvatting();
   return;
 }
+
 
 
   // ========================
