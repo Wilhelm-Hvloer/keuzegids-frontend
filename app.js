@@ -866,56 +866,75 @@ async function berekenBasisPrijsVoorSysteem(systeemNaam, m2, ruimtes) {
 
 
 // ========================
-// SAMENVATTING
+// SAMENVATTING TONEN
 // ========================
-
 function toonSamenvatting() {
   const questionEl = document.getElementById("question-text");
+  const optionsEl = document.getElementById("options-box");
   const resultEl = document.getElementById("result-box");
 
-  // centrale reset
-  resetUI();
+  // UI opschonen
+  questionEl.innerHTML = "<strong>Samenvatting</strong>";
+  optionsEl.innerHTML = "";
+  optionsEl.style.display = "none";
+  resultEl.style.display = "block";
+  resultEl.innerHTML = "";
 
-  let html = "<h3>Samenvatting</h3><ul>";
+  let html = "";
 
-  gekozenAntwoorden.forEach(item => {
-    html += `<li><strong>${item.vraag}</strong>: ${item.antwoord}</li>`;
-  });
-
-  html += "</ul>";
-
-  html += `<p><strong>Systeem:</strong> ${gekozenSysteem}</p>`;
-
-  if (prijsPerM2 !== null && prijsPerM2 !== undefined) {
-    html += `<p><strong>Prijs per m²:</strong> € ${prijsPerM2},-</p>`;
+  // ========================
+  // KEUZES (VRAGEN + ANTWOORDEN)
+  // ========================
+  if (gekozenAntwoorden.length > 0) {
+    html += "<h3>Gemaakte keuzes</h3><ul>";
+    gekozenAntwoorden.forEach(item => {
+      html += `<li><strong>${item.vraag}</strong><br>${item.antwoord}</li>`;
+    });
+    html += "</ul><hr>";
   }
 
-  html += `<p><strong>Basisprijs:</strong> € ${basisPrijs},-</p>`;
+  // ========================
+  // GEKOZEN SYSTEEM
+  // ========================
+  if (gekozenSysteem) {
+    html += `<h3>Gekozen coatingsysteem</h3>
+      <p><strong>${gekozenSysteem}</strong></p>`;
+  }
 
-  if (backendExtras.length || meerwerkUren > 0) {
-    html += "<p><strong>Extra opties:</strong></p><ul>";
+  // ========================
+  // PRIJSINFORMATIE
+  // ========================
+  if (basisPrijs !== null || totaalPrijs !== null) {
+    html += "<h3>Prijsoverzicht</h3>";
 
-    backendExtras.forEach(extra => {
-      html += `<li>${extra.naam}: € ${extra.totaal},-</li>`;
-    });
-
-    if (meerwerkUren > 0) {
-      const bedrag = meerwerkUren * MEERWERK_TARIEF;
-      html += `<li>Meerwerk: ${meerwerkUren} uur × € ${MEERWERK_TARIEF} = € ${bedrag},-</li>`;
+    if (prijsPerM2 !== null) {
+      html += `<p>Prijs per m²: <strong>€ ${prijsPerM2},-</strong></p>`;
     }
 
-    html += "</ul>";
+    if (basisPrijs !== null) {
+      html += `<p>Basisprijs: <strong>€ ${basisPrijs},-</strong></p>`;
+    }
+
+    // Extra opties
+    if (gekozenExtras.length > 0) {
+      html += "<p><strong>Gekozen extra opties:</strong></p><ul>";
+      gekozenExtras.forEach(extra => {
+        html += `<li>${extra}</li>`;
+      });
+      html += "</ul>";
+    }
+
+    if (totaalPrijs !== null) {
+      html += `<p><strong>Totaalprijs:</strong> € ${totaalPrijs},-</p>`;
+    }
+  } else {
+    html +=
+      "<p><em>Prijs wordt later bepaald of is afhankelijk van nadere afstemming.</em></p>";
   }
 
-  html += `
-    <p><strong>Totaalprijs:</strong> € ${totaalPrijs},-</p>
-    <button onclick="startKeuzegids()">Opnieuw starten</button>
-  `;
-
-  questionEl.innerHTML = "";
-  resultEl.style.display = "block";
   resultEl.innerHTML = html;
 }
+
 
 
 
