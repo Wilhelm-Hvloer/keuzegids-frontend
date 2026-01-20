@@ -257,58 +257,29 @@ function startVergelijking() {
 // KEUZE MAKEN
 // ========================
 async function chooseOption(index) {
-  if (!currentNode || !Array.isArray(currentNode.next)) return;
+  if (!currentNode) return;
 
-  const gekozenOptie = currentNode.next[index];
-  if (!gekozenOptie) return;
+  console.log("➡️ keuze:", currentNode.id, "index:", index);
 
-  const cleanText = stripPrefix(gekozenOptie.text || "");
-
-  // ------------------------
-  // LOGGEN: alleen bij vragen
-  // ------------------------
-  if (currentNode.type === "vraag" && currentNode.text) {
-    gekozenAntwoorden.push({
-      vraag: stripPrefix(currentNode.text),
-      antwoord: cleanText
-    });
-  }
-
-  // ========================
-  // EXTRA'S PER M²
-  // ========================
-  const EXTRA_KEYS = ["ADD 250", "DecoFlakes", "Durakorrel"];
-  let extraGevonden = false;
-
-  EXTRA_KEYS.forEach(extra => {
-    if (cleanText.includes(extra) && !gekozenExtras.includes(extra)) {
-      gekozenExtras.push(extra);
-      extraGevonden = true;
-    }
+  const res = await fetch(`${API_BASE}/api/next`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      node_id: currentNode.id,
+      choice: index
+    })
   });
 
-  if (extraGevonden) {
-    await herberekenPrijs();
-  }
+  const nextNode = await res.json();
 
-  // ------------------------
-  // ANTWOORD = TRANSPARANT
-  // automatisch door naar next
-  // ------------------------
-  if (
-    gekozenOptie.type === "antwoord" &&
-    Array.isArray(gekozenOptie.next) &&
-    gekozenOptie.next.length === 1
-  ) {
-    renderNode(gekozenOptie.next[0]);
+  if (nextNode.error) {
+    console.error("Backend fout:", nextNode.error);
     return;
   }
 
-  // ------------------------
-  // NORMALE FLOW
-  // ------------------------
-  renderNode(gekozenOptie);
+  renderNode(nextNode);
 }
+
 
 
 
@@ -359,13 +330,14 @@ async function renderNode(node) {
 
 
 
-  // ========================
-  // EINDE
-  // ========================
-  if (Array.isArray(node.next) && node.next.length === 0) {
-    toonSamenvatting();
-    return;
-  }
+// ========================
+// EINDE
+// ========================
+if (node.id === "END") {
+  toonSamenvatting();
+  return;
+}
+
 
   // ========================
   // VRAAGTEKST
@@ -377,9 +349,15 @@ async function renderNode(node) {
   // ========================
   // ANTWOORD-KNOPEN
   // ========================
-  const antwoorden = Array.isArray(node.next)
-    ? node.next.filter(n => n.type === "antwoord")
-    : [];
+  const opties = Array.isArray(node.next) ? node.next : [];
+
+  opties.forEach((optie, index) => {
+    const btn = document.createElement("button");
+    btn.textContent = stripPrefix(optie.text || "Verder");
+    btn.onclick = () => chooseOption(index);
+    optionsEl.appendChild(btn);
+  });
+
 
   antwoorden.forEach(antwoordNode => {
     const index = node.next.indexOf(antwoordNode);
