@@ -78,25 +78,37 @@ async function startKeuzegids() {
   toonFlow();
   resetUI();
 
-  // state resetten
+  // ========================
+  // STATE RESETTEN
+  // ========================
   gekozenSysteem = null;
   gekozenAntwoorden = [];
   gekozenExtras = [];
+  backendExtras = [];
   basisPrijs = null;
   totaalPrijs = null;
-  backendExtras = [];
+  prijsPerM2 = null;
+
   vervolgNodeNaBasis = null;
   inOptieFase = false;
+
   gekozenOppervlakte = null;
   gekozenRuimtes = null;
   meerwerkUren = 0;
 
-  // keuzeboom starten
-  const res = await fetch(`${API_BASE}/api/start`);
-  const node = await res.json();
-  renderNode(node);
-}
+  lastVraagTekst = null; // 👈 ESSENTIEEL
 
+  // ========================
+  // KEUZEGIDS STARTEN
+  // ========================
+  try {
+    const res = await fetch(`${API_BASE}/api/start`);
+    const node = await res.json();
+    renderNode(node);
+  } catch (err) {
+    console.error("❌ Fout bij starten keuzegids:", err);
+  }
+}
 
 
 
