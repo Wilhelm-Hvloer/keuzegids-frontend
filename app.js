@@ -275,6 +275,23 @@ async function chooseOption(index) {
     });
   }
 
+  // ========================
+  // EXTRA'S PER M²
+  // ========================
+  const EXTRA_KEYS = ["ADD 250", "DecoFlakes", "Durakorrel"];
+  let extraGevonden = false;
+
+  EXTRA_KEYS.forEach(extra => {
+    if (cleanText.includes(extra) && !gekozenExtras.includes(extra)) {
+      gekozenExtras.push(extra);
+      extraGevonden = true;
+    }
+  });
+
+  if (extraGevonden) {
+    await herberekenPrijs();
+  }
+
   // ------------------------
   // ANTWOORD = TRANSPARANT
   // automatisch door naar next
@@ -296,49 +313,6 @@ async function chooseOption(index) {
 
 
 
-  // ========================
-  // EXTRA'S PER M²
-  // ========================
-  const EXTRA_KEYS = ["ADD 250", "DecoFlakes", "Durakorrel"];
-  let extraGevonden = false;
-
-  EXTRA_KEYS.forEach(extra => {
-    if (cleanText.includes(extra) && !gekozenExtras.includes(extra)) {
-      gekozenExtras.push(extra);
-      extraGevonden = true;
-    }
-  });
-
-  if (extraGevonden) {
-    await herberekenPrijs();
-  }
-
-  // ========================
-  // BOOM VERVOLGEN
-  // ========================
-  const res = await fetch(`${API_BASE}/api/next`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({
-      node_id: currentNode.id,
-      choice: index
-    })
-  });
-
-  const node = await res.json();
-  renderNode(node);
-}
-
-function gaVerderNaPrijsBerekening() {
-  if (!vervolgNodeNaBasis) return;
-
-  const node = vervolgNodeNaBasis;
-  vervolgNodeNaBasis = null;
-
-  renderNode(node);
-}
-
-
 // ========================
 // NODE RENDEREN
 // ========================
@@ -355,22 +329,7 @@ async function renderNode(node) {
   optionsEl.innerHTML = "";
   questionEl.innerHTML = "";
 
-// =====================================
-// ANTWOORD = DOORGEVEN NAAR VOLGENDE NODE
-// =====================================
-if (node.type === "antwoord") {
-  if (Array.isArray(node.next) && node.next.length === 1) {
-    const volgendeNode = getNode(node.next[0]);
-    if (volgendeNode) {
-      renderNode(volgendeNode);
-    } else {
-      console.warn("Volgende node niet gevonden voor antwoord:", node);
-    }
-  } else {
-    console.warn("Antwoord-node heeft geen of meerdere next-nodes:", node);
-  }
-  return;
-}
+
 
 
   // ========================
