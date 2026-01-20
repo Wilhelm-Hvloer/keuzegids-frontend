@@ -256,7 +256,6 @@ function startVergelijking() {
 // ========================
 // KEUZE MAKEN
 // ========================
-
 async function chooseOption(index) {
   if (!currentNode || !Array.isArray(currentNode.next)) return;
 
@@ -292,11 +291,25 @@ async function chooseOption(index) {
     await herberekenPrijs();
   }
 
-  // ========================
-  // BOOM VOLGEN (1 REGEL!)
-  // ========================
+  // ------------------------
+  // ANTWOORD = TRANSPARANT
+  // automatisch door naar next
+  // ------------------------
+  if (
+    gekozenOptie.type === "antwoord" &&
+    Array.isArray(gekozenOptie.next) &&
+    gekozenOptie.next.length === 1
+  ) {
+    renderNode(gekozenOptie.next[0]);
+    return;
+  }
+
+  // ------------------------
+  // NORMALE FLOW
+  // ------------------------
   renderNode(gekozenOptie);
 }
+
 
 
 
@@ -307,15 +320,6 @@ async function chooseOption(index) {
 async function renderNode(node) {
   if (!node) return;
 
-  // 🔑 antwoord-nodes zijn transparant
-  if (
-    node.type === "antwoord" &&
-    Array.isArray(node.next) &&
-    node.next.length === 1
-  ) {
-    renderNode(node.next[0]);
-    return;
-  }
 
   currentNode = node;
   console.log("▶ renderNode:", node.type, node);
