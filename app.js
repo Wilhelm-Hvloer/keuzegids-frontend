@@ -327,16 +327,29 @@ async function renderNode(node) {
   const questionEl = document.getElementById("question-text");
   const optionsEl = document.getElementById("options-box");
 
-  // 🔑 KEUZEGIDS: opties moeten zichtbaar zijn
+  // opties zichtbaar
   optionsEl.style.display = "block";
+  optionsEl.innerHTML = "";
+  questionEl.innerHTML = "";
 
-  // XTR-node → direct meerwerk invoer
+  // =====================================
+  // NOOIT antwoord-nodes direct renderen
+  // =====================================
+  if (node.type === "antwoord") {
+    return;
+  }
+
+  // ========================
+  // XTR-node → meerwerk
+  // ========================
   if (node.type === "xtr") {
     toonMeerwerkInvoer(stripPrefix(node.text));
     return;
   }
 
-  // AFW → afweging starten (prijsvergelijking)
+  // ========================
+  // AFW → afweging / prijsvergelijking
+  // ========================
   if (node.type === "afw" && !afwegingAfgerond) {
     afwegingNode = node;
 
@@ -347,7 +360,7 @@ async function renderNode(node) {
       return;
     }
 
-    // m² & ruimtes bekend → prijsvergelijking tonen
+    // m² & ruimtes bekend → afweging tonen
     toonAfwegingMetPrijzen();
     return;
   }
@@ -373,73 +386,38 @@ async function renderNode(node) {
     return;
   }
 
-  // ❗️GEEN prijsberekening meer tijdens optie-vragen
-  // prijscontext alleen tonen bij echt einde
-  questionEl.innerHTML =
-    inOptieFase && Array.isArray(node.next) && node.next.length === 0
-      ? toonPrijsContext()
-      : "";
+  // ========================
+  // EINDE → samenvatting
+  // ========================
+  if (Array.isArray(node.next) && node.next.length === 0) {
+    toonSamenvatting();
+    return;
+  }
 
-  optionsEl.innerHTML = "";
+  // ========================
+  // CENTRALE KNOPPENRENDER
+  // ========================
 
+  // vraagtekst tonen
+  if (node.type === "vraag") {
+    questionEl.textContent = stripPrefix(node.text);
+  }
 
-
-// === NORMALE RENDER VAN VRAAG + KEUZES (KEUZEGIDS) ===
-
-// vraagtekst
-if (node.type === "vraag") {
-  questionEl.textContent = stripPrefix(node.text);
-}
-
-optionsEl.innerHTML = "";
-
-// === VRAAG RENDEREN ===
-if (node.type === "vraag") {
-  questionEl.textContent = stripPrefix(node.text);
-}
-
-optionsEl.innerHTML = "";
-
-// tel hoeveel antwoord-nodes er zijn
-const antwoorden =
-  Array.isArray(node.next)
+  // antwoordknoppen genereren
+  const antwoorden = Array.isArray(node.next)
     ? node.next.filter(n => n.type === "antwoord")
     : [];
 
-// 1️⃣ Normale situatie: vraag → antwoorden
-if (antwoorden.length > 0) {
-  antwoorden.forEach((nextNode, index) => {
+  antwoorden.forEach(antwoordNode => {
+    const index = node.next.indexOf(antwoordNode);
+
     const btn = document.createElement("button");
-    btn.textContent = stripPrefix(nextNode.text);
-    btn.onclick = () => chooseOption(node.next.indexOf(nextNode));
+    btn.textContent = stripPrefix(antwoordNode.text);
+    btn.onclick = () => chooseOption(index);
+
     optionsEl.appendChild(btn);
   });
-  return;
 }
-
-// 2️⃣ Geen antwoorden → automatisch door (bv na systeemkeuze)
-if (node.next?.length === 1) {
-  renderNode(node.next[0]);
-  return;
-}
-
-
-
-
-
-// === AUTOMATISCHE DOORLOOP NA ANTWOORD ===
-if (
-  node.type === "antwoord" &&
-  Array.isArray(node.next) &&
-  node.next.length === 1
-) {
-  setTimeout(() => {
-    chooseOption(0);
-  }, 0);
-  return;
-}
-
-} // sluit renderNode af
 
 
 
