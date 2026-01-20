@@ -393,28 +393,34 @@ if (node.type === "vraag") {
 
 optionsEl.innerHTML = "";
 
-// === NORMALE RENDER VAN VRAAG + ANTWOORDEN (KEUZEGIDS) ===
-
-// 1️⃣ Vraagtekst alleen tonen bij echte vraag
+// === VRAAG RENDEREN ===
 if (node.type === "vraag") {
   questionEl.textContent = stripPrefix(node.text);
 }
 
 optionsEl.innerHTML = "";
 
-optionsEl.innerHTML = "";
+// tel hoeveel antwoord-nodes er zijn
+const antwoorden =
+  Array.isArray(node.next)
+    ? node.next.filter(n => n.type === "antwoord")
+    : [];
 
-if (Array.isArray(node.next)) {
-  node.next.forEach((nextNode, index) => {
-    if (!["antwoord", "systeem"].includes(nextNode.type)) return;
-
+// 1️⃣ Normale situatie: vraag → antwoorden
+if (antwoorden.length > 0) {
+  antwoorden.forEach((nextNode, index) => {
     const btn = document.createElement("button");
-    btn.textContent = stripPrefix(
-      nextNode.text || nextNode.system
-    );
-    btn.onclick = () => chooseOption(index);
+    btn.textContent = stripPrefix(nextNode.text);
+    btn.onclick = () => chooseOption(node.next.indexOf(nextNode));
     optionsEl.appendChild(btn);
   });
+  return;
+}
+
+// 2️⃣ Geen antwoorden → automatisch door (bv na systeemkeuze)
+if (node.next?.length === 1) {
+  renderNode(node.next[0]);
+  return;
 }
 
 
