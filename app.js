@@ -295,6 +295,20 @@ async function renderNode(node) {
   currentNode = node;
   console.log("▶ renderNode:", node.type, node);
 
+  // ========================
+  // AUTO-DOORLOPEN BIJ 1 VERVOLG
+  // ========================
+  if (
+    Array.isArray(node.next) &&
+    node.next.length === 1 &&
+    node.type === "antwoord"
+  ) {
+    console.log("⏩ auto-doorgaan via:", node.id);
+    chooseOption(0);
+    return;
+  }
+
+
   const questionEl = document.getElementById("question-text");
   const optionsEl = document.getElementById("options-box");
 
