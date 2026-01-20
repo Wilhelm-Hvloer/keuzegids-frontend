@@ -257,20 +257,43 @@ function startVergelijking() {
 // KEUZE MAKEN
 // ========================
 
-
 async function chooseOption(index) {
-  if (!currentNode) return;
+  if (!currentNode || !Array.isArray(currentNode.next)) return;
 
   const gekozenOptie = currentNode.next[index];
-  const cleanText = stripPrefix(gekozenOptie?.text || "");
+  if (!gekozenOptie) return;
 
-  // ALLE vragen + antwoorden loggen
-if (currentNode.type === "vraag" && currentNode.text) {
-  gekozenAntwoorden.push({
-    vraag: stripPrefix(currentNode.text),
-    antwoord: cleanText
-  });
+  const cleanText = stripPrefix(gekozenOptie.text || "");
+
+  // ------------------------
+  // LOGGEN: alleen bij vragen
+  // ------------------------
+  if (currentNode.type === "vraag" && currentNode.text) {
+    gekozenAntwoorden.push({
+      vraag: stripPrefix(currentNode.text),
+      antwoord: cleanText
+    });
+  }
+
+  // ------------------------
+  // ANTWOORD = TRANSPARANT
+  // automatisch door naar next
+  // ------------------------
+  if (
+    gekozenOptie.type === "antwoord" &&
+    Array.isArray(gekozenOptie.next) &&
+    gekozenOptie.next.length === 1
+  ) {
+    renderNode(gekozenOptie.next[0]);
+    return;
+  }
+
+  // ------------------------
+  // NORMALE FLOW
+  // ------------------------
+  renderNode(gekozenOptie);
 }
+
 
 
   // ========================
