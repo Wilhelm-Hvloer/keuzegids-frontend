@@ -352,22 +352,26 @@ async function renderNode(node) {
     return;
   }
 
-  // ========================
-  // SYSTEEM GEKOZEN (keuzegids)
-  // ========================
-  if (node.type === "systeem" && actieveFlow === "keuzegids") {
-    gekozenSysteem = stripPrefix(node.system || node.text);
+// ========================
+// SYSTEEM GEKOZEN (keuzegids)
+// ========================
+if (node.type === "systeem" && actieveFlow === "keuzegids") {
+  gekozenSysteem = stripPrefix(node.system || node.text);
+
+  // prijs nog niet bekend → eerst prijs invoer
+  if (!gekozenOppervlakte || !gekozenRuimtes) {
     vervolgNodeNaBasis = node.next?.[0] || null;
-
-    if (!gekozenOppervlakte || !gekozenRuimtes) {
-      toonPrijsInvoer();
-      return;
-    }
-
-    inOptieFase = true;
-    gaVerderNaPrijsBerekening();
+    toonPrijsInvoer();
     return;
   }
+
+  // prijs bekend → gewoon door met de boom
+  if (Array.isArray(node.next) && node.next.length > 0) {
+    renderNode(node.next[0]);
+    return;
+  }
+}
+
 
   // ========================
   // EINDE
