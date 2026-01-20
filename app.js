@@ -904,39 +904,53 @@ function toonSamenvatting() {
   // GEKOZEN SYSTEEM
   // ========================
   if (gekozenSysteem) {
-    html += `<h3>Gekozen coatingsysteem</h3>
-      <p><strong>${gekozenSysteem}</strong></p>`;
+    html += `
+      <h3>Gekozen coatingsysteem</h3>
+      <p><strong>${gekozenSysteem}</strong></p>
+    `;
   }
 
   // ========================
-  // PRIJSINFORMATIE
+  // PRIJSOVERZICHT
   // ========================
-  if (basisPrijs !== null || totaalPrijs !== null) {
+  if (basisPrijs !== null) {
     html += "<h3>Prijsoverzicht</h3>";
 
     if (prijsPerM2 !== null) {
       html += `<p>Prijs per m²: <strong>€ ${prijsPerM2},-</strong></p>`;
     }
 
-    if (basisPrijs !== null) {
-      html += `<p>Basisprijs: <strong>€ ${basisPrijs},-</strong></p>`;
-    }
+    html += `<p>Basisprijs: <strong>€ ${basisPrijs},-</strong></p>`;
 
-    // Extra opties
-    if (gekozenExtras.length > 0) {
-      html += "<p><strong>Gekozen extra opties:</strong></p><ul>";
-      gekozenExtras.forEach(extra => {
-        html += `<li>${extra}</li>`;
+    // ========================
+    // EXTRA OPTIES (MET PRIJZEN)
+    // ========================
+    let extrasTotaal = 0;
+
+    if (backendExtras.length > 0) {
+      html += "<p><strong>Extra opties:</strong></p><ul>";
+
+      backendExtras.forEach(extra => {
+        html += `<li>${extra.naam}: € ${extra.totaal},-</li>`;
+        extrasTotaal += extra.totaal;
       });
+
       html += "</ul>";
     }
 
+    // ========================
+    // TOTAALPRIJS (UITLEGBAAR)
+    // ========================
     if (totaalPrijs !== null) {
-      html += `<p><strong>Totaalprijs:</strong> € ${totaalPrijs},-</p>`;
+      html += `
+        <p>
+          <strong>Totaalprijs:</strong><br>
+          € ${basisPrijs},- (basis)
+          ${extrasTotaal > 0 ? ` + € ${extrasTotaal},- (extra’s)` : ""}
+          <br><strong>= € ${totaalPrijs},-</strong>
+        </p>
+      `;
     }
-  } else {
-    html +=
-      "<p><em>Prijs wordt later bepaald of is afhankelijk van nadere afstemming.</em></p>";
   }
 
   resultEl.innerHTML = html;
