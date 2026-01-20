@@ -352,27 +352,6 @@ async function renderNode(node) {
     toonAfwegingMetPrijzen();
     return;
   }
-
-  // ========================
-  // VRAAG TEKST
-  // ========================
-  if (node.type === "vraag" && node.text) {
-    questionEl.textContent = stripPrefix(node.text);
-  }
-
-  // ========================
-  // ANTWOORD-KNOPEN
-  // ========================
-  if (Array.isArray(node.next)) {
-    node.next.forEach((nextNode, index) => {
-      if (nextNode.type !== "antwoord") return;
-
-      const btn = document.createElement("button");
-      btn.textContent = stripPrefix(nextNode.text);
-      btn.onclick = () => chooseOption(index);
-      optionsEl.appendChild(btn);
-    });
-  }
 }
 
 
@@ -452,6 +431,7 @@ async function renderNode(node) {
     optionsEl.appendChild(btn);
   });
 }
+
 
 
 
