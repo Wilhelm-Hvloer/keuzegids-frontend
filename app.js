@@ -315,26 +315,34 @@ async function renderNode(node) {
     lastVraagTekst = stripPrefix(node.text);
   }
 
+// ========================
+// ANTWOORD REGISTREREN (VEILIG)
+// ========================
 if (node.type === "antwoord" && node.text && lastVraagTekst) {
   const antwoordTekst = stripPrefix(node.text);
 
+  // Antwoord opslaan voor samenvatting
   gekozenAntwoorden.push({
     vraag: lastVraagTekst,
     antwoord: antwoordTekst
   });
 
   // ========================
-  // EXTRA OPTIES HERKENNEN
+  // EXTRA OPTIES REGISTREREN
+  // (alleen markeren, NIET rekenen)
   // ========================
-  if (antwoordTekst.toLowerCase().includes("decoflakes")) {
+  const antwoordLower = antwoordTekst.toLowerCase();
+
+  if (antwoordLower.includes("decoflakes")) {
     if (!gekozenExtras.includes("DecoFlakes")) {
       gekozenExtras.push("DecoFlakes");
-      herberekenPrijs();
     }
   }
 
+  // reset vraag-context
   lastVraagTekst = null;
 }
+
 
 
   // ========================
@@ -386,7 +394,9 @@ if (node.type === "antwoord" && node.text && lastVraagTekst) {
       return;
     }
 
+    // Alle prijs-input is nu compleet
     toonAfwegingMetPrijzen();
+    herberekenPrijs(); // 👈 HIER en alleen hier
     return;
   }
 
@@ -404,7 +414,6 @@ if (node.type === "antwoord" && node.text && lastVraagTekst) {
     optionsEl.appendChild(btn);
   });
 }
-
 
 // ========================
 // AFWEGING MET PRIJSVERGELIJKING
