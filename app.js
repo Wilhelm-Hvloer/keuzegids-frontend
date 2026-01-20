@@ -318,7 +318,7 @@ async function renderNode(node) {
   }
 
   currentNode = node;
-  console.log("▶ renderNode aangeroepen:", node.type, node);
+  console.log("▶ renderNode:", node.type, node);
 
   const questionEl = document.getElementById("question-text");
   const optionsEl = document.getElementById("options-box");
@@ -353,7 +353,7 @@ async function renderNode(node) {
   }
 
   // ========================
-  // SYSTEEM GEKOZEN
+  // SYSTEEM GEKOZEN (keuzegids)
   // ========================
   if (node.type === "systeem" && actieveFlow === "keuzegids") {
     gekozenSysteem = stripPrefix(node.system || node.text);
@@ -401,68 +401,6 @@ async function renderNode(node) {
     optionsEl.appendChild(btn);
   });
 }
-
-
-
-
-
-
-  // ========================
-  // SYSTEEM GEKOZEN (KEUZEGIDS)
-  // ========================
-  if (node.type === "systeem" && actieveFlow === "keuzegids") {
-    gekozenSysteem = stripPrefix(node.system || node.text);
-
-    // onthoud waar de boom verder moet
-    vervolgNodeNaBasis = node.next?.[0] || null;
-
-    // prijs nog niet bekend → eerst prijs invoer
-    if (!gekozenOppervlakte || !gekozenRuimtes) {
-      toonPrijsInvoer();
-      return;
-    }
-
-    // prijs al bekend → meteen verder
-    inOptieFase = true;
-    gaVerderNaPrijsBerekening();
-    return;
-  }
-
-  // ========================
-  // EINDE → samenvatting
-  // ========================
-  if (Array.isArray(node.next) && node.next.length === 0) {
-    toonSamenvatting();
-    return;
-  }
-
-  // ========================
-  // CENTRALE KNOPPENRENDER
-  // ========================
-
-  // vraagtekst tonen
-  if (node.type === "vraag") {
-    questionEl.textContent = stripPrefix(node.text);
-  }
-
-  // antwoordknoppen genereren
-  const antwoorden = Array.isArray(node.next)
-    ? node.next.filter(n => n.type === "antwoord")
-    : [];
-
-  antwoorden.forEach(antwoordNode => {
-    const index = node.next.indexOf(antwoordNode);
-
-    const btn = document.createElement("button");
-    btn.textContent = stripPrefix(antwoordNode.text);
-    btn.onclick = () => chooseOption(index);
-
-    optionsEl.appendChild(btn);
-  });
-}
-
-
-
 
 
 // ========================
