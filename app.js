@@ -294,7 +294,6 @@ async function chooseOption(index) {
 
   // ------------------------
   // ANTWOORD = TRANSPARANT
-  // automatisch door naar next
   // ------------------------
   if (
     gekozenOptie.type === "antwoord" &&
@@ -308,7 +307,11 @@ async function chooseOption(index) {
   // ------------------------
   // NORMALE FLOW
   // ------------------------
-  renderNode(gekozenOptie);
+  if (Array.isArray(gekozenOptie.next) && gekozenOptie.next.length === 1) {
+    renderNode(gekozenOptie.next[0]);
+  } else {
+    renderNode(gekozenOptie);
+  }
 }
 
 
