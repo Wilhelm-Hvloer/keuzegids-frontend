@@ -307,8 +307,7 @@ async function chooseOption(index) {
 async function renderNode(node) {
   if (!node) return;
 
-  // 🔑 ANTWOORD-NODES ZIJN TRANSPARANT
-  // direct door naar de volgende node
+  // 🔑 antwoord-nodes zijn transparant
   if (
     node.type === "antwoord" &&
     Array.isArray(node.next) &&
@@ -330,7 +329,7 @@ async function renderNode(node) {
   questionEl.innerHTML = "";
 
   // ========================
-  // XTR-node → meerwerk
+  // XTR → meerwerk
   // ========================
   if (node.type === "xtr") {
     toonMeerwerkInvoer(stripPrefix(node.text));
@@ -338,7 +337,7 @@ async function renderNode(node) {
   }
 
   // ========================
-  // AFW → afweging / prijsvergelijking
+  // AFW → afweging
   // ========================
   if (node.type === "afw" && !afwegingAfgerond) {
     afwegingNode = node;
@@ -352,30 +351,60 @@ async function renderNode(node) {
     toonAfwegingMetPrijzen();
     return;
   }
-}
-
 
   // ========================
-  // VRAAG TEKST
+  // SYSTEEM GEKOZEN
   // ========================
-  if (node.type === "vraag" && node.text) {
+  if (node.type === "systeem" && actieveFlow === "keuzegids") {
+    gekozenSysteem = stripPrefix(node.system || node.text);
+    vervolgNodeNaBasis = node.next?.[0] || null;
+
+    if (!gekozenOppervlakte || !gekozenRuimtes) {
+      toonPrijsInvoer();
+      return;
+    }
+
+    inOptieFase = true;
+    gaVerderNaPrijsBerekening();
+    return;
+  }
+
+  // ========================
+  // EINDE
+  // ========================
+  if (Array.isArray(node.next) && node.next.length === 0) {
+    toonSamenvatting();
+    return;
+  }
+
+  // ========================
+  // VRAAGTEKST
+  // ========================
+  if (node.type === "vraag") {
     questionEl.textContent = stripPrefix(node.text);
   }
 
   // ========================
   // ANTWOORD-KNOPEN
   // ========================
-  if (Array.isArray(node.next)) {
-    node.next.forEach((nextNode, index) => {
-      if (nextNode.type !== "antwoord") return;
+  const antwoorden = Array.isArray(node.next)
+    ? node.next.filter(n => n.type === "antwoord")
+    : [];
 
-      const btn = document.createElement("button");
-      btn.textContent = stripPrefix(nextNode.text);
-      btn.onclick = () => chooseOption(index);
-      optionsEl.appendChild(btn);
-    });
-  }
+  antwoorden.forEach(antwoordNode => {
+    const index = node.next.indexOf(antwoordNode);
+
+    const btn = document.createElement("button");
+    btn.textContent = stripPrefix(antwoordNode.text);
+    btn.onclick = () => chooseOption(index);
+
+    optionsEl.appendChild(btn);
+  });
 }
+
+
+
+
 
 
   // ========================
