@@ -332,12 +332,23 @@ async function renderNode(node) {
   optionsEl.innerHTML = "";
   questionEl.innerHTML = "";
 
-  // =====================================
-  // NOOIT antwoord-nodes direct renderen
-  // =====================================
-  if (node.type === "antwoord") {
-    return;
+// =====================================
+// ANTWOORD = DOORGEVEN NAAR VOLGENDE NODE
+// =====================================
+if (node.type === "antwoord") {
+  if (Array.isArray(node.next) && node.next.length === 1) {
+    const volgendeNode = getNode(node.next[0]);
+    if (volgendeNode) {
+      renderNode(volgendeNode);
+    } else {
+      console.warn("Volgende node niet gevonden voor antwoord:", node);
+    }
+  } else {
+    console.warn("Antwoord-node heeft geen of meerdere next-nodes:", node);
   }
+  return;
+}
+
 
   // ========================
   // XTR-node → meerwerk
