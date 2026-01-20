@@ -292,27 +292,12 @@ async function chooseOption(index) {
     await herberekenPrijs();
   }
 
-  // ------------------------
-  // ANTWOORD = TRANSPARANT
-  // ------------------------
-  if (
-    gekozenOptie.type === "antwoord" &&
-    Array.isArray(gekozenOptie.next) &&
-    gekozenOptie.next.length === 1
-  ) {
-    renderNode(gekozenOptie.next[0]);
-    return;
-  }
-
-  // ------------------------
-  // NORMALE FLOW
-  // ------------------------
-  if (Array.isArray(gekozenOptie.next) && gekozenOptie.next.length === 1) {
-    renderNode(gekozenOptie.next[0]);
-  } else {
-    renderNode(gekozenOptie);
-  }
+  // ========================
+  // BOOM VOLGEN (1 REGEL!)
+  // ========================
+  renderNode(gekozenOptie);
 }
+
 
 
 
