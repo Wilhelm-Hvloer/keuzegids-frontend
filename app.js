@@ -283,7 +283,6 @@ async function chooseOption(index) {
 
 
 
-
 // ========================
 // NODE RENDEREN
 // ========================
@@ -291,9 +290,31 @@ async function chooseOption(index) {
 async function renderNode(node) {
   if (!node) return;
 
-
   currentNode = node;
   console.log("▶ renderNode:", node.type, node);
+
+  // ========================
+  // VRAAG ONTHOUDEN
+  // ========================
+  if (node.type === "vraag" && node.text) {
+    lastVraagTekst = stripPrefix(node.text);
+  }
+
+  // ========================
+  // ANTWOORD REGISTREREN
+  // (ook bij auto-doorloop)
+  // ========================
+  if (
+    node.type === "antwoord" &&
+    node.text &&
+    lastVraagTekst
+  ) {
+    gekozenAntwoorden.push({
+      vraag: lastVraagTekst,
+      antwoord: stripPrefix(node.text)
+    });
+    lastVraagTekst = null;
+  }
 
   // ========================
   // AUTO-DOORLOPEN BIJ 1 VERVOLG
@@ -308,6 +329,14 @@ async function renderNode(node) {
     return;
   }
 
+  // ========================
+  // EINDE KEUZEBOOM → SAMENVATTING
+  // ========================
+  if (!Array.isArray(node.next) || node.next.length === 0) {
+    console.log("✅ Einde keuzeboom (lege next), toon samenvatting");
+    toonSamenvatting();
+    return;
+  }
 
   const questionEl = document.getElementById("question-text");
   const optionsEl = document.getElementById("options-box");
@@ -340,6 +369,23 @@ async function renderNode(node) {
     toonAfwegingMetPrijzen();
     return;
   }
+
+  // ========================
+  // OPTIES TONEN
+  // ========================
+  if (node.type === "vraag") {
+    questionEl.textContent = stripPrefix(node.text);
+  }
+
+  if (Array.isArray(node.next)) {
+    node.next.forEach((optie, index) => {
+      const btn = document.createElement("button");
+      btn.textContent = stripPrefix(optie.text || "Verder");
+      btn.onclick = () => chooseOption(index);
+      optionsEl.appendChild(btn);
+    });
+  }
+}
 
 
 
@@ -841,15 +887,12 @@ async function herberekenPrijs() {
   const data = await res.json();
   if (data.error) return;
 
-  basisPrijs = data.basisprijs;
-  prijsPerM2 = data.prijs_per_m2;   // 👈 essentieel
+  basisPrijs   = data.basisprijs;
+  prijsPerM2   = data.prijs_per_m2;
   backendExtras = data.extras || [];
-
-  totaalPrijs = basisPrijs;
-  backendExtras.forEach(extra => {
-    totaalPrijs += extra.totaal;
-  });
+  totaalPrijs  = data.totaalprijs; // 👈 ENIGE juiste bron
 }
+
 
 
 // ========================
