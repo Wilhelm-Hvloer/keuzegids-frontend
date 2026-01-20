@@ -358,11 +358,15 @@ if (node.type === "antwoord" && node.text && lastVraagTekst) {
     return;
   }
 
-  // ========================
   // EINDE KEUZEBOOM → SAMENVATTING
-  // ========================
   if (!Array.isArray(node.next) || node.next.length === 0) {
-    console.log("✅ Einde keuzeboom (lege next), toon samenvatting");
+    console.log("✅ Einde keuzeboom (lege next)");
+
+    // Laatste kans om prijs te herberekenen mét extra’s
+    if (gekozenSysteem && gekozenOppervlakte && gekozenRuimtes) {
+      herberekenPrijs();
+    }
+
     toonSamenvatting();
     return;
   }
