@@ -300,26 +300,34 @@ async function chooseOption(index) {
 
 
 
-
-
 // ========================
 // NODE RENDEREN
 // ========================
 
 async function renderNode(node) {
+  if (!node) return;
+
+  // 🔑 ANTWOORD-NODES ZIJN TRANSPARANT
+  // direct door naar de volgende node
+  if (
+    node.type === "antwoord" &&
+    Array.isArray(node.next) &&
+    node.next.length === 1
+  ) {
+    renderNode(node.next[0]);
+    return;
+  }
+
   currentNode = node;
-  console.log("▶ renderNode aangeroepen:", node?.type, node);
+  console.log("▶ renderNode aangeroepen:", node.type, node);
 
   const questionEl = document.getElementById("question-text");
   const optionsEl = document.getElementById("options-box");
 
-  // opties zichtbaar
+  // reset UI
   optionsEl.style.display = "block";
   optionsEl.innerHTML = "";
   questionEl.innerHTML = "";
-
-
-
 
   // ========================
   // XTR-node → meerwerk
@@ -335,17 +343,61 @@ async function renderNode(node) {
   if (node.type === "afw" && !afwegingAfgerond) {
     afwegingNode = node;
 
-    // m² / ruimtes nog niet ingevuld → eerst prijsinvoer
     if (!gekozenOppervlakte || !gekozenRuimtes) {
       inAfwegingPrijs = true;
       toonPrijsInvoer();
       return;
     }
 
-    // m² & ruimtes bekend → afweging tonen
     toonAfwegingMetPrijzen();
     return;
   }
+
+  // ========================
+  // VRAAG TEKST
+  // ========================
+  if (node.type === "vraag" && node.text) {
+    questionEl.textContent = stripPrefix(node.text);
+  }
+
+  // ========================
+  // ANTWOORD-KNOPEN
+  // ========================
+  if (Array.isArray(node.next)) {
+    node.next.forEach((nextNode, index) => {
+      if (nextNode.type !== "antwoord") return;
+
+      const btn = document.createElement("button");
+      btn.textContent = stripPrefix(nextNode.text);
+      btn.onclick = () => chooseOption(index);
+      optionsEl.appendChild(btn);
+    });
+  }
+}
+
+
+  // ========================
+  // VRAAG TEKST
+  // ========================
+  if (node.type === "vraag" && node.text) {
+    questionEl.textContent = stripPrefix(node.text);
+  }
+
+  // ========================
+  // ANTWOORD-KNOPEN
+  // ========================
+  if (Array.isArray(node.next)) {
+    node.next.forEach((nextNode, index) => {
+      if (nextNode.type !== "antwoord") return;
+
+      const btn = document.createElement("button");
+      btn.textContent = stripPrefix(nextNode.text);
+      btn.onclick = () => chooseOption(index);
+      optionsEl.appendChild(btn);
+    });
+  }
+}
+
 
   // ========================
   // SYSTEEM GEKOZEN (KEUZEGIDS)
