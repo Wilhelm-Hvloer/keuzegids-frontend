@@ -315,16 +315,27 @@ async function renderNode(node) {
     lastVraagTekst = stripPrefix(node.text);
   }
 
+if (node.type === "antwoord" && node.text && lastVraagTekst) {
+  const antwoordTekst = stripPrefix(node.text);
+
+  gekozenAntwoorden.push({
+    vraag: lastVraagTekst,
+    antwoord: antwoordTekst
+  });
+
   // ========================
-  // ANTWOORD REGISTREREN
+  // EXTRA OPTIES HERKENNEN
   // ========================
-  if (node.type === "antwoord" && node.text && lastVraagTekst) {
-    gekozenAntwoorden.push({
-      vraag: lastVraagTekst,
-      antwoord: stripPrefix(node.text)
-    });
-    lastVraagTekst = null;
+  if (antwoordTekst.toLowerCase().includes("decoflakes")) {
+    if (!gekozenExtras.includes("DecoFlakes")) {
+      gekozenExtras.push("DecoFlakes");
+      herberekenPrijs();
+    }
   }
+
+  lastVraagTekst = null;
+}
+
 
   // ========================
   // AUTO-DOORLOPEN BIJ 1 VERVOLG
