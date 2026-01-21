@@ -302,6 +302,28 @@ async function chooseOption(index) {
 
 
 // ========================
+// VRAAG TONEN + OPTIES
+// ========================
+function toonVraagMetOpties(node) {
+  const questionEl = document.getElementById("question-text");
+  const optionsEl = document.getElementById("options-box");
+
+  optionsEl.style.display = "block";
+  optionsEl.innerHTML = "";
+  questionEl.textContent = stripPrefix(node.text);
+
+  if (!Array.isArray(node.next)) return;
+
+  node.next.forEach((optie, index) => {
+    const btn = document.createElement("button");
+    btn.textContent = stripPrefix(optie.text || "Verder");
+    btn.onclick = () => chooseOption(index);
+    optionsEl.appendChild(btn);
+  });
+}
+
+
+// ========================
 // NODE RENDEREN (ROUTER)
 // ========================
 async function renderNode(node) {
@@ -332,7 +354,12 @@ async function renderNode(node) {
       return;
 
     default:
-      handleEindeNode(node);
+      default:
+      if (!Array.isArray(node.next) || node.next.length === 0) {
+        handleEindeNode(node);
+      } else {
+        console.warn("⚠️ Onbekend node-type:", node);
+      }
       return;
   }
 }
