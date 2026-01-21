@@ -305,7 +305,6 @@ async function chooseOption(index) {
 // ========================
 // NODE RENDEREN
 // ========================
-
 async function renderNode(node) {
   if (!node) return;
 
@@ -323,56 +322,42 @@ async function renderNode(node) {
   }
 
   // ========================
-  // ANTWOORD REGISTREREN (VEILIG + EXPLICIETE VERTALING)
+  // ANTWOORD REGISTREREN
   // ========================
   if (node.type === "antwoord" && node.text && lastVraagTekst) {
     const antwoordTekst = stripPrefix(node.text);
 
-    // Antwoord opslaan voor samenvatting
     gekozenAntwoorden.push({
       vraag: lastVraagTekst,
       antwoord: antwoordTekst
     });
 
-    // ========================
-    // EXTRA OPTIES REGISTREREN
-    // frontend-tekst → backend-key
-    // ========================
     const antwoordKey = antwoordTekst.toLowerCase().trim();
-
     if (EXTRA_MAPPING[antwoordKey]) {
       const backendExtra = EXTRA_MAPPING[antwoordKey];
-
       if (!gekozenExtras.includes(backendExtra)) {
         gekozenExtras.push(backendExtra);
       }
     }
 
-    console.log("🧩 antwoordKey:", antwoordKey);
-    console.log("🧩 EXTRA_MAPPING hit:", EXTRA_MAPPING[antwoordKey]);
-    console.log("🧩 gekozenExtras:", gekozenExtras);
-
-    // reset vraag-context
     lastVraagTekst = null;
   }
 
   // ========================
-  // SYSTEM NODE → START PRIJSFASE (FIX 2)
+  // SYSTEM NODE → START PRIJSFASE
   // ========================
   if (node.type === "system") {
     gekozenSysteem = node.system;
-    vervolgNodeNaBasis = node; // onthoud waar we verder moeten
+    vervolgNodeNaBasis = node;
     actieveFlow = "keuzegids";
 
     console.log("🎯 Systeem gekozen:", gekozenSysteem);
 
-    // Nog geen prijs bekend → vraag m² + ruimtes
     if (!gekozenOppervlakte || !gekozenRuimtes) {
-      toonPrijsInvoer(); // toont m² + ruimtes UI
+      toonPrijsInvoer(); // m² + ruimtes vragen
       return; // ⛔ pauzeer keuzeboom
     }
 
-    // Prijs al bekend (bijv. terug navigeren)
     await herberekenPrijs();
     gaVerderNaPrijsBerekening();
     return;
@@ -395,7 +380,7 @@ async function renderNode(node) {
   // EINDE KEUZEBOOM
   // ========================
   if (!Array.isArray(node.next) || node.next.length === 0) {
-    console.log("🔚 Einde keuzeboom bereikt → toon samenvatting");
+    console.log("🔚 Einde keuzeboom → samenvatting");
     toonSamenvatting();
     return;
   }
@@ -424,20 +409,6 @@ async function renderNode(node) {
   }
 }
 
-
-
-// ========================
-// AUTO-DOORLOPEN BIJ 1 VERVOLG
-// ========================
-if (
-  node.type === "antwoord" &&
-  Array.isArray(node.next) &&
-  node.next.length === 1
-) {
-  console.log("⏩ auto-doorgaan via:", node.id);
-  chooseOption(0);
-  // ❌ GEEN return hier → dit blok mag ook buiten een function staan
-}
 
 
 // ========================
