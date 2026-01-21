@@ -397,8 +397,7 @@ async function handleAntwoordNode(node) {
   // AUTO-DOORLOOP (MET UITZONDERING)
   // ========================
   if (Array.isArray(node.next) && node.next.length === 1) {
-    const nextNodeId = node.next[0];
-    const nextNode = getNode(nextNodeId);
+    const nextNode = node.next[0]; // ✅ dit IS al een node-object
 
     // ⛔ nooit automatisch door naar systeem
     if (nextNode && nextNode.type === "system") {
@@ -410,6 +409,7 @@ async function handleAntwoordNode(node) {
     await chooseOption(0);
   }
 }
+
 
 
 // ========================
@@ -562,11 +562,11 @@ function toonSysteemBevestiging() {
     // 🔑 expliciete keuze
     gekozenSysteem = vervolgNodeNaBasis.system;
 
-    const nextId = vervolgNodeNaBasis.next?.[0];
+    const nextNode = vervolgNodeNaBasis.next?.[0]; // ✅ node-object
     vervolgNodeNaBasis = null;
 
-    if (nextId) {
-      renderNode(getNode(nextId));
+    if (nextNode) {
+      renderNode(nextNode);
     } else {
       toonSamenvatting();
     }
@@ -574,6 +574,7 @@ function toonSysteemBevestiging() {
 
   optionsEl.appendChild(btn);
 }
+
 
 
 
