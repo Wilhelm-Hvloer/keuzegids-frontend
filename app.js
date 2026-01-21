@@ -351,12 +351,13 @@ async function renderNode(node) {
     vervolgNodeNaBasis = node;
     actieveFlow = "keuzegids";
 
-    console.log("🎯 Systeem gekozen:", gekozenSysteem);
+    console.log("🎯 Systeem gekozen (bevestiging vereist):", gekozenSysteem);
 
-    if (!gekozenOppervlakte || !gekozenRuimtes) {
-      toonPrijsInvoer();
-      return; // ⛔ pauzeer boom
-    }
+    // ⛔ altijd stoppen bij systeem
+    // eerst prijs tonen = expliciete bevestiging
+    toonPrijsInvoer();
+    return;
+  }
 
     await herberekenPrijs();
     gaVerderNaPrijsBerekening();
