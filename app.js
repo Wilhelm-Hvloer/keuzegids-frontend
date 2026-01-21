@@ -303,7 +303,7 @@ async function chooseOption(index) {
 
 
 // ========================
-// NODE RENDEREN
+// NODE RENDEREN (ENIGE WAARHEID)
 // ========================
 async function renderNode(node) {
   if (!node) return;
@@ -344,7 +344,7 @@ async function renderNode(node) {
   }
 
   // ========================
-  // SYSTEM NODE → START PRIJSFASE
+  // SYSTEM → START PRIJSFASE
   // ========================
   if (node.type === "system") {
     gekozenSysteem = node.system;
@@ -353,15 +353,38 @@ async function renderNode(node) {
 
     console.log("🎯 Systeem gekozen:", gekozenSysteem);
 
-    // Nog geen prijs → eerst m² + ruimtes vragen
     if (!gekozenOppervlakte || !gekozenRuimtes) {
       toonPrijsInvoer();
-      return; // ⛔ pauzeer keuzeboom
+      return; // ⛔ pauzeer boom
     }
 
-    // Prijs al bekend → verder
     await herberekenPrijs();
     gaVerderNaPrijsBerekening();
+    return;
+  }
+
+  // ========================
+  // XTR → MEERWERK
+  // ========================
+  if (node.type === "xtr") {
+    toonMeerwerkInvoer(stripPrefix(node.text));
+    return;
+  }
+
+  // ========================
+  // AFW → AFWEGING
+  // ========================
+  if (node.type === "afw" && !afwegingAfgerond) {
+    afwegingNode = node;
+
+    if (!gekozenOppervlakte || !gekozenRuimtes) {
+      inAfwegingPrijs = true;
+      toonPrijsInvoer();
+      return;
+    }
+
+    toonAfwegingMetPrijzen();
+    await herberekenPrijs();
     return;
   }
 
@@ -373,100 +396,38 @@ async function renderNode(node) {
     Array.isArray(node.next) &&
     node.next.length === 1
   ) {
-    console.log("⏩ auto-doorgaan via:", node.id);
     chooseOption(0);
     return;
   }
 
   // ========================
-  // EINDE KEUZEBOOM (ENIGE JUISTE PLEK)
+  // EINDE KEUZEBOOM (ENIGE PLEK)
   // ========================
   if (!Array.isArray(node.next) || node.next.length === 0) {
-    console.log("🔚 Einde keuzeboom bereikt");
+    console.log("🔚 Einde keuzeboom");
 
-    // CASE 1: systeem gekozen, maar prijs nog niet ingevoerd
     if (gekozenSysteem && (!gekozenOppervlakte || !gekozenRuimtes)) {
-      console.log("⏸ Wacht op prijsinvoer voor systeem:", gekozenSysteem);
-      return;
+      return; // wacht op prijs
     }
 
-    // CASE 2: prijs berekend, maar we moeten terug de boom in
     if (vervolgNodeNaBasis) {
-      console.log("▶️ Verder na prijsberekening");
       const nextNode = vervolgNodeNaBasis;
       vervolgNodeNaBasis = null;
       renderNode(nextNode);
       return;
     }
 
-    // CASE 3: alles klaar → samenvatting
-    console.log("✅ Alles afgerond → toon samenvatting");
     toonSamenvatting();
     return;
   }
 
   // ========================
-  // UI RESET
+  // UI RESET + OPTIES TONEN
   // ========================
   optionsEl.style.display = "block";
   optionsEl.innerHTML = "";
   questionEl.innerHTML = "";
 
-  // ========================
-  // VRAAG + OPTIES TONEN
-  // ========================
-  if (node.type === "vraag") {
-    questionEl.textContent = stripPrefix(node.text);
-  }
-
-  if (Array.isArray(node.next)) {
-    node.next.forEach((optie, index) => {
-      const btn = document.createElement("button");
-      btn.textContent = stripPrefix(optie.text || "Verder");
-      btn.onclick = () => chooseOption(index);
-      optionsEl.appendChild(btn);
-    });
-  }
-}
-
-
-
-  // ========================
-  // UI RESET
-  // ========================
-  optionsEl.style.display = "block";
-  optionsEl.innerHTML = "";
-  questionEl.innerHTML = "";
-
-  // ========================
-  // XTR → meerwerk
-  // ========================
-  if (node.type === "xtr") {
-    toonMeerwerkInvoer(stripPrefix(node.text));
-    return;
-  }
-
-  // ========================
-  // AFW → afweging
-  // ========================
-  if (node.type === "afw" && !afwegingAfgerond) {
-    afwegingNode = node;
-
-    if (!gekozenOppervlakte || !gekozenRuimtes) {
-      inAfwegingPrijs = true;
-      toonPrijsInvoer();
-      return;
-    }
-
-    // Alle prijs-input is nu compleet
-    toonAfwegingMetPrijzen();
-    herberekenPrijs(); // 👈 HIER en alleen hier
-    return;
-  }
-
-  // ========================
-  // VRAAG + OPTIES TONEN
-  // ========================
   if (node.type === "vraag") {
     questionEl.textContent = stripPrefix(node.text);
   }
@@ -478,6 +439,7 @@ async function renderNode(node) {
     optionsEl.appendChild(btn);
   });
 }
+
 
 // ========================
 // AFWEGING MET PRIJSVERGELIJKING
