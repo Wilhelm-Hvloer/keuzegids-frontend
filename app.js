@@ -272,12 +272,20 @@ function startVergelijking() {
 }
 
 
-
 // ========================
-// KEUZE MAKEN
+// KEUZE MAKEN (BACKEND-LEIDEND + FLOW-GUARD)
 // ========================
 async function chooseOption(index) {
-  if (!currentNode) return;
+  // ⛔ blokkeren als keuzeboom gepauzeerd is
+  if (actieveFlow !== "keuzegids") {
+    console.warn("⏸ Keuze genegeerd: flow gepauzeerd:", actieveFlow);
+    return;
+  }
+
+  if (!currentNode) {
+    console.warn("⚠️ Geen currentNode bij chooseOption");
+    return;
+  }
 
   console.log("➡️ keuze:", currentNode.id, "index:", index);
 
@@ -299,7 +307,6 @@ async function chooseOption(index) {
 
   renderNode(nextNode);
 }
-
 
 // ========================
 // VRAAG TONEN + OPTIES
@@ -401,22 +408,28 @@ async function handleAntwoordNode(node) {
 }
 
 
-
-
-
 // ========================
-// SYSTEM → START PRIJSFASE (EN NIKS ANDERS)
+// FIX 2: SYSTEM → PAUZE + PRIJSFASE
 // ========================
 function handleSystemNode(node) {
-  console.log("🎯 System-node bereikt:", node.system);
+  console.log("🧠 Systeem bereikt:", node.system);
 
-  // ⚠️ NOG GEEN systeem kiezen
-  gekozenSysteem = null;
+  // systeem vastleggen
+  gekozenSysteem = node.system;
 
-  // onthoud: HIERNA moet de boom verder
-  vervolgNodeNaBasis = node;
+  // onthoud waar we NA bevestiging verder moeten
+  vervolgNodeNaBasis = node.next?.[0] ?? null;
 
-  // altijd eerst m² + ruimtes
+  // keuzeboom pauzeren
+  actieveFlow = "prijsfase";
+
+  // UI resetten
+  const questionEl = document.getElementById("question-text");
+  const optionsEl = document.getElementById("options-box");
+  questionEl.innerHTML = "";
+  optionsEl.innerHTML = "";
+
+  // prijsfase starten (m² + ruimtes)
   toonPrijsInvoer();
 }
 
@@ -535,15 +548,15 @@ async function toonAfwegingMetPrijzen() {
 }
 
 // ========================
-// FIX 3: SYSTEEM BEVESTIGEN (BACKEND-LEIDEND)
+// FIX 3: SYSTEEM BEVESTIGEN (CORRECT)
 // ========================
 function toonSysteemBevestiging() {
   const optionsEl = document.getElementById("options-box");
   optionsEl.innerHTML = "";
   optionsEl.style.display = "block";
 
-  if (!gekozenSysteem) {
-    console.warn("⚠️ Geen systeem gekozen bij bevestiging");
+  if (!gekozenSysteem || !vervolgNodeNaBasis) {
+    console.warn("⚠️ Geen systeem of vervolgnode bij bevestiging");
     return;
   }
 
@@ -555,17 +568,18 @@ function toonSysteemBevestiging() {
     <span>Klik om dit systeem te gebruiken</span>
   `;
 
-  btn.onclick = async () => {
+  btn.onclick = () => {
     console.log("▶️ Systeem bevestigd:", gekozenSysteem);
 
     // keuzeboom hervatten
     actieveFlow = "keuzegids";
 
-    // vervolg-node onthouden maar NIET zelf renderen
+    const nextNode = vervolgNodeNaBasis;
     vervolgNodeNaBasis = null;
 
-    // 🔑 backend beslist wat de volgende node is
-    await chooseOption(0);
+    // 👉 GEEN backend-keuze meer hier
+    // 👉 backend heeft systeem-node al afgehandeld
+    renderNode(nextNode);
   };
 
   optionsEl.appendChild(btn);
