@@ -301,7 +301,6 @@ async function chooseOption(index) {
 }
 
 
-
 // ========================
 // NODE RENDEREN (ENIGE WAARHEID)
 // ========================
@@ -344,6 +343,18 @@ async function renderNode(node) {
   }
 
   // ========================
+  // AUTO-DOORLOPEN BIJ 1 VERVOLG
+  // ========================
+  if (
+    node.type === "antwoord" &&
+    Array.isArray(node.next) &&
+    node.next.length === 1
+  ) {
+    await chooseOption(0);
+    return;
+  }
+
+  // ========================
   // SYSTEM → START PRIJSFASE
   // ========================
   if (node.type === "system") {
@@ -353,7 +364,6 @@ async function renderNode(node) {
 
     console.log("🎯 Systeem gekozen (bevestiging vereist):", gekozenSysteem);
 
-    // altijd expliciete prijsfase
     toonPrijsInvoer();
     return;
   }
@@ -393,47 +403,6 @@ async function renderNode(node) {
   }
 
   // ========================
-  // STANDAARD: VOLGENDE KEUZES TONEN
-  // ========================
-  toonVraagMetOpties(node);
-}
-
-
-
-  // ========================
-  // AUTO-DOORLOPEN BIJ 1 VERVOLG
-  // ========================
-  if (
-    node.type === "antwoord" &&
-    Array.isArray(node.next) &&
-    node.next.length === 1
-  ) {
-    chooseOption(0);
-    return;
-  }
-
-  // ========================
-  // EINDE KEUZEBOOM (ENIGE PLEK)
-  // ========================
-  if (!Array.isArray(node.next) || node.next.length === 0) {
-    console.log("🔚 Einde keuzeboom");
-
-    if (gekozenSysteem && (!gekozenOppervlakte || !gekozenRuimtes)) {
-      return; // wacht op prijs
-    }
-
-    if (vervolgNodeNaBasis) {
-      const nextNode = vervolgNodeNaBasis;
-      vervolgNodeNaBasis = null;
-      renderNode(nextNode);
-      return;
-    }
-
-    toonSamenvatting();
-    return;
-  }
-
-  // ========================
   // UI RESET + OPTIES TONEN
   // ========================
   optionsEl.style.display = "block";
@@ -451,6 +420,7 @@ async function renderNode(node) {
     optionsEl.appendChild(btn);
   });
 }
+
 
 
 // ========================
