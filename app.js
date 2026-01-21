@@ -22,10 +22,10 @@ console.log("Keuzegids frontend gestart");
 const API_BASE = "https://keuzegids-backend.onrender.com";
 
 // 👉 FRONTEND → BACKEND VERTALING VOOR EXTRA OPTIES
-// links = wat gebruiker zegt
-// rechts = wat backend verwacht
+// keys = exacte antwoordtekst uit keuzeboom (lowercase, zonder prefix)
+// values = wat backend verwacht
 const EXTRA_MAPPING = {
-  decoflakes: "decoflakes"
+  "ja, decoflakes toevoegen": "decoflakes"
 };
 
 // ========================
@@ -54,7 +54,6 @@ let afwegingNode = null;
 let afwegingResultaten = [];
 let inAfwegingPrijs = false;
 let afwegingAfgerond = false; // voorkomt oneindige afwegings-loop
-
 
 
 // ========================
@@ -344,6 +343,11 @@ if (node.type === "antwoord" && node.text && lastVraagTekst) {
       gekozenExtras.push(backendExtra);
     }
   }
+
+  console.log("🧩 antwoordKey:", antwoordKey);
+  console.log("🧩 EXTRA_MAPPING hit:", EXTRA_MAPPING[antwoordKey]);
+  console.log("🧩 gekozenExtras:", gekozenExtras);
+
 
   // reset vraag-context
   lastVraagTekst = null;
