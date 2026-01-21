@@ -945,7 +945,6 @@ async function berekenBasisPrijsVoorSysteem(systeemNaam, m2, ruimtes) {
 
 
 
-
 // ========================
 // SAMENVATTING TONEN
 // ========================
@@ -985,8 +984,8 @@ async function toonSamenvatting() {
   // ========================
   if (gekozenSysteem) {
     html += `
-      <h3>Gekozen coatingsysteem</h3>
-      <p><strong>${gekozenSysteem}</strong></p>
+      <div class="titel-coatingsysteem">Gekozen coatingsysteem</div>
+      <div class="gekozen-systeem">${gekozenSysteem}</div>
     `;
   }
 
@@ -1015,11 +1014,10 @@ async function toonSamenvatting() {
       html += "</ul>";
     }
 
+    // 🔴 HIER ZIT DE BELANGRIJKSTE WIJZIGING
     html += `
-      <p>
-        <strong>Totaalprijs:</strong><br>
-        <strong>€ ${totaalPrijs},-</strong>
-      </p>
+      <div class="titel-coatingsysteem">Totaalprijs</div>
+      <div class="totaalprijs">€ ${totaalPrijs},-</div>
     `;
   }
 
