@@ -1,6 +1,3 @@
-
-
-
 console.log("APP LOADED");
 
 function resetUI() {
@@ -16,8 +13,6 @@ function resetUI() {
   resultEl.style.display = "none";
 }
 
-
-
 console.log("Keuzegids frontend gestart");
 
 // ========================
@@ -25,6 +20,13 @@ console.log("Keuzegids frontend gestart");
 // ========================
 
 const API_BASE = "https://keuzegids-backend.onrender.com";
+
+// 👉 FRONTEND → BACKEND VERTALING VOOR EXTRA OPTIES
+// links = wat gebruiker zegt
+// rechts = wat backend verwacht
+const EXTRA_MAPPING = {
+  decoflakes: "decoflakes"
+};
 
 // ========================
 // STATE
@@ -43,7 +45,6 @@ let gekozenOppervlakte = null;
 let gekozenRuimtes = null;
 let actieveFlow = null;
 
-
 // meerwerk (xtr)
 let meerwerkUren = 0;
 const MEERWERK_TARIEF = 120;
@@ -53,6 +54,8 @@ let afwegingNode = null;
 let afwegingResultaten = [];
 let inAfwegingPrijs = false;
 let afwegingAfgerond = false; // voorkomt oneindige afwegings-loop
+
+
 
 // ========================
 // INIT
@@ -66,6 +69,7 @@ function toonFlow() {
   if (home) home.style.display = "none";
   if (flow) flow.style.display = "block";
 }
+
 
 // ========================
 // START KEUZEGIDS
@@ -316,7 +320,7 @@ async function renderNode(node) {
   }
 
 // ========================
-// ANTWOORD REGISTREREN (VEILIG)
+// ANTWOORD REGISTREREN (VEILIG + EXPLICIETE VERTALING)
 // ========================
 if (node.type === "antwoord" && node.text && lastVraagTekst) {
   const antwoordTekst = stripPrefix(node.text);
@@ -329,19 +333,22 @@ if (node.type === "antwoord" && node.text && lastVraagTekst) {
 
   // ========================
   // EXTRA OPTIES REGISTREREN
-  // (alleen markeren, NIET rekenen)
+  // frontend-tekst → backend-key
   // ========================
-  const antwoordLower = antwoordTekst.toLowerCase();
+  const antwoordKey = antwoordTekst.toLowerCase().trim();
 
-  if (antwoordLower.includes("decoflakes")) {
-    if (!gekozenExtras.includes("DecoFlakes")) {
-      gekozenExtras.push("DecoFlakes");
+  if (EXTRA_MAPPING[antwoordKey]) {
+    const backendExtra = EXTRA_MAPPING[antwoordKey];
+
+    if (!gekozenExtras.includes(backendExtra)) {
+      gekozenExtras.push(backendExtra);
     }
   }
 
   // reset vraag-context
   lastVraagTekst = null;
 }
+
 
 
 
