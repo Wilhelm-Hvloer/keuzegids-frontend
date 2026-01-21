@@ -945,6 +945,7 @@ async function berekenBasisPrijsVoorSysteem(systeemNaam, m2, ruimtes) {
 
 
 
+
 // ========================
 // SAMENVATTING TONEN
 // ========================
@@ -1065,5 +1066,3 @@ function gaNaarHome() {
   afwegingResultaten = [];
   afwegingAfgerond = false;
 }
-
-
