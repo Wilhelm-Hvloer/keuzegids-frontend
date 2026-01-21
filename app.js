@@ -949,7 +949,13 @@ async function berekenBasisPrijsVoorSysteem(systeemNaam, m2, ruimtes) {
 // ========================
 // SAMENVATTING TONEN
 // ========================
-function toonSamenvatting() {
+async function toonSamenvatting() {
+  // 🔑 ALTIJD herberekenen bij starten samenvatting
+  if (gekozenSysteem && gekozenOppervlakte && gekozenRuimtes) {
+    console.log("🔁 Herbereken prijs bij starten samenvatting");
+    await herberekenPrijs();
+  }
+
   const questionEl = document.getElementById("question-text");
   const optionsEl = document.getElementById("options-box");
   const resultEl = document.getElementById("result-box");
@@ -985,7 +991,7 @@ function toonSamenvatting() {
   }
 
   // ========================
-  // PRIJSOVERZICHT (BACKEND IS LEIDEND)
+  // PRIJSOVERZICHT (BACKEND = WAARHEID)
   // ========================
   if (basisPrijs !== null && totaalPrijs !== null) {
     html += "<h3>Prijsoverzicht</h3>";
@@ -1019,6 +1025,7 @@ function toonSamenvatting() {
 
   resultEl.innerHTML = html;
 }
+
 
 
 // ========================
