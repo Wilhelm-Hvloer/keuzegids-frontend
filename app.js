@@ -374,7 +374,7 @@ function handleVraagNode(node) {
 }
 
 // ========================
-// ANTWOORD (+ AUTO-DOORLOOP)
+// ANTWOORD (+ VOORWAARDELIJKE AUTO-DOORLOOP)
 // ========================
 async function handleAntwoordNode(node) {
   if (node.text && lastVraagTekst) {
@@ -393,11 +393,24 @@ async function handleAntwoordNode(node) {
     lastVraagTekst = null;
   }
 
-  // auto-doorloop bij exact 1 vervolg
+  // ========================
+  // AUTO-DOORLOOP (MET UITZONDERING)
+  // ========================
   if (Array.isArray(node.next) && node.next.length === 1) {
+    const nextNodeId = node.next[0];
+    const nextNode = getNode(nextNodeId);
+
+    // ⛔ nooit automatisch door naar systeem
+    if (nextNode && nextNode.type === "system") {
+      console.log("⏸ Antwoord → systeem: wacht op prijsfase");
+      return;
+    }
+
+    // ✅ wel automatisch door in alle andere gevallen
     await chooseOption(0);
   }
 }
+
 
 // ========================
 // SYSTEM → START PRIJSFASE (EN NIKS ANDERS)
