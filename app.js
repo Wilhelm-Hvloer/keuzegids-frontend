@@ -350,9 +350,18 @@ async function renderNode(node) {
     Array.isArray(node.next) &&
     node.next.length === 1
   ) {
+    const nextNodeId = node.next[0];
+    const nextNode = getNode(nextNodeId);
+
+    // ⛔ NOOIT automatisch door bij systeem
+    if (nextNode && nextNode.type === "system") {
+      return;
+    }
+
     await chooseOption(0);
     return;
   }
+
 
   // ========================
   // SYSTEM → START PRIJSFASE
