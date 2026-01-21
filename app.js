@@ -354,7 +354,7 @@ async function renderNode(node) {
       return;
 
     default:
-      default:
+      // alleen hier eindigen als de boom écht klaar is
       if (!Array.isArray(node.next) || node.next.length === 0) {
         handleEindeNode(node);
       } else {
@@ -363,6 +363,7 @@ async function renderNode(node) {
       return;
   }
 }
+
 
 // ========================
 // VRAAG
