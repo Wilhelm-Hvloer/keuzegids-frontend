@@ -371,11 +371,10 @@ if (node.type === "antwoord" && node.text && lastVraagTekst) {
 
   // EINDE KEUZEBOOM → SAMENVATTING
   if (!Array.isArray(node.next) || node.next.length === 0) {
-    console.log("✅ Einde keuzeboom (lege next)");
+    console.log("✅ Einde keuzeboom (wacht op prijsberekening)");
 
-    // Laatste kans om prijs te herberekenen mét extra’s
     if (gekozenSysteem && gekozenOppervlakte && gekozenRuimtes) {
-      herberekenPrijs();
+      await herberekenPrijs(); // ⬅️ CRUCIAAL
     }
 
     toonSamenvatting();
