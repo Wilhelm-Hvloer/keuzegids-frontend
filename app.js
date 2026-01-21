@@ -353,11 +353,13 @@ async function renderNode(node) {
 
     console.log("🎯 Systeem gekozen:", gekozenSysteem);
 
+    // Nog geen prijs → eerst m² + ruimtes vragen
     if (!gekozenOppervlakte || !gekozenRuimtes) {
-      toonPrijsInvoer(); // m² + ruimtes vragen
+      toonPrijsInvoer();
       return; // ⛔ pauzeer keuzeboom
     }
 
+    // Prijs al bekend → verder
     await herberekenPrijs();
     gaVerderNaPrijsBerekening();
     return;
@@ -377,10 +379,28 @@ async function renderNode(node) {
   }
 
   // ========================
-  // EINDE KEUZEBOOM
+  // EINDE KEUZEBOOM (ENIGE JUISTE PLEK)
   // ========================
   if (!Array.isArray(node.next) || node.next.length === 0) {
-    console.log("🔚 Einde keuzeboom → samenvatting");
+    console.log("🔚 Einde keuzeboom bereikt");
+
+    // CASE 1: systeem gekozen, maar prijs nog niet ingevoerd
+    if (gekozenSysteem && (!gekozenOppervlakte || !gekozenRuimtes)) {
+      console.log("⏸ Wacht op prijsinvoer voor systeem:", gekozenSysteem);
+      return;
+    }
+
+    // CASE 2: prijs berekend, maar we moeten terug de boom in
+    if (vervolgNodeNaBasis) {
+      console.log("▶️ Verder na prijsberekening");
+      const nextNode = vervolgNodeNaBasis;
+      vervolgNodeNaBasis = null;
+      renderNode(nextNode);
+      return;
+    }
+
+    // CASE 3: alles klaar → samenvatting
+    console.log("✅ Alles afgerond → toon samenvatting");
     toonSamenvatting();
     return;
   }
@@ -409,35 +429,6 @@ async function renderNode(node) {
   }
 }
 
-
-
-
-// ========================
-// EINDE KEUZEBOOM
-// ========================
-if (!Array.isArray(node.next) || node.next.length === 0) {
-  console.log("🔚 Einde keuzeboom bereikt");
-
-  // 🔹 CASE 1: systeem is gekozen maar prijs nog niet berekend
-  if (gekozenSysteem && (!gekozenOppervlakte || !gekozenRuimtes)) {
-    console.log("⏸ Wacht op prijsinvoer voor systeem:", gekozenSysteem);
-    return; // ⛔ GEEN samenvatting, prijsfase moet nog komen
-  }
-
-  // 🔹 CASE 2: prijs is berekend, maar we moeten nog verder in de boom
-  if (vervolgNodeNaBasis) {
-    console.log("▶️ Verder na prijsberekening");
-    const nodeNaPrijs = vervolgNodeNaBasis;
-    vervolgNodeNaBasis = null;
-    renderNode(nodeNaPrijs);
-    return;
-  }
-
-  // 🔹 CASE 3: alles is klaar → samenvatting
-  console.log("✅ Alles afgerond → toon samenvatting");
-  toonSamenvatting();
-  return;
-}
 
 
   // ========================
