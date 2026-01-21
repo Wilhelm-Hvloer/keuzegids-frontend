@@ -355,31 +355,46 @@ if (node.type === "antwoord" && node.text && lastVraagTekst) {
 
 
 
+// ========================
+// AUTO-DOORLOPEN BIJ 1 VERVOLG
+// ========================
+if (
+  node.type === "antwoord" &&
+  Array.isArray(node.next) &&
+  node.next.length === 1
+) {
+  console.log("⏩ auto-doorgaan via:", node.id);
+  chooseOption(0);
+  return;
+}
 
-  // ========================
-  // AUTO-DOORLOPEN BIJ 1 VERVOLG
-  // ========================
-  if (
-    node.type === "antwoord" &&
-    Array.isArray(node.next) &&
-    node.next.length === 1
-  ) {
-    console.log("⏩ auto-doorgaan via:", node.id);
-    chooseOption(0);
+// ========================
+// EINDE KEUZEBOOM
+// ========================
+if (!Array.isArray(node.next) || node.next.length === 0) {
+  console.log("🔚 Einde keuzeboom bereikt");
+
+  // 🔹 CASE 1: systeem is gekozen maar prijs nog niet berekend
+  if (gekozenSysteem && (!gekozenOppervlakte || !gekozenRuimtes)) {
+    console.log("⏸ Wacht op prijsinvoer voor systeem:", gekozenSysteem);
+    return; // ⛔ GEEN samenvatting, prijsfase moet nog komen
+  }
+
+  // 🔹 CASE 2: prijs is berekend, maar we moeten nog verder in de boom
+  if (vervolgNodeNaBasis) {
+    console.log("▶️ Verder na prijsberekening");
+    const nodeNaPrijs = vervolgNodeNaBasis;
+    vervolgNodeNaBasis = null;
+    renderNode(nodeNaPrijs);
     return;
   }
 
-  // EINDE KEUZEBOOM → SAMENVATTING
-  if (!Array.isArray(node.next) || node.next.length === 0) {
-    console.log("✅ Einde keuzeboom (wacht op prijsberekening)");
+  // 🔹 CASE 3: alles is klaar → samenvatting
+  console.log("✅ Alles afgerond → toon samenvatting");
+  toonSamenvatting();
+  return;
+}
 
-    if (gekozenSysteem && gekozenOppervlakte && gekozenRuimtes) {
-      await herberekenPrijs(); // ⬅️ CRUCIAAL
-    }
-
-    toonSamenvatting();
-    return;
-  }
 
   // ========================
   // UI RESET
@@ -728,8 +743,10 @@ async function berekenPrijs(ruimtes) {
     return;
   }
 
+  // 🔑 altijd backend laten rekenen
   await herberekenPrijs();
 
+  // prijs tonen (voor zowel vergelijken als 1 systeem)
   resultEl.style.display = "block";
   resultEl.innerHTML = `
     <strong>Prijs per m²:</strong> € ${prijsPerM2 ?? "—"},-<br>
@@ -737,11 +754,27 @@ async function berekenPrijs(ruimtes) {
     <strong>Totaalprijs:</strong> € ${totaalPrijs},-
   `;
 
-  // 🔑 alleen keuzegids mag de keuzeboom hervatten
+  // ========================
+  // VERDER NA PRIJSBEREKENING
+  // ========================
   if (actieveFlow === "keuzegids") {
-    gaVerderNaPrijsBerekening();
+    // CASE: 1 systeem → verder in keuzeboom
+    if (vervolgNodeNaBasis) {
+      const nodeNaPrijs = vervolgNodeNaBasis;
+      vervolgNodeNaBasis = null;
+
+      console.log("▶️ Verder in keuzeboom na prijsfase");
+      renderNode(nodeNaPrijs);
+      return;
+    }
+
+    // CASE: vergelijking → bestaand gedrag behouden
+    if (typeof gaVerderNaPrijsBerekening === "function") {
+      gaVerderNaPrijsBerekening();
+    }
   }
 }
+
 
 
 
