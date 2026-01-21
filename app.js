@@ -297,7 +297,6 @@ async function chooseOption(index) {
 
 
 
-
 // ========================
 // NODE RENDEREN
 // ========================
@@ -318,39 +317,106 @@ async function renderNode(node) {
     lastVraagTekst = stripPrefix(node.text);
   }
 
-// ========================
-// ANTWOORD REGISTREREN (VEILIG + EXPLICIETE VERTALING)
-// ========================
-if (node.type === "antwoord" && node.text && lastVraagTekst) {
-  const antwoordTekst = stripPrefix(node.text);
-
-  // Antwoord opslaan voor samenvatting
-  gekozenAntwoorden.push({
-    vraag: lastVraagTekst,
-    antwoord: antwoordTekst
-  });
-
   // ========================
-  // EXTRA OPTIES REGISTREREN
-  // frontend-tekst → backend-key
+  // ANTWOORD REGISTREREN (VEILIG + EXPLICIETE VERTALING)
   // ========================
-  const antwoordKey = antwoordTekst.toLowerCase().trim();
+  if (node.type === "antwoord" && node.text && lastVraagTekst) {
+    const antwoordTekst = stripPrefix(node.text);
 
-  if (EXTRA_MAPPING[antwoordKey]) {
-    const backendExtra = EXTRA_MAPPING[antwoordKey];
+    // Antwoord opslaan voor samenvatting
+    gekozenAntwoorden.push({
+      vraag: lastVraagTekst,
+      antwoord: antwoordTekst
+    });
 
-    if (!gekozenExtras.includes(backendExtra)) {
-      gekozenExtras.push(backendExtra);
+    // ========================
+    // EXTRA OPTIES REGISTREREN
+    // frontend-tekst → backend-key
+    // ========================
+    const antwoordKey = antwoordTekst.toLowerCase().trim();
+
+    if (EXTRA_MAPPING[antwoordKey]) {
+      const backendExtra = EXTRA_MAPPING[antwoordKey];
+
+      if (!gekozenExtras.includes(backendExtra)) {
+        gekozenExtras.push(backendExtra);
+      }
     }
+
+    console.log("🧩 antwoordKey:", antwoordKey);
+    console.log("🧩 EXTRA_MAPPING hit:", EXTRA_MAPPING[antwoordKey]);
+    console.log("🧩 gekozenExtras:", gekozenExtras);
+
+    // reset vraag-context
+    lastVraagTekst = null;
   }
 
-  console.log("🧩 antwoordKey:", antwoordKey);
-  console.log("🧩 EXTRA_MAPPING hit:", EXTRA_MAPPING[antwoordKey]);
-  console.log("🧩 gekozenExtras:", gekozenExtras);
+  // ========================
+  // SYSTEM NODE → START PRIJSFASE (FIX 2)
+  // ========================
+  if (node.type === "system") {
+    gekozenSysteem = node.system;
+    vervolgNodeNaBasis = node; // onthoud waar we verder moeten
+    actieveFlow = "keuzegids";
 
+    console.log("🎯 Systeem gekozen:", gekozenSysteem);
 
-  // reset vraag-context
-  lastVraagTekst = null;
+    // Nog geen prijs bekend → vraag m² + ruimtes
+    if (!gekozenOppervlakte || !gekozenRuimtes) {
+      toonPrijsInvoer(); // toont m² + ruimtes UI
+      return; // ⛔ pauzeer keuzeboom
+    }
+
+    // Prijs al bekend (bijv. terug navigeren)
+    await herberekenPrijs();
+    gaVerderNaPrijsBerekening();
+    return;
+  }
+
+  // ========================
+  // AUTO-DOORLOPEN BIJ 1 VERVOLG
+  // ========================
+  if (
+    node.type === "antwoord" &&
+    Array.isArray(node.next) &&
+    node.next.length === 1
+  ) {
+    console.log("⏩ auto-doorgaan via:", node.id);
+    chooseOption(0);
+    return;
+  }
+
+  // ========================
+  // EINDE KEUZEBOOM
+  // ========================
+  if (!Array.isArray(node.next) || node.next.length === 0) {
+    console.log("🔚 Einde keuzeboom bereikt → toon samenvatting");
+    toonSamenvatting();
+    return;
+  }
+
+  // ========================
+  // UI RESET
+  // ========================
+  optionsEl.style.display = "block";
+  optionsEl.innerHTML = "";
+  questionEl.innerHTML = "";
+
+  // ========================
+  // VRAAG + OPTIES TONEN
+  // ========================
+  if (node.type === "vraag") {
+    questionEl.textContent = stripPrefix(node.text);
+  }
+
+  if (Array.isArray(node.next)) {
+    node.next.forEach((optie, index) => {
+      const btn = document.createElement("button");
+      btn.textContent = stripPrefix(optie.text || "Verder");
+      btn.onclick = () => chooseOption(index);
+      optionsEl.appendChild(btn);
+    });
+  }
 }
 
 
@@ -968,7 +1034,7 @@ function toonSamenvatting() {
   // ========================
   // KEUZES (VRAGEN + ANTWOORDEN)
   // ========================
-  if (gekozenAntwoorden.length > 0) {
+  if (Array.isArray(gekozenAntwoorden) && gekozenAntwoorden.length > 0) {
     html += "<h3>Gemaakte keuzes</h3><ul>";
     gekozenAntwoorden.forEach(item => {
       html += `<li><strong>${item.vraag}</strong><br>${item.antwoord}</li>`;
@@ -986,47 +1052,32 @@ function toonSamenvatting() {
     `;
   }
 
-// ========================
-// PRIJSOVERZICHT (BACKEND IS LEIDEND)
-// ========================
-if (basisPrijs !== null) {
-  html += "<h3>Prijsoverzicht</h3>";
-
-  if (prijsPerM2 !== null) {
-    html += `<p>Prijs per m²: <strong>€ ${prijsPerM2},-</strong></p>`;
-  }
-
-  html += `<p>Basisprijs: <strong>€ ${basisPrijs},-</strong></p>`;
-
   // ========================
-  // EXTRA OPTIES (ALLEEN BACKEND)
+  // PRIJSOVERZICHT (BACKEND IS LEIDEND)
   // ========================
-  if (backendExtras.length > 0) {
-    html += "<p><strong>Extra opties:</strong></p><ul>";
+  if (basisPrijs !== null && totaalPrijs !== null) {
+    html += "<h3>Prijsoverzicht</h3>";
 
-    backendExtras.forEach(extra => {
-      html += `<li>${extra.naam}: € ${extra.totaal},-</li>`;
-    });
+    if (prijsPerM2 !== null) {
+      html += `<p>Prijs per m²: <strong>€ ${prijsPerM2},-</strong></p>`;
+    }
 
-    html += "</ul>";
-  }
+    html += `<p>Basisprijs: <strong>€ ${basisPrijs},-</strong></p>`;
 
-  // ========================
-  // TOTAALPRIJS (ENIGE WAARHEID)
-  // ========================
-  if (totaalPrijs !== null) {
-    html += `
-      <p>
-        <strong>Totaalprijs:</strong><br>
-        <strong>€ ${totaalPrijs},-</strong>
-      </p>
-    `;
-  }
-}
+    // ========================
+    // EXTRA OPTIES (UIT BACKEND)
+    // ========================
+    if (Array.isArray(backendExtras) && backendExtras.length > 0) {
+      html += "<p><strong>Extra opties:</strong></p><ul>";
 
-resultEl.innerHTML = html;
-}
+      backendExtras.forEach(extra => {
+        html += `<li>${extra.naam}: € ${extra.totaal},-</li>`;
+      });
 
+      html += "</ul>";
+    }
+
+    // =====
 
 
 
