@@ -343,46 +343,61 @@ async function renderNode(node) {
     lastVraagTekst = null;
   }
 
-// ========================
-// SYSTEM → START PRIJSFASE
-// ========================
-if (node.type === "system") {
-  gekozenSysteem = node.system;
-  vervolgNodeNaBasis = node;
-  actieveFlow = "keuzegids";
+  // ========================
+  // SYSTEM → START PRIJSFASE
+  // ========================
+  if (node.type === "system") {
+    gekozenSysteem = node.system;
+    vervolgNodeNaBasis = node;
+    actieveFlow = "keuzegids";
 
-  console.log("🎯 Systeem gekozen (bevestiging vereist):", gekozenSysteem);
+    console.log("🎯 Systeem gekozen (bevestiging vereist):", gekozenSysteem);
 
-  // ⛔ altijd stoppen bij systeem
-  // eerst prijs tonen = expliciete bevestiging
-  toonPrijsInvoer();
-  return;
-}
-
-// ========================
-// XTR → MEERWERK
-// ========================
-if (node.type === "xtr") {
-  toonMeerwerkInvoer(stripPrefix(node.text));
-  return;
-}
-
-// ========================
-// AFW → AFWEGING
-// ========================
-if (node.type === "afw" && !afwegingAfgerond) {
-  afwegingNode = node;
-
-  if (!gekozenOppervlakte || !gekozenRuimtes) {
-    inAfwegingPrijs = true;
+    // altijd expliciete prijsfase
     toonPrijsInvoer();
     return;
   }
 
-  toonAfwegingMetPrijzen();
-  await herberekenPrijs();
-  return;
+  // ========================
+  // XTR → MEERWERK
+  // ========================
+  if (node.type === "xtr") {
+    toonMeerwerkInvoer(stripPrefix(node.text));
+    return;
+  }
+
+  // ========================
+  // AFW → AFWEGING
+  // ========================
+  if (node.type === "afw" && !afwegingAfgerond) {
+    afwegingNode = node;
+
+    if (!gekozenOppervlakte || !gekozenRuimtes) {
+      inAfwegingPrijs = true;
+      toonPrijsInvoer();
+      return;
+    }
+
+    toonAfwegingMetPrijzen();
+    await herberekenPrijs();
+    return;
+  }
+
+  // ========================
+  // EINDE KEUZEBOOM
+  // ========================
+  if (!Array.isArray(node.next) || node.next.length === 0) {
+    console.log("🏁 Einde keuzeboom");
+    toonSamenvatting();
+    return;
+  }
+
+  // ========================
+  // STANDAARD: VOLGENDE KEUZES TONEN
+  // ========================
+  toonVraagMetOpties(node);
 }
+
 
 
   // ========================
