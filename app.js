@@ -851,11 +851,12 @@ async function kiesAfgewogenSysteem(index) {
 
 
 // ========================
-// PRIJS HERBEREKENEN
+// PRIJS HERBEREKENEN (BACKEND IS ENIGE WAARHEID)
 // ========================
-
 async function herberekenPrijs() {
   if (!gekozenSysteem || !gekozenOppervlakte || !gekozenRuimtes) return;
+
+  console.log("📤 herberekenPrijs → extras:", gekozenExtras);
 
   const res = await fetch(`${API_BASE}/api/price`, {
     method: "POST",
@@ -864,18 +865,26 @@ async function herberekenPrijs() {
       systeem: gekozenSysteem,
       oppervlakte: gekozenOppervlakte,
       ruimtes: gekozenRuimtes,
-      extras: gekozenExtras
+      extras: gekozenExtras // 👈 cruciaal
     })
   });
 
   const data = await res.json();
-  if (data.error) return;
 
-  basisPrijs   = data.basisprijs;
-  prijsPerM2   = data.prijs_per_m2;
+  if (data.error) {
+    console.error("❌ prijsfout backend:", data.error);
+    return;
+  }
+
+  basisPrijs    = data.basisprijs;
+  prijsPerM2    = data.prijs_per_m2;
   backendExtras = data.extras || [];
-  totaalPrijs  = data.totaalprijs; // 👈 ENIGE juiste bron
+  totaalPrijs   = data.totaalprijs; // 👈 NOOIT zelf rekenen
+
+  console.log("📥 backendExtras:", backendExtras);
+  console.log("💰 totaalPrijs:", totaalPrijs);
 }
+
 
 
 
@@ -945,50 +954,45 @@ function toonSamenvatting() {
     `;
   }
 
-  // ========================
-  // PRIJSOVERZICHT
-  // ========================
-  if (basisPrijs !== null) {
-    html += "<h3>Prijsoverzicht</h3>";
+// ========================
+// PRIJSOVERZICHT (BACKEND IS LEIDEND)
+// ========================
+if (basisPrijs !== null) {
+  html += "<h3>Prijsoverzicht</h3>";
 
-    if (prijsPerM2 !== null) {
-      html += `<p>Prijs per m²: <strong>€ ${prijsPerM2},-</strong></p>`;
-    }
-
-    html += `<p>Basisprijs: <strong>€ ${basisPrijs},-</strong></p>`;
-
-    // ========================
-    // EXTRA OPTIES (MET PRIJZEN)
-    // ========================
-    let extrasTotaal = 0;
-
-    if (backendExtras.length > 0) {
-      html += "<p><strong>Extra opties:</strong></p><ul>";
-
-      backendExtras.forEach(extra => {
-        html += `<li>${extra.naam}: € ${extra.totaal},-</li>`;
-        extrasTotaal += extra.totaal;
-      });
-
-      html += "</ul>";
-    }
-
-    // ========================
-    // TOTAALPRIJS (UITLEGBAAR)
-    // ========================
-    if (totaalPrijs !== null) {
-      html += `
-        <p>
-          <strong>Totaalprijs:</strong><br>
-          € ${basisPrijs},- (basis)
-          ${extrasTotaal > 0 ? ` + € ${extrasTotaal},- (extra’s)` : ""}
-          <br><strong>= € ${totaalPrijs},-</strong>
-        </p>
-      `;
-    }
+  if (prijsPerM2 !== null) {
+    html += `<p>Prijs per m²: <strong>€ ${prijsPerM2},-</strong></p>`;
   }
 
-  resultEl.innerHTML = html;
+  html += `<p>Basisprijs: <strong>€ ${basisPrijs},-</strong></p>`;
+
+  // ========================
+  // EXTRA OPTIES (ALLEEN BACKEND)
+  // ========================
+  if (backendExtras.length > 0) {
+    html += "<p><strong>Extra opties:</strong></p><ul>";
+
+    backendExtras.forEach(extra => {
+      html += `<li>${extra.naam}: € ${extra.totaal},-</li>`;
+    });
+
+    html += "</ul>";
+  }
+
+  // ========================
+  // TOTAALPRIJS (ENIGE WAARHEID)
+  // ========================
+  if (totaalPrijs !== null) {
+    html += `
+      <p>
+        <strong>Totaalprijs:</strong><br>
+        <strong>€ ${totaalPrijs},-</strong>
+      </p>
+    `;
+  }
+}
+
+resultEl.innerHTML = html;
 }
 
 
