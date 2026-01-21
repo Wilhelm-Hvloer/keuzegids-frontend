@@ -302,7 +302,7 @@ async function chooseOption(index) {
 
 
 // ========================
-// NODE RENDEREN (ENIGE WAARHEID)
+// NODE RENDEREN (ROUTER)
 // ========================
 async function renderNode(node) {
   if (!node) return;
@@ -310,20 +310,46 @@ async function renderNode(node) {
   currentNode = node;
   console.log("▶ renderNode:", node.type, node);
 
-  const questionEl = document.getElementById("question-text");
-  const optionsEl = document.getElementById("options-box");
+  switch (node.type) {
+    case "vraag":
+      handleVraagNode(node);
+      return;
 
-  // ========================
-  // VRAAG ONTHOUDEN
-  // ========================
-  if (node.type === "vraag" && node.text) {
-    lastVraagTekst = stripPrefix(node.text);
+    case "antwoord":
+      await handleAntwoordNode(node);
+      return;
+
+    case "system":
+      handleSystemNode(node);
+      return;
+
+    case "xtr":
+      handleXtrNode(node);
+      return;
+
+    case "afw":
+      await handleAfwNode(node);
+      return;
+
+    default:
+      handleEindeNode(node);
+      return;
   }
+}
 
-  // ========================
-  // ANTWOORD REGISTREREN
-  // ========================
-  if (node.type === "antwoord" && node.text && lastVraagTekst) {
+// ========================
+// VRAAG
+// ========================
+function handleVraagNode(node) {
+  lastVraagTekst = stripPrefix(node.text);
+  toonVraagMetOpties(node);
+}
+
+// ========================
+// ANTWOORD (+ AUTO-DOORLOOP)
+// ========================
+async function handleAntwoordNode(node) {
+  if (node.text && lastVraagTekst) {
     const antwoordTekst = stripPrefix(node.text);
 
     gekozenAntwoorden.push({
@@ -331,97 +357,61 @@ async function renderNode(node) {
       antwoord: antwoordTekst
     });
 
-    const antwoordKey = antwoordTekst.toLowerCase().trim();
-    if (EXTRA_MAPPING[antwoordKey]) {
-      const backendExtra = EXTRA_MAPPING[antwoordKey];
-      if (!gekozenExtras.includes(backendExtra)) {
-        gekozenExtras.push(backendExtra);
-      }
+    const key = antwoordTekst.toLowerCase().trim();
+    if (EXTRA_MAPPING[key] && !gekozenExtras.includes(EXTRA_MAPPING[key])) {
+      gekozenExtras.push(EXTRA_MAPPING[key]);
     }
 
     lastVraagTekst = null;
   }
 
-  // ========================
-  // AUTO-DOORLOPEN BIJ 1 VERVOLG
-  // ========================
-  if (
-    node.type === "antwoord" &&
-    Array.isArray(node.next) &&
-    node.next.length === 1
-  ) {
-    // ✅ antwoord met 1 vervolg → automatisch door
+  // auto-doorloop bij exact 1 vervolg
+  if (Array.isArray(node.next) && node.next.length === 1) {
     await chooseOption(0);
-    return;
   }
+}
 
+// ========================
+// SYSTEM → START PRIJSFASE
+// ========================
+function handleSystemNode(node) {
+  gekozenSysteem = node.system;
+  vervolgNodeNaBasis = node;
 
+  console.log("🎯 System bereikt:", gekozenSysteem);
 
-  // ========================
-  // SYSTEM → START PRIJSFASE
-  // ========================
-  if (node.type === "system") {
-    gekozenSysteem = node.system;
-    vervolgNodeNaBasis = node;
-    actieveFlow = "keuzegids";
+  toonPrijsInvoer(); // expliciete prijsfase
+}
 
-    console.log("🎯 Systeem gekozen (bevestiging vereist):", gekozenSysteem);
+// ========================
+// XTR → MEERWERK
+// ========================
+function handleXtrNode(node) {
+  toonMeerwerkInvoer(stripPrefix(node.text));
+}
 
+// ========================
+// AFW → AFWEGING
+// ========================
+async function handleAfwNode(node) {
+  afwegingNode = node;
+
+  if (!gekozenOppervlakte || !gekozenRuimtes) {
+    inAfwegingPrijs = true;
     toonPrijsInvoer();
     return;
   }
 
-  // ========================
-  // XTR → MEERWERK
-  // ========================
-  if (node.type === "xtr") {
-    toonMeerwerkInvoer(stripPrefix(node.text));
-    return;
-  }
+  toonAfwegingMetPrijzen();
+  await herberekenPrijs();
+}
 
-  // ========================
-  // AFW → AFWEGING
-  // ========================
-  if (node.type === "afw" && !afwegingAfgerond) {
-    afwegingNode = node;
-
-    if (!gekozenOppervlakte || !gekozenRuimtes) {
-      inAfwegingPrijs = true;
-      toonPrijsInvoer();
-      return;
-    }
-
-    toonAfwegingMetPrijzen();
-    await herberekenPrijs();
-    return;
-  }
-
-  // ========================
-  // EINDE KEUZEBOOM
-  // ========================
-  if (!Array.isArray(node.next) || node.next.length === 0) {
-    console.log("🏁 Einde keuzeboom");
-    toonSamenvatting();
-    return;
-  }
-
-  // ========================
-  // UI RESET + OPTIES TONEN
-  // ========================
-  optionsEl.style.display = "block";
-  optionsEl.innerHTML = "";
-  questionEl.innerHTML = "";
-
-  if (node.type === "vraag") {
-    questionEl.textContent = stripPrefix(node.text);
-  }
-
-  node.next.forEach((optie, index) => {
-    const btn = document.createElement("button");
-    btn.textContent = stripPrefix(optie.text || "Verder");
-    btn.onclick = () => chooseOption(index);
-    optionsEl.appendChild(btn);
-  });
+// ========================
+// EINDE KEUZEBOOM
+// ========================
+function handleEindeNode(node) {
+  console.log("🏁 Einde keuzeboom");
+  toonSamenvatting();
 }
 
 
