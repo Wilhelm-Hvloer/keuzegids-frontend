@@ -1009,8 +1009,16 @@ function toonSamenvatting() {
       html += "</ul>";
     }
 
-    // =====
+    html += `
+      <p>
+        <strong>Totaalprijs:</strong><br>
+        <strong>€ ${totaalPrijs},-</strong>
+      </p>
+    `;
+  }
 
+  resultEl.innerHTML = html;
+}
 
 
 // ========================
@@ -1066,3 +1074,4 @@ function gaNaarHome() {
   afwegingResultaten = [];
   afwegingAfgerond = false;
 }
+
