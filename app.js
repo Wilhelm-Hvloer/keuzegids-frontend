@@ -436,8 +436,9 @@ if (
 ) {
   console.log("⏩ auto-doorgaan via:", node.id);
   chooseOption(0);
-  return;
+  // ❌ GEEN return hier → dit blok mag ook buiten een function staan
 }
+
 
 // ========================
 // EINDE KEUZEBOOM
