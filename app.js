@@ -374,7 +374,7 @@ function handleVraagNode(node) {
 }
 
 // ========================
-// ANTWOORD (+ VOORWAARDELIJKE AUTO-DOORLOOP)
+// ANTWOORD (BACKEND-LEIDEND)
 // ========================
 async function handleAntwoordNode(node) {
   if (node.text && lastVraagTekst) {
@@ -393,18 +393,13 @@ async function handleAntwoordNode(node) {
     lastVraagTekst = null;
   }
 
-  // auto-doorloop alleen als volgende node GEEN systeem is
+  // ✅ ENIGE auto-doorloop-regel:
+  // exact 1 keuze → backend laten bepalen wat volgt
   if (Array.isArray(node.next) && node.next.length === 1) {
-    const nextNode = getNode(node.next[0]);
-
-    if (nextNode?.type === "system") {
-      console.log("⏸ Auto-doorloop gestopt: systeem-node");
-      return;
-    }
-
     await chooseOption(0);
   }
 }
+
 
 
 
@@ -540,7 +535,7 @@ async function toonAfwegingMetPrijzen() {
 }
 
 // ========================
-// SYSTEEM BEVESTIGEN (EXPLICIET)
+// FIX 3: SYSTEEM BEVESTIGEN (BACKEND-LEIDEND)
 // ========================
 function toonSysteemBevestiging() {
   const optionsEl = document.getElementById("options-box");
@@ -560,24 +555,22 @@ function toonSysteemBevestiging() {
     <span>Klik om dit systeem te gebruiken</span>
   `;
 
-  btn.onclick = () => {
+  btn.onclick = async () => {
     console.log("▶️ Systeem bevestigd:", gekozenSysteem);
-
-    const nextNode = vervolgNodeNaBasis;
-    vervolgNodeNaBasis = null;
 
     // keuzeboom hervatten
     actieveFlow = "keuzegids";
 
-    if (nextNode) {
-      renderNode(nextNode);
-    } else {
-      toonSamenvatting();
-    }
+    // vervolg-node onthouden maar NIET zelf renderen
+    vervolgNodeNaBasis = null;
+
+    // 🔑 backend beslist wat de volgende node is
+    await chooseOption(0);
   };
 
   optionsEl.appendChild(btn);
 }
+
 
 
 
