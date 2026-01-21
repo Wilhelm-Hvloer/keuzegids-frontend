@@ -393,22 +393,19 @@ async function handleAntwoordNode(node) {
     lastVraagTekst = null;
   }
 
-  // ========================
-  // AUTO-DOORLOOP (MET UITZONDERING)
-  // ========================
+  // auto-doorloop alleen als volgende node GEEN systeem is
   if (Array.isArray(node.next) && node.next.length === 1) {
-    const nextNode = node.next[0]; // ✅ dit IS al een node-object
+    const nextNode = getNode(node.next[0]);
 
-    // ⛔ nooit automatisch door naar systeem
-    if (nextNode && nextNode.type === "system") {
-      console.log("⏸ Antwoord → systeem: wacht op prijsfase");
+    if (nextNode?.type === "system") {
+      console.log("⏸ Auto-doorloop gestopt: systeem-node");
       return;
     }
 
-    // ✅ wel automatisch door in alle andere gevallen
     await chooseOption(0);
   }
 }
+
 
 
 
@@ -542,28 +539,35 @@ async function toonAfwegingMetPrijzen() {
   }
 }
 
-
 // ========================
-// SYSTEEM BEVESTIGEN (1 SYSTEEM)
+// SYSTEEM BEVESTIGEN (EXPLICIET)
 // ========================
 function toonSysteemBevestiging() {
   const optionsEl = document.getElementById("options-box");
   optionsEl.innerHTML = "";
   optionsEl.style.display = "block";
 
+  if (!gekozenSysteem) {
+    console.warn("⚠️ Geen systeem gekozen bij bevestiging");
+    return;
+  }
+
   const btn = document.createElement("button");
   btn.classList.add("systeem-knop");
+
   btn.innerHTML = `
-    <strong>${vervolgNodeNaBasis.system}</strong><br>
+    <strong>${gekozenSysteem}</strong><br>
     <span>Klik om dit systeem te gebruiken</span>
   `;
 
   btn.onclick = () => {
-    // 🔑 expliciete keuze
-    gekozenSysteem = vervolgNodeNaBasis.system;
+    console.log("▶️ Systeem bevestigd:", gekozenSysteem);
 
-    const nextNode = vervolgNodeNaBasis.next?.[0]; // ✅ node-object
+    const nextNode = vervolgNodeNaBasis;
     vervolgNodeNaBasis = null;
+
+    // keuzeboom hervatten
+    actieveFlow = "keuzegids";
 
     if (nextNode) {
       renderNode(nextNode);
@@ -574,7 +578,6 @@ function toonSysteemBevestiging() {
 
   optionsEl.appendChild(btn);
 }
-
 
 
 
@@ -813,22 +816,27 @@ async function berekenPrijs(ruimtes) {
   `;
 
   // ========================
-  // VERDER NA PRIJSBEREKENING
+  // FIX 2: NA PRIJSFASE NOOIT AUTOMATISCH VERDER
   // ========================
-  if (actieveFlow === "keuzegids") {
-    console.log("⏸ Prijsfase afgerond — wacht op systeembevestiging");
 
-    // CASE: 1 systeem → kaart tonen + wachten op klik
-    if (vervolgNodeNaBasis) {
-      toonSysteemBevestiging();
-      return;
-    }
+  // alleen relevant als we uit de keuzegids komen
+  if (actieveFlow !== "keuzegids") {
+    return;
+  }
 
-    // CASE: meerdere systemen → vergelijking
-    if (typeof gaVerderNaPrijsBerekening === "function") {
-      gaVerderNaPrijsBerekening();
-      return;
-    }
+  console.log("⏸ Prijsfase afgerond — wacht op expliciete systeemkeuze");
+
+  // CASE: keuzegids (1 systeem)
+  // → toon systeemkaart en wacht op klik
+  if (vervolgNodeNaBasis) {
+    toonSysteemBevestiging();
+    return;
+  }
+
+  // CASE: vergelijking (meerdere systemen)
+  if (typeof gaVerderNaPrijsBerekening === "function") {
+    gaVerderNaPrijsBerekening();
+    return;
   }
 }
 
