@@ -559,7 +559,6 @@ function toonPrijsInvoerVoorAfweging() {
 }
 
 
-
 // ========================
 // MEERWERK INVOER
 // ========================
@@ -568,7 +567,7 @@ function toonMeerwerkInvoer(omschrijving) {
   const questionEl = document.getElementById("question-text");
   const optionsEl = document.getElementById("options-box");
 
-  // 🔴 STAP 3C: opties zijn hier nodig
+  // opties resetten
   optionsEl.innerHTML = "";
   optionsEl.style.display = "block";
 
@@ -583,12 +582,22 @@ function toonMeerwerkInvoer(omschrijving) {
 
   const btn = document.createElement("button");
   btn.textContent = "Ga verder";
-  btn.onclick = () => {
+
+  btn.onclick = async () => {
     const waarde = document.getElementById("meerwerk-bedrag").value;
-    if (waarde) {
+
+    if (waarde && Number(waarde) > 0) {
       totaalPrijs += Number(waarde);
+      gekozenExtras.push(`Meerwerk: € ${waarde},-`);
     }
-    toonSamenvatting();
+
+    // ✅ KEUZEBOOM VERVOLGEN NA XTR
+    if (Array.isArray(currentNode.next) && currentNode.next.length > 0) {
+      await chooseOption(0);
+    } else {
+      // alleen als xtr écht het eindpunt is
+      toonSamenvatting();
+    }
   };
 
   optionsEl.appendChild(btn);
@@ -597,7 +606,7 @@ function toonMeerwerkInvoer(omschrijving) {
 // ========================
 // MEERWERK VERWERKEN + FLOW HERVATTEN
 // ========================
-
+// ⚠️ Wordt momenteel niet gebruikt in de flow
 async function verwerkMeerwerk() {
   const input = document.getElementById("meerwerk-uren");
   if (!input) return;
