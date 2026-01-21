@@ -190,6 +190,30 @@ hr {
   border-radius: 12px;
 }
 
+/* titel: "Gekozen coatingsysteem" → normaal */
+#result-box .titel-coatingsysteem {
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--text-main);
+  margin-bottom: 4px;
+}
+
+/* systeemnaam: "Rolcoating Basic" → groter + oranje */
+#result-box .gekozen-systeem {
+  font-size: 22px;
+  font-weight: 700;
+  color: var(--accent);
+  margin-bottom: 12px;
+}
+
+/* totaalprijs: "€ 3.692,-" → grootste focus */
+#result-box .totaalprijs {
+  font-size: 26px;
+  font-weight: 800;
+  color: var(--accent);
+  margin-top: 12px;
+}
+
 /* =========================
    MOBIEL
    ========================= */
@@ -207,19 +231,15 @@ hr {
   #status-bar {
     padding: 10px 14px;
   }
-}
 
-/* =========================
-   PRIMAIRE ACTIE – GEEF PRIJS
-   ========================= */
+  /* ook mobiel netjes schalen */
+  #result-box .gekozen-systeem {
+    font-size: 20px;
+  }
 
-#geef-prijs-btn {
-  background: #BC4C1F;
-  color: #F6F6F6;
-}
-
-#geef-prijs-btn:hover {
-  background: #a8441c;
+  #result-box .totaalprijs {
+    font-size: 24px;
+  }
 }
 
 /* =========================
@@ -239,31 +259,26 @@ hr {
    VERTICALE SPACING VOOR LOSSE KNOPPEN
    ========================= */
 
-/* standaard spacing tussen opeenvolgende knoppen */
 button + button {
   margin-top: 12px;
 }
 
-/* extra rust op homescreen */
 #home-screen button + button {
   margin-top: 16px;
 }
 
-/* extra rust bij keuze aantal ruimtes */
 #options-box button + button {
-  margin-top: 0; /* gap regelt dit al */
+  margin-top: 0;
 }
 
 /* =========================
-   SPACING VOOR FLOW-KNOPPEN (AANTAL RUIMTES FIX)
+   SPACING VOOR FLOW-KNOPPEN
    ========================= */
 
-/* algemene verticale spacing binnen flow */
 #flow-screen button {
   margin-bottom: 12px;
 }
 
-/* voorkom dubbele spacing bij options-box (die gebruikt al gap) */
 #options-box button {
   margin-bottom: 0;
 }
@@ -280,17 +295,14 @@ button:empty {
    DEFINITIEVE FIX: AANTAL RUIMTES SPACING
    ========================= */
 
-/* geef elke directe child in het flow-scherm ruimte */
 #flow-screen > * {
   margin-bottom: 16px;
 }
 
-/* voorkom extra ruimte onder de laatste */
 #flow-screen > *:last-child {
   margin-bottom: 0;
 }
 
-/* options-box gebruikt al gap, dus daar geen extra marge */
 #options-box > * {
   margin-bottom: 0;
 }
@@ -316,6 +328,4 @@ button:empty {
   color: #F6F6F6;
   border: 2px solid #BC4C1F;
 }
-
-
 
