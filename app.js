@@ -113,6 +113,11 @@ async function startKeuzegids() {
   }
 }
 
+// 👇👇 DIT WAS DE MISSENDE
+window.startKeuzegids = startKeuzegids;
+
+// 👇 alleen laten staan ALS startPrijslijst bestaat
+window.startPrijslijst = startPrijslijst;
 
 
 // ========================
