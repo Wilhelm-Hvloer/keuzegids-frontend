@@ -417,29 +417,34 @@ async function handleAntwoordNode(node) {
 
 
 // ========================
-// FIX 2: SYSTEM → PAUZE + PRIJSFASE (BACKEND-LEIDEND)
+// SYSTEM NODE → UI-AFhandeling (BACKEND-LEIDEND)
 // ========================
 function handleSystemNode(node) {
-  console.log("🧠 Systeem bereikt:", node.system);
+  console.log("🧠 Systeem node ontvangen:", node);
 
-  // systeem vastleggen
-  gekozenSysteem = node.system;
+  // systeem vastleggen (alleen data)
+  gekozenSysteem = node.system ?? null;
 
-  // ❗ GEEN next-node vooruit bepalen
-  vervolgNodeNaBasis = null;
+  // 🔑 backend bepaalt flow
+  if (node.ui_mode === "prijsfase" && node.paused === true) {
+    console.log("⏸ Keuzeboom gepauzeerd door backend → start prijsfase");
 
-  // keuzeboom pauzeren
-  actieveFlow = "prijsfase";
+    actieveFlow = "prijsfase";
 
-  // UI resetten
-  const questionEl = document.getElementById("question-text");
-  const optionsEl = document.getElementById("options-box");
-  questionEl.innerHTML = "";
-  optionsEl.innerHTML = "";
+    // UI reset
+    const questionEl = document.getElementById("question-text");
+    const optionsEl = document.getElementById("options-box");
+    questionEl.innerHTML = "";
+    optionsEl.innerHTML = "";
 
-  // prijsfase starten (m² + ruimtes)
-  toonPrijsInvoer();
+    toonPrijsInvoer();
+    return;
+  }
+
+  // fallback (zou eigenlijk niet meer nodig zijn)
+  console.warn("⚠️ System node zonder prijsfase-instructie:", node);
 }
+
 
 
 
