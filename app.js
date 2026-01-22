@@ -409,7 +409,7 @@ async function handleAntwoordNode(node) {
 
 
 // ========================
-// FIX 2: SYSTEM → PAUZE + PRIJSFASE
+// FIX 2: SYSTEM → PAUZE + PRIJSFASE (BACKEND-LEIDEND)
 // ========================
 function handleSystemNode(node) {
   console.log("🧠 Systeem bereikt:", node.system);
@@ -417,8 +417,8 @@ function handleSystemNode(node) {
   // systeem vastleggen
   gekozenSysteem = node.system;
 
-  // onthoud waar we NA bevestiging verder moeten
-  vervolgNodeNaBasis = node.next?.[0] ?? null;
+  // ❗ GEEN next-node vooruit bepalen
+  vervolgNodeNaBasis = null;
 
   // keuzeboom pauzeren
   actieveFlow = "prijsfase";
@@ -432,6 +432,7 @@ function handleSystemNode(node) {
   // prijsfase starten (m² + ruimtes)
   toonPrijsInvoer();
 }
+
 
 
 // ========================
