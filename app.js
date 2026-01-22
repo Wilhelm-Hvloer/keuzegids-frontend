@@ -306,25 +306,35 @@ async function handleAntwoordNode(node) {
   if (node.text && lastVraagTekst) {
     const antwoordTekst = stripPrefix(node.text);
 
+    const key = antwoordTekst.toLowerCase().trim();
+    const isExtra = EXTRA_MAPPING[key];
+
+    // ========================
+    // VRAAG / ANTWOORD OPSLAAN
+    // ========================
     gekozenAntwoorden.push({
       vraag: lastVraagTekst,
       antwoord: antwoordTekst
     });
 
-    const key = antwoordTekst.toLowerCase().trim();
-    if (EXTRA_MAPPING[key] && !gekozenExtras.includes(EXTRA_MAPPING[key])) {
-      gekozenExtras.push(EXTRA_MAPPING[key]);
+    // ========================
+    // EXTRA REGISTREREN (bv. DecoFlakes)
+    // ========================
+    if (isExtra && !gekozenExtras.includes(isExtra)) {
+      gekozenExtras.push(isExtra);
     }
 
     lastVraagTekst = null;
   }
 
-  // ✅ ENIGE auto-doorloop-regel:
-  // exact 1 keuze → backend laten bepalen wat volgt
+  // ========================
+  // AUTO-DOORLOOP
+  // ========================
   if (Array.isArray(node.next) && node.next.length === 1) {
     await chooseOption(0);
   }
 }
+
 
 // ========================
 // SYSTEM NODE → UI-AFhandeling (BACKEND-LEIDEND)
@@ -881,14 +891,53 @@ async function toonSamenvatting() {
   let html = "";
 
   // ========================
-  // KEUZES (VRAGEN + ANTWOORDEN)
+  // GEMAAKTE KEUZES
   // ========================
   if (Array.isArray(gekozenAntwoorden) && gekozenAntwoorden.length > 0) {
     html += "<h3>Gemaakte keuzes</h3><ul>";
     gekozenAntwoorden.forEach(item => {
-      html += `<li><strong>${item.vraag}</strong><br>${item.antwoord}</li>`;
+      html += `
+        <li>
+          <strong>${item.vraag}</strong><br>
+          ${item.antwoord}
+        </li>
+      `;
     });
-    html += "</ul><hr>";
+    html += "</ul>";
+  }
+
+  // ========================
+  // m² & RUIMTES
+  // ========================
+  if (gekozenOppervlakte && gekozenRuimtes) {
+    html += `
+      <hr>
+      <strong>Aantal m²:</strong> ${gekozenOppervlakte}<br>
+      <strong>${gekozenRuimtes} ruimte${gekozenRuimtes > 1 ? "s" : ""}</strong>
+    `;
+  }
+
+  // ========================
+  // EXTRA VRAGEN (NA PRIJSFASE)
+  // ========================
+  if (Array.isArray(gekozenAntwoorden) && gekozenAntwoorden.length > 0) {
+    const extraVragen = gekozenAntwoorden.filter(item =>
+      item.vraag.toLowerCase().includes("antislip") ||
+      item.vraag.toLowerCase().includes("versiering")
+    );
+
+    if (extraVragen.length > 0) {
+      html += "<hr><ul>";
+      extraVragen.forEach(item => {
+        html += `
+          <li>
+            <strong>${item.vraag}</strong><br>
+            ${item.antwoord}
+          </li>
+        `;
+      });
+      html += "</ul>";
+    }
   }
 
   // ========================
@@ -896,37 +945,36 @@ async function toonSamenvatting() {
   // ========================
   if (gekozenSysteem) {
     html += `
+      <hr>
       <div class="titel-coatingsysteem">Gekozen coatingsysteem</div>
       <div class="gekozen-systeem">${gekozenSysteem}</div>
     `;
   }
 
   // ========================
-  // PRIJSOVERZICHT (BACKEND = WAARHEID)
+  // PRIJSOVERZICHT
   // ========================
   if (basisPrijs !== null && totaalPrijs !== null) {
-    html += "<h3>Prijsoverzicht</h3>";
-
-    if (prijsPerM2 !== null) {
-      html += `<p>Prijs per m²: <strong>€ ${prijsPerM2},-</strong></p>`;
-    }
-
-    html += `<p>Basisprijs: <strong>€ ${basisPrijs},-</strong></p>`;
+    html += `
+      <h3>Prijsoverzicht</h3>
+      <p>Prijs per m²: <strong>€ ${prijsPerM2},-</strong></p>
+      <p>Basisprijs: <strong>€ ${basisPrijs},-</strong></p>
+    `;
 
     // ========================
-    // EXTRA OPTIES (UIT BACKEND)
+    // OPTIES
     // ========================
     if (Array.isArray(backendExtras) && backendExtras.length > 0) {
-      html += "<p><strong>Extra opties:</strong></p><ul>";
-
+      html += "<p><strong>Opties:</strong></p><ul>";
       backendExtras.forEach(extra => {
         html += `<li>${extra.naam}: € ${extra.totaal},-</li>`;
       });
-
       html += "</ul>";
     }
 
-    // 🔴 HIER ZIT DE BELANGRIJKSTE WIJZIGING
+    // ========================
+    // TOTAALPRIJS
+    // ========================
     html += `
       <div class="titel-coatingsysteem">Totaalprijs</div>
       <div class="totaalprijs">€ ${totaalPrijs},-</div>
@@ -935,6 +983,7 @@ async function toonSamenvatting() {
 
   resultEl.innerHTML = html;
 }
+
 
 
 
