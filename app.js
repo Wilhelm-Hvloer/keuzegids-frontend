@@ -322,8 +322,9 @@ async function handleAntwoordNode(node) {
 function handleSystemNode(node) {
   console.log("🧠 Systeem node ontvangen:", node);
 
-  // systeem vastleggen (data-only)
-  gekozenSysteem = node.system ?? null;
+  // 🔑 CONTEXT & DATA VASTLEGGEN
+  currentSystemNode = node;
+  gekozenSysteem = node.system || stripPrefix(node.text) || node.id;
 
   // 🔑 system-node = altijd prijsfase
   actieveFlow = "prijsfase";
@@ -331,13 +332,14 @@ function handleSystemNode(node) {
   // UI reset
   const questionEl = document.getElementById("question-text");
   const optionsEl = document.getElementById("options-box");
+
   questionEl.innerHTML = "";
   optionsEl.innerHTML = "";
 
   console.log("💰 Start prijsfase voor systeem:", gekozenSysteem);
+
   toonPrijsInvoer();
 }
-
 
 
 
@@ -686,70 +688,38 @@ async function berekenPrijs(ruimtes) {
   // 🔑 backend berekent
   await herberekenPrijs();
 
-  // prijs tonen (PUUR INFORMATIEF)
+  // ========================
+  // PRIJS TONEN (INFORMATIEF)
+  // ========================
   resultEl.style.display = "block";
   resultEl.innerHTML = `
-    <strong>Prijs per m²:</strong> € ${prijsPerM2 ?? "—"},-<br>
-    <strong>Basisprijs:</strong> € ${basisPrijs},-<br>
-    <strong>Totaalprijs:</strong> € ${totaalPrijs},-
+    <div class="card">
+      <strong>${gekozenSysteem}</strong><br>
+      Prijs per m²: € ${prijsPerM2 ?? "—"},-<br>
+      Basisprijs: € ${basisPrijs},-<br>
+      <strong>Totaalprijs: € ${totaalPrijs},-</strong>
+    </div>
   `;
 
-  // ⛔ frontend doet hier niets meer
-  console.log("ℹ️ Prijs berekend — wacht op backend-volgende stap");
+  // ========================
+  // 🔑 BEVESTIGINGSKNOP
+  // ========================
+  const bevestigBtn = document.createElement("button");
+  bevestigBtn.textContent = "Kies dit systeem en ga verder";
+  bevestigBtn.style.marginTop = "16px";
+
+  bevestigBtn.onclick = async () => {
+    console.log("➡️ Systeem bevestigd, keuzeboom vervolgen");
+
+    // systeem-node heeft altijd exact 1 vervolg
+    await chooseOption(0);
+  };
+
+  resultEl.appendChild(bevestigBtn);
+
+  console.log("ℹ️ Prijs berekend — wacht op systeembevestiging");
 }
 
-
-
-
-
-
-
-
-
-// ========================
-// AFWEGING – PRIJS BEREKENEN (2 SYSTEMEN)
-// ========================
-
-async function berekenAfweging(ruimtes) {
-  const m2Input = document.getElementById("input-m2");
-  const oppervlakte = parseFloat(m2Input?.value);
-
-  if (!oppervlakte || oppervlakte <= 0) {
-    alert("Vul een geldige oppervlakte in.");
-    return;
-  }
-
-  gekozenOppervlakte = oppervlakte;
-  gekozenRuimtes = ruimtes;
-
-  afwegingResultaten = [];
-
-  for (const sysNode of afwegingNode.next) {
-    const systeemNaam = stripPrefix(sysNode.text);
-
-    const res = await fetch(`${API_BASE}/api/price`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        systeem: systeemNaam,
-        oppervlakte,
-        ruimtes,
-        extras: [] // bewust leeg: alleen basisvergelijking
-      })
-    });
-
-    const data = await res.json();
-    if (!data.error) {
-      afwegingResultaten.push({
-        systeem: systeemNaam,
-        prijs: data.basisprijs,
-        prijsPerM2: data.prijs_per_m2
-      });
-    }
-  }
-
-  toonAfwegingResultaten();
-}
 
 
 function toonAfwegingResultaten() {
