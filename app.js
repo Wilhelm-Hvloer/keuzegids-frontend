@@ -316,7 +316,6 @@ async function handleAntwoordNode(node) {
   }
 }
 
-
 // ========================
 // SYSTEM NODE → UI-AFhandeling (BACKEND-LEIDEND)
 // ========================
@@ -338,6 +337,7 @@ function handleSystemNode(node) {
   console.log("💰 Start prijsfase voor systeem:", gekozenSysteem);
   toonPrijsInvoer();
 }
+
 
 
 
