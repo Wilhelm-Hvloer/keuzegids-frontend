@@ -556,43 +556,7 @@ async function toonAfwegingMetPrijzen() {
   }
 }
 
-// ========================
-// FIX 3: SYSTEEM BEVESTIGEN (CORRECT)
-// ========================
-function toonSysteemBevestiging() {
-  const optionsEl = document.getElementById("options-box");
-  optionsEl.innerHTML = "";
-  optionsEl.style.display = "block";
 
-  if (!gekozenSysteem || !vervolgNodeNaBasis) {
-    console.warn("⚠️ Geen systeem of vervolgnode bij bevestiging");
-    return;
-  }
-
-  const btn = document.createElement("button");
-  btn.classList.add("systeem-knop");
-
-  btn.innerHTML = `
-    <strong>${gekozenSysteem}</strong><br>
-    <span>Klik om dit systeem te gebruiken</span>
-  `;
-
-  btn.onclick = () => {
-    console.log("▶️ Systeem bevestigd:", gekozenSysteem);
-
-    // keuzeboom hervatten
-    actieveFlow = "keuzegids";
-
-    const nextNode = vervolgNodeNaBasis;
-    vervolgNodeNaBasis = null;
-
-    // 👉 GEEN backend-keuze meer hier
-    // 👉 backend heeft systeem-node al afgehandeld
-    renderNode(nextNode);
-  };
-
-  optionsEl.appendChild(btn);
-}
 
 
 
