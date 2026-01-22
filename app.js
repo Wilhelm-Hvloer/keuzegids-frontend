@@ -255,7 +255,9 @@ async function renderNode(node) {
       await handleAntwoordNode(node);
       return;
 
+    // 🔑 BELANGRIJK: backend gebruikt "systeem"
     case "system":
+    case "systeem":
       handleSystemNode(node);
       return;
 
@@ -268,7 +270,6 @@ async function renderNode(node) {
       return;
 
     default:
-      // alleen hier eindigen als de boom écht klaar is
       if (!Array.isArray(node.next) || node.next.length === 0) {
         handleEindeNode(node);
       } else {
@@ -277,6 +278,7 @@ async function renderNode(node) {
       return;
   }
 }
+
 
 
 // ========================
