@@ -39,7 +39,6 @@ let gekozenExtras = [];
 let basisPrijs = null;
 let totaalPrijs = null;
 let backendExtras = [];
-let vervolgNodeNaBasis = null; // onthoudt boom-positie tijdens prijsfase
 let inOptieFase = false;
 let gekozenOppervlakte = null;
 let gekozenRuimtes = null;
@@ -71,19 +70,17 @@ function toonFlow() {
 
 
 // ========================
-// START KEUZEGIDS
+// START KEUZEGIDS (BACKEND-LEIDEND)
 // ========================
-
 async function startKeuzegids() {
-  // 🔑 expliciet: we zitten nu in de keuzegids-flow
-  actieveFlow = "keuzegids";
-
+  // UI reset
   toonFlow();
   resetUI();
 
   // ========================
   // STATE RESETTEN
   // ========================
+  actieveFlow = null;            // 🔑 backend bepaalt flow
   gekozenSysteem = null;
   gekozenAntwoorden = [];
   gekozenExtras = [];
@@ -92,128 +89,58 @@ async function startKeuzegids() {
   totaalPrijs = null;
   prijsPerM2 = null;
 
-  vervolgNodeNaBasis = null;
-  inOptieFase = false;
-
   gekozenOppervlakte = null;
   gekozenRuimtes = null;
   meerwerkUren = 0;
 
-  lastVraagTekst = null; // 👈 ESSENTIEEL
+  lastVraagTekst = null;
 
   // ========================
-  // KEUZEGIDS STARTEN
+  // KEUZEGIDS STARTEN (BACKEND)
   // ========================
   try {
     const res = await fetch(`${API_BASE}/api/start`);
     const node = await res.json();
-    renderNode(node);
+
+    renderNode(node); // backend zegt wat dit is
   } catch (err) {
     console.error("❌ Fout bij starten keuzegids:", err);
   }
 }
 
-// 👇👇 DIT WAS DE MISSENDE
+// beschikbaar maken voor HTML
 window.startKeuzegids = startKeuzegids;
 
-// 👇 alleen laten staan ALS startPrijslijst bestaat
-window.startPrijslijst = startPrijslijst;
-
-
-// ========================
-// START PRIJSLIJST
-// ========================
-
-function startPrijslijst() {
-  // 🔑 expliciet: we zitten nu in de prijslijst-flow
-  actieveFlow = "prijslijst";
-
-  toonFlow();
-  resetUI();
-
-  // state resetten (prijslijst-specifiek)
-  inAfwegingPrijs = false;
-  vergelijkSystemen = [];
-  gekozenSysteem = null;
-  gekozenOppervlakte = null;
-  gekozenRuimtes = null;
-
-  // géén keuzeboom → alleen systemen kiezen
-  toonSysteemSelectie();
-}
-
 
 
 
 // ========================
-// PRIJSLIJST – SYSTEEMSELECTIE
+// SYSTEEMSELECTIE (BACKEND-LEIDEND, DOMME RENDERER)
 // ========================
-
-function toonSysteemSelectie() {
+function toonSysteemSelectie(node) {
   const questionEl = document.getElementById("question-text");
   const optionsEl = document.getElementById("options-box");
 
-  // scherm resetten
   resetUI();
   optionsEl.style.display = "block";
   optionsEl.innerHTML = "";
 
-  vergelijkSystemen = [];
+  questionEl.innerHTML = "<strong>Kies een coatingsysteem</strong>";
 
-  questionEl.innerHTML =
-    "<strong>Kies één of twee coatingsystemen</strong><br>" +
-    "<small>1 systeem = prijs berekenen · 2 systemen = vergelijken</small>";
+  if (!Array.isArray(node.next) || node.next.length === 0) {
+    console.warn("⚠️ Geen systemen om te tonen");
+    return;
+  }
 
-  const systemen = [
-    "Rolcoating Basic",
-    "Rolcoating Premium",
-    "Gietcoating Basic",
-    "Gietcoating Premium",
-    "Gietcoating Optimum",
-    "Gietcoating Optimum met schraplaag",
-    "Gietcoating Extreme",
-    "Gietcoating Extreme met schraplaag",
-    "Flakecoating",
-    "DOS Basic",
-    "DOS Premium"
-  ];
-
-  systemen.forEach(naam => {
-    const wrapper = document.createElement("div");
-    wrapper.style.marginBottom = "12px";
-
+  node.next.forEach((optie, index) => {
     const btn = document.createElement("button");
-    btn.textContent = naam;
+    btn.textContent = optie.text || "Kies";
 
     btn.onclick = () => {
-      // toggle selectie
-      if (vergelijkSystemen.includes(naam)) {
-        vergelijkSystemen = vergelijkSystemen.filter(s => s !== naam);
-        btn.classList.remove("actief");
-      } else {
-        if (vergelijkSystemen.length >= 2) return; // max 2
-        vergelijkSystemen.push(naam);
-        btn.classList.add("actief");
-      }
-
-      // --- UI-logica ---
-      if (vergelijkSystemen.length === 1) {
-        gekozenSysteem = vergelijkSystemen[0];
-        toonGeefPrijsKnop();
-      }
-
-      if (vergelijkSystemen.length === 2) {
-        verwijderGeefPrijsKnop();
-        startVergelijking();
-      }
-
-      if (vergelijkSystemen.length === 0) {
-        verwijderGeefPrijsKnop();
-      }
+      chooseOption(index);
     };
 
-    wrapper.appendChild(btn);
-    optionsEl.appendChild(wrapper);
+    optionsEl.appendChild(btn);
   });
 }
 
@@ -221,67 +148,35 @@ function toonSysteemSelectie() {
 
 
 
-// ========================
-// PRIJSLIJST – GEEF PRIJS KNOP
-// ========================
 
+// ========================
+// PRIJSLIJST – GEEF PRIJS KNOP (UITGESCHAKELD)
+// ========================
 function toonGeefPrijsKnop() {
-  const optionsEl = document.getElementById("options-box");
-
-  if (document.getElementById("geef-prijs-btn")) return;
-
-  const wrapper = document.createElement("div");
-  wrapper.style.marginTop = "16px";
-  wrapper.id = "geef-prijs-wrapper";
-
-  const btn = document.createElement("button");
-  btn.id = "geef-prijs-btn";
-  btn.textContent = "Geef prijs";
-  btn.classList.add("accent");
-
-  btn.onclick = () => {
-    inAfwegingPrijs = false;
-    toonPrijsInvoer();
-  };
-
-  wrapper.appendChild(btn);
-  optionsEl.appendChild(wrapper);
+  console.warn("⚠️ toonGeefPrijsKnop is uitgeschakeld — backend is leidend");
 }
 
 function verwijderGeefPrijsKnop() {
-  const wrapper = document.getElementById("geef-prijs-wrapper");
-  if (wrapper) wrapper.remove();
+  // bewust leeg
 }
 
-// ========================
-// PRIJSLIJST – VERGELIJKING START
-// ========================
 
+
+// ========================
+// PRIJSLIJST – VERGELIJKING START (UITGESCHAKELD)
+// ========================
 function startVergelijking() {
-  inAfwegingPrijs = true;
-
-  afwegingNode = {
-    next: vergelijkSystemen.map((systeem, index) => ({
-      id: index,
-      type: "systeem",
-      text: systeem
-    }))
-  };
-
-  toonPrijsInvoer();
+  console.warn("⚠️ startVergelijking is uitgeschakeld — backend bepaalt vergelijking");
 }
 
 
+
+
+
 // ========================
-// KEUZE MAKEN (BACKEND-LEIDEND + FLOW-GUARD)
+// KEUZE MAKEN (BACKEND-LEIDEND)
 // ========================
 async function chooseOption(index) {
-  // ⛔ blokkeren als keuzeboom gepauzeerd is
-  if (actieveFlow !== "keuzegids") {
-    console.warn("⏸ Keuze genegeerd: flow gepauzeerd:", actieveFlow);
-    return;
-  }
-
   if (!currentNode) {
     console.warn("⚠️ Geen currentNode bij chooseOption");
     return;
@@ -294,25 +189,29 @@ async function chooseOption(index) {
 
   console.log("➡️ keuze:", currentNode.id, "index:", index);
 
-  const res = await fetch(`${API_BASE}/api/next`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({
-      node_id: currentNode.id,
-      choice: index
-    })
-  });
+  try {
+    const res = await fetch(`${API_BASE}/api/next`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        node_id: currentNode.id,
+        choice: index
+      })
+    });
 
-  const nextNode = await res.json();
+    const nextNode = await res.json();
 
-  if (nextNode.error) {
-    console.error("Backend fout:", nextNode.error);
-    return;
+    if (nextNode.error) {
+      console.error("Backend fout:", nextNode.error);
+      return;
+    }
+
+    // 🔑 NOOIT flow blokkeren of resetten
+    renderNode(nextNode);
+
+  } catch (err) {
+    console.error("❌ Fout bij chooseOption:", err);
   }
-
-  // 🔑 flow expliciet actief houden
-  actieveFlow = "keuzegids";
-  renderNode(nextNode);
 }
 
 
@@ -422,28 +321,22 @@ async function handleAntwoordNode(node) {
 function handleSystemNode(node) {
   console.log("🧠 Systeem node ontvangen:", node);
 
-  // systeem vastleggen (alleen data)
+  // systeem vastleggen (data-only)
   gekozenSysteem = node.system ?? null;
 
-  // 🔑 backend bepaalt flow
-  if (node.ui_mode === "prijsfase" && node.paused === true) {
-    console.log("⏸ Keuzeboom gepauzeerd door backend → start prijsfase");
+  // 🔑 system-node = altijd prijsfase
+  actieveFlow = "prijsfase";
 
-    actieveFlow = "prijsfase";
+  // UI reset
+  const questionEl = document.getElementById("question-text");
+  const optionsEl = document.getElementById("options-box");
+  questionEl.innerHTML = "";
+  optionsEl.innerHTML = "";
 
-    // UI reset
-    const questionEl = document.getElementById("question-text");
-    const optionsEl = document.getElementById("options-box");
-    questionEl.innerHTML = "";
-    optionsEl.innerHTML = "";
-
-    toonPrijsInvoer();
-    return;
-  }
-
-  // fallback (zou eigenlijk niet meer nodig zijn)
-  console.warn("⚠️ System node zonder prijsfase-instructie:", node);
+  console.log("💰 Start prijsfase voor systeem:", gekozenSysteem);
+  toonPrijsInvoer();
 }
+
 
 
 
@@ -772,9 +665,8 @@ function toonPrijsInvoer() {
 }
 
 
-
 // ========================
-// PRIJS BEREKENEN
+// PRIJS BEREKENEN (BACKEND-LEIDEND)
 // ========================
 async function berekenPrijs(ruimtes) {
   const m2Input = document.getElementById("input-m2");
@@ -789,10 +681,10 @@ async function berekenPrijs(ruimtes) {
     return;
   }
 
-  // 🔑 altijd backend laten rekenen
+  // 🔑 backend berekent
   await herberekenPrijs();
 
-  // prijs tonen (informatief)
+  // prijs tonen (PUUR INFORMATIEF)
   resultEl.style.display = "block";
   resultEl.innerHTML = `
     <strong>Prijs per m²:</strong> € ${prijsPerM2 ?? "—"},-<br>
@@ -800,29 +692,8 @@ async function berekenPrijs(ruimtes) {
     <strong>Totaalprijs:</strong> € ${totaalPrijs},-
   `;
 
-  // ========================
-  // FIX 2: NA PRIJSFASE NOOIT AUTOMATISCH VERDER
-  // ========================
-
-  // alleen relevant als we uit de keuzegids komen
-  if (actieveFlow !== "keuzegids") {
-    return;
-  }
-
-  console.log("⏸ Prijsfase afgerond — wacht op expliciete systeemkeuze");
-
-  // CASE: keuzegids (1 systeem)
-  // → toon systeemkaart en wacht op klik
-  if (vervolgNodeNaBasis) {
-    toonSysteemBevestiging();
-    return;
-  }
-
-  // CASE: vergelijking (meerdere systemen)
-  if (typeof gaVerderNaPrijsBerekening === "function") {
-    gaVerderNaPrijsBerekening();
-    return;
-  }
+  // ⛔ frontend doet hier niets meer
+  console.log("ℹ️ Prijs berekend — wacht op backend-volgende stap");
 }
 
 
@@ -1097,12 +968,11 @@ function stripPrefix(text = "") {
 
 
 // ========================
-// HOMESCREEN ACTIES
+// HOMESCREEN ACTIES (OPGESCHOOND)
 // ========================
 
+// alleen keuzegids is nog publiek
 window.startKeuzegids = startKeuzegids;
-window.startPrijslijst = startPrijslijst;
-
 
 function gaNaarHome() {
   // schermen resetten
@@ -1114,24 +984,29 @@ function gaNaarHome() {
 
   const optionsEl = document.getElementById("options-box");
   optionsEl.innerHTML = "";
-  optionsEl.style.display = "none"; // 🔴 BELANGRIJK
+  optionsEl.style.display = "none";
 
   document.getElementById("result-box").innerHTML = "";
 
-  // state resetten (belangrijk!)
+  // ========================
+  // FRONTEND STATE RESET
+  // ========================
   currentNode = null;
+  actieveFlow = null;
+
   gekozenSysteem = null;
   gekozenAntwoorden = [];
   gekozenExtras = [];
+  backendExtras = [];
+
   basisPrijs = null;
   totaalPrijs = null;
-  backendExtras = [];
-  vervolgNodeNaBasis = null;
-  inOptieFase = false;
+  prijsPerM2 = null;
+
   gekozenOppervlakte = null;
   gekozenRuimtes = null;
-  afwegingNode = null;
-  afwegingResultaten = [];
-  afwegingAfgerond = false;
+  meerwerkUren = 0;
+
+  lastVraagTekst = null;
 }
 
