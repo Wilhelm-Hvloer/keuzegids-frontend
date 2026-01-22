@@ -287,6 +287,11 @@ async function chooseOption(index) {
     return;
   }
 
+  if (!Array.isArray(currentNode.next) || !currentNode.next[index]) {
+    console.warn("⚠️ Ongeldige keuze-index:", index, currentNode);
+    return;
+  }
+
   console.log("➡️ keuze:", currentNode.id, "index:", index);
 
   const res = await fetch(`${API_BASE}/api/next`, {
@@ -305,8 +310,11 @@ async function chooseOption(index) {
     return;
   }
 
+  // 🔑 flow expliciet actief houden
+  actieveFlow = "keuzegids";
   renderNode(nextNode);
 }
+
 
 // ========================
 // VRAAG TONEN + OPTIES
