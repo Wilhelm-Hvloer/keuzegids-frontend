@@ -206,13 +206,23 @@ async function chooseOption(index) {
       return;
     }
 
-    // 🔑 NOOIT flow blokkeren of resetten
+    // ========================
+    // 🔑 EINDE KEUZEBOOM
+    // ========================
+    if (!Array.isArray(nextNode.next) || nextNode.next.length === 0) {
+      console.log("🏁 Einde keuzeboom bereikt");
+      toonSamenvatting();
+      return;
+    }
+
+    // 🔑 normaal vervolg
     renderNode(nextNode);
 
   } catch (err) {
     console.error("❌ Fout bij chooseOption:", err);
   }
 }
+
 
 
 // ========================
@@ -710,6 +720,10 @@ async function berekenPrijs(ruimtes) {
 
   bevestigBtn.onclick = async () => {
     console.log("➡️ Systeem bevestigd, keuzeboom vervolgen");
+
+    // 🔑 PRIJSFASE AFSLUITEN → kaart opruimen
+    resultEl.innerHTML = "";
+    resultEl.style.display = "none";
 
     // systeem-node heeft altijd exact 1 vervolg
     await chooseOption(0);
