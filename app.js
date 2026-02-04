@@ -334,23 +334,22 @@ async function handleAntwoordNode(node) {
 }
 
 // ========================
-// SYSTEM NODE → UI-AFhandeling (BACKEND-LEIDEND)
+// SYSTEM NODE → START PRIJSFASE
 // ========================
 function handleSystemNode(node) {
-  console.log("🧠 Systeem node ontvangen:", node);
+  console.log("💰 System-node → start prijsfase", node);
 
-  // 🔑 CONTEXT & DATA
+  // context vastleggen
   currentSystemNode = node;
   gekozenSysteem = node.system || stripPrefix(node.text) || node.id;
 
-  // UI reset
-  const questionEl = document.getElementById("question-text");
-  const optionsEl = document.getElementById("options-box");
+  // 🔑 BACKEND-LEIDEND SIGNaal respecteren
+  if (node.requires_price || node.ui_mode === "prijs") {
+    toonPrijsInvoer();     // 👈 HIER start de hele prijsflow
+    return;
+  }
 
-  questionEl.innerHTML = "";
-  optionsEl.innerHTML = "";
-
-  console.log("📦 System-node ontvangen — wacht op backend-volgende stap");
+  console.warn("⚠️ System-node zonder prijsfase", node);
 }
 
 
@@ -367,11 +366,15 @@ function handleXtrNode(node) {
 // AFW → AFWEGING (UITGESCHAKELD)
 // ========================
 function handleAfwNode(node) {
-  console.warn(
-    "⚠️ Afweging-node ontvangen, maar vergelijking zit in aparte prijslijst-app",
-    node
-  );
+  console.log("⚖️ Afweging-node → prijsvergelijking", node);
+
+  afwegingNode = node;
+  actieveFlow = "keuzegids";
+
+  // start met m² + ruimtes vragen
+  toonPrijsInvoerVoorAfweging();
 }
+
 
 
 
