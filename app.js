@@ -75,6 +75,7 @@ function toonFlow() {
 async function startKeuzegids() {
   // UI reset (neutraal)
   resetUI();
+  toonFlow(); // 👈 CRUCIAAL: homescreen → flow
 
   // ========================
   // STATE RESETTEN
@@ -108,7 +109,6 @@ async function startKeuzegids() {
 
 // beschikbaar maken voor HTML
 window.startKeuzegids = startKeuzegids;
-
 
 
 
