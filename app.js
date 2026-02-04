@@ -73,25 +73,23 @@ function toonFlow() {
 // START KEUZEGIDS (BACKEND-LEIDEND)
 // ========================
 async function startKeuzegids() {
-  // UI reset
-  toonFlow();
+  // UI reset (neutraal)
   resetUI();
 
   // ========================
   // STATE RESETTEN
   // ========================
-  actieveFlow = null;            // 🔑 backend bepaalt flow
   gekozenSysteem = null;
   gekozenAntwoorden = [];
   gekozenExtras = [];
   backendExtras = [];
+
   basisPrijs = null;
   totaalPrijs = null;
   prijsPerM2 = null;
 
   gekozenOppervlakte = null;
   gekozenRuimtes = null;
-  meerwerkUren = 0;
 
   lastVraagTekst = null;
 
@@ -102,7 +100,7 @@ async function startKeuzegids() {
     const res = await fetch(`${API_BASE}/api/start`);
     const node = await res.json();
 
-    renderNode(node); // backend zegt wat dit is
+    renderNode(node); // 🔑 backend bepaalt wat dit is
   } catch (err) {
     console.error("❌ Fout bij starten keuzegids:", err);
   }
@@ -335,19 +333,15 @@ async function handleAntwoordNode(node) {
   }
 }
 
-
 // ========================
 // SYSTEM NODE → UI-AFhandeling (BACKEND-LEIDEND)
 // ========================
 function handleSystemNode(node) {
   console.log("🧠 Systeem node ontvangen:", node);
 
-  // 🔑 CONTEXT & DATA VASTLEGGEN
+  // 🔑 CONTEXT & DATA
   currentSystemNode = node;
   gekozenSysteem = node.system || stripPrefix(node.text) || node.id;
-
-  // 🔑 system-node = altijd prijsfase
-  actieveFlow = "prijsfase";
 
   // UI reset
   const questionEl = document.getElementById("question-text");
@@ -356,11 +350,8 @@ function handleSystemNode(node) {
   questionEl.innerHTML = "";
   optionsEl.innerHTML = "";
 
-  console.log("💰 Start prijsfase voor systeem:", gekozenSysteem);
-
-  toonPrijsInvoer();
+  console.log("📦 System-node ontvangen — wacht op backend-volgende stap");
 }
-
 
 
 
@@ -373,20 +364,16 @@ function handleXtrNode(node) {
 }
 
 // ========================
-// AFW → AFWEGING
+// AFW → AFWEGING (UITGESCHAKELD)
 // ========================
-async function handleAfwNode(node) {
-  afwegingNode = node;
-
-  if (!gekozenOppervlakte || !gekozenRuimtes) {
-    inAfwegingPrijs = true;
-    toonPrijsInvoer();
-    return;
-  }
-
-  toonAfwegingMetPrijzen();
-  await herberekenPrijs();
+function handleAfwNode(node) {
+  console.warn(
+    "⚠️ Afweging-node ontvangen, maar vergelijking zit in aparte prijslijst-app",
+    node
+  );
 }
+
+
 
 // ========================
 // EINDE KEUZEBOOM
@@ -624,23 +611,16 @@ function toonPrijsContext() {
 
 
 // ========================
-// PRIJSINVOER
+// PRIJSINVOER (BACKEND-LEIDEND)
 // ========================
-
 function toonPrijsInvoer() {
   const questionEl = document.getElementById("question-text");
   const optionsEl = document.getElementById("options-box");
-  const resultEl = document.getElementById("result-box");
 
   resetUI();
-
   optionsEl.style.display = "block";
 
-  const titel = inAfwegingPrijs
-    ? "Bereken de prijs (vergelijk systemen)"
-    : `${gekozenSysteem}<br>Bereken de prijs`;
-
-  questionEl.innerHTML = `<strong>${titel}</strong>`;
+  questionEl.innerHTML = `<strong>${gekozenSysteem}<br>Bereken de prijs</strong>`;
 
   // ===== Oppervlakte =====
   const label = document.createElement("label");
@@ -657,36 +637,29 @@ function toonPrijsInvoer() {
   optionsEl.appendChild(ruimteBlok);
 
   [1, 2, 3].forEach(aantal => {
-    const wrapper = document.createElement("div");
-    wrapper.style.marginTop = "12px";
-
     const btn = document.createElement("button");
     btn.textContent = `${aantal} ruimte${aantal > 1 ? "s" : ""}`;
     btn.classList.add("ruimte-knop");
 
-    btn.onclick = () => {
+    btn.onclick = async () => {
       document.querySelectorAll(".ruimte-knop").forEach(b =>
         b.classList.remove("actief")
       );
       btn.classList.add("actief");
 
-      inAfwegingPrijs
-        ? berekenAfweging(aantal)
-        : berekenPrijs(aantal);
+      gekozenRuimtes = aantal;
+      gekozenOppervlakte = parseFloat(
+        document.getElementById("input-m2").value
+      );
+
+      // 🔑 ENIGE ACTIE: backend laten rekenen & beslissen
+      await herberekenPrijs();
     };
 
-    wrapper.appendChild(btn);
-    optionsEl.appendChild(wrapper);
+    optionsEl.appendChild(btn);
   });
-
-  // 🔴 DIT ONTBRAK — essentieel voor 2 systemen
-  if (inAfwegingPrijs) {
-    const afwegingResultaat = document.createElement("div");
-    afwegingResultaat.id = "afweging-resultaat";
-    afwegingResultaat.style.marginTop = "16px";
-    optionsEl.appendChild(afwegingResultaat);
-  }
 }
+
 
 
 // ========================
