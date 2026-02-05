@@ -53,6 +53,10 @@ let afwegingNode = null;
 let afwegingResultaten = [];
 let inAfwegingPrijs = false;
 
+// ========================
+// PRIJSLIJST STATE
+// ========================
+let geselecteerdePrijslijstSystemen = [];
 
 
 // ========================
@@ -98,18 +102,28 @@ function startPrijslijst() {
 }
 
 // ========================
-// PRIJSLIJST – SYSTEEMSELECTIE (DEFINITIEF)
+// PRIJSLIJST – SYSTEEMSELECTIE (FIX 2)
 // ========================
 function toonPrijslijstSysteemSelectie() {
   const questionEl = document.getElementById("question-text");
   const optionsEl = document.getElementById("options-box");
+  const resultEl = document.getElementById("result-box");
 
   resetUI();
   optionsEl.style.display = "block";
+  resultEl.style.display = "none";
+  resultEl.innerHTML = "";
+
+  // state reset
+  geselecteerdePrijslijstSystemen = [];
+  actieveFlow = "prijslijst";
 
   questionEl.innerHTML = `
-    <strong>Kies een coatingsysteem</strong><br>
-    <small>1 systeem = prijs berekenen</small>
+    <strong>Kies één of twee coatingsystemen</strong><br>
+    <small>
+      1 systeem = prijs berekenen<br>
+      2 systemen = vergelijken
+    </small>
   `;
 
   const systemen = [
@@ -131,9 +145,27 @@ function toonPrijslijstSysteemSelectie() {
     btn.textContent = systeem;
 
     btn.onclick = () => {
-      gekozenSysteem = systeem;
-      actieveFlow = "prijslijst";   // 🔑 expliciet
-      toonPrijsInvoer();
+      if (geselecteerdePrijslijstSystemen.includes(systeem)) {
+        // deselecteren
+        geselecteerdePrijslijstSystemen =
+          geselecteerdePrijslijstSystemen.filter(s => s !== systeem);
+        btn.classList.remove("actief");
+      } else {
+        if (geselecteerdePrijslijstSystemen.length >= 2) return;
+        geselecteerdePrijslijstSystemen.push(systeem);
+        btn.classList.add("actief");
+      }
+
+      // acties bepalen
+      if (geselecteerdePrijslijstSystemen.length === 1) {
+        toonGeefPrijsKnop();
+      } else {
+        verwijderGeefPrijsKnop();
+      }
+
+      if (geselecteerdePrijslijstSystemen.length === 2) {
+        startVergelijking();
+      }
     };
 
     optionsEl.appendChild(btn);
@@ -142,23 +174,51 @@ function toonPrijslijstSysteemSelectie() {
 
 
 // ========================
-// PRIJSLIJST – GEEF PRIJS KNOP (UITGESCHAKELD)
+// PRIJSLIJST – GEEF PRIJS KNOP
 // ========================
 function toonGeefPrijsKnop() {
-  console.warn("⚠️ toonGeefPrijsKnop is uitgeschakeld — backend is leidend");
+  const optionsEl = document.getElementById("options-box");
+
+  // voorkom dubbele knop
+  if (document.getElementById("btn-geef-prijs")) return;
+
+  const btn = document.createElement("button");
+  btn.id = "btn-geef-prijs";
+  btn.style.marginTop = "16px";
+  btn.textContent = "Bereken prijs";
+
+  btn.onclick = () => {
+    gekozenSysteem = geselecteerdePrijslijstSystemen[0];
+    toonPrijsInvoer();
+  };
+
+  optionsEl.appendChild(btn);
 }
 
 function verwijderGeefPrijsKnop() {
-  // bewust leeg
+  const btn = document.getElementById("btn-geef-prijs");
+  if (btn) btn.remove();
 }
 
 
-
 // ========================
-// PRIJSLIJST – VERGELIJKING START (UITGESCHAKELD)
+// PRIJSLIJST – VERGELIJKING START
 // ========================
 function startVergelijking() {
-  console.warn("⚠️ startVergelijking is uitgeschakeld — backend bepaalt vergelijking");
+  console.log("🔀 Prijslijst vergelijking gestart");
+
+  // we hergebruiken bestaande afweging-prijsflow
+  afwegingNode = {
+    type: "afw",
+    next: geselecteerdePrijslijstSystemen.map(s => ({
+      type: "systeem",
+      system: s,
+      text: `Sys: ${s}`,
+      requires_price: true
+    }))
+  };
+
+  toonPrijsInvoerVoorAfweging();
 }
 
 
