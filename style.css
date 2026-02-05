@@ -242,18 +242,6 @@ hr {
   }
 }
 
-/* =========================
-   PRIMAIRE ACTIE – GEEF PRIJS
-   ========================= */
-
-#geef-prijs-btn {
-  background: #BC4C1F !important;
-  color: #F6F6F6;
-}
-
-#geef-prijs-btn:hover {
-  background: #a8441c;
-}
 
 /* =========================
    VERTICALE SPACING VOOR LOSSE KNOPPEN
@@ -330,12 +318,12 @@ button:empty {
 }
 
 /* =========================
-   PRIMAIRE ACTIE – BEREKEN PRIJS
+   PRIMAIRE ACTIE – BEREKEN PRIJS (DEFINITIEF)
    ========================= */
-button.actie-knop,
-button.actie-knop:hover {
-  background-color: #BC4C1F;
-  color: #ffffff;
+#options-box button.actie-knop,
+#options-box button.actie-knop:hover {
+  background-color: var(--accent);
+  color: var(--text-main);
   font-weight: 700;
 }
 
