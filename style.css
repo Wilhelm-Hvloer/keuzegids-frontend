@@ -329,3 +329,18 @@ button:empty {
   border: 2px solid #BC4C1F;
 }
 
+/* =========================
+   PRIMAIRE ACTIE – BEREKEN PRIJS
+   ========================= */
+
+button.actie-knop {
+  background-color: var(--accent);
+  color: var(--text-main);
+  font-weight: 700;
+}
+
+button.actie-knop:hover {
+  background-color: #a8431b;
+}
+
+
