@@ -98,7 +98,7 @@ function startPrijslijst() {
 }
 
 // ========================
-// PRIJSLIJST – SYSTEEMSELECTIE
+// PRIJSLIJST – SYSTEEMSELECTIE (DEFINITIEF)
 // ========================
 function toonPrijslijstSysteemSelectie() {
   const questionEl = document.getElementById("question-text");
@@ -114,8 +114,16 @@ function toonPrijslijstSysteemSelectie() {
 
   const systemen = [
     "Rolcoating Basic",
+    "Rolcoating Premium",
     "Gietcoating Basic",
-    "DOS Basic"
+    "Gietcoating Premium",
+    "Gietcoating Optimum",
+    "Gietcoating Optimum met schraplaag",
+    "Gietcoating Extreme",
+    "Gietcoating Extreme met schraplaag",
+    "Flakecoating",
+    "DOS-coating Basic",
+    "DOS-coating Premium"
   ];
 
   systemen.forEach(systeem => {
@@ -124,12 +132,35 @@ function toonPrijslijstSysteemSelectie() {
 
     btn.onclick = () => {
       gekozenSysteem = systeem;
-      toonPrijsInvoer(); // 👉 PAS NU
+      actieveFlow = "prijslijst";   // 🔑 expliciet
+      toonPrijsInvoer();
     };
 
     optionsEl.appendChild(btn);
   });
 }
+
+
+// ========================
+// PRIJSLIJST – GEEF PRIJS KNOP (UITGESCHAKELD)
+// ========================
+function toonGeefPrijsKnop() {
+  console.warn("⚠️ toonGeefPrijsKnop is uitgeschakeld — backend is leidend");
+}
+
+function verwijderGeefPrijsKnop() {
+  // bewust leeg
+}
+
+
+
+// ========================
+// PRIJSLIJST – VERGELIJKING START (UITGESCHAKELD)
+// ========================
+function startVergelijking() {
+  console.warn("⚠️ startVergelijking is uitgeschakeld — backend bepaalt vergelijking");
+}
+
 
 
 // ========================
@@ -211,25 +242,6 @@ function toonSysteemSelectie(node) {
 
 
 
-// ========================
-// PRIJSLIJST – GEEF PRIJS KNOP (UITGESCHAKELD)
-// ========================
-function toonGeefPrijsKnop() {
-  console.warn("⚠️ toonGeefPrijsKnop is uitgeschakeld — backend is leidend");
-}
-
-function verwijderGeefPrijsKnop() {
-  // bewust leeg
-}
-
-
-
-// ========================
-// PRIJSLIJST – VERGELIJKING START (UITGESCHAKELD)
-// ========================
-function startVergelijking() {
-  console.warn("⚠️ startVergelijking is uitgeschakeld — backend bepaalt vergelijking");
-}
 
 
 
