@@ -363,15 +363,19 @@ function handleXtrNode(node) {
 }
 
 // ========================
-// AFW → AFWEGING (UITGESCHAKELD)
+// AFW → AFWEGING (2-FASE FLOW)
 // ========================
 function handleAfwNode(node) {
-  console.log("⚖️ Afweging-node → prijsvergelijking", node);
+  console.log("⚖️ Afweging-node → eerst invoer, daarna prijzen", node);
 
   afwegingNode = node;
   actieveFlow = "keuzegids";
 
-  // start met m² + ruimtes vragen
+  // reset eventuele oude afweging
+  afwegingResultaten = [];
+  inAfwegingPrijs = true;
+
+  // 🔑 FASE 1: m² + ruimtes invoeren
   toonPrijsInvoerVoorAfweging();
 }
 
@@ -619,9 +623,12 @@ function toonPrijsContext() {
 function toonPrijsInvoer() {
   const questionEl = document.getElementById("question-text");
   const optionsEl = document.getElementById("options-box");
+  const resultEl = document.getElementById("result-box");
 
   resetUI();
   optionsEl.style.display = "block";
+  resultEl.style.display = "none";
+  resultEl.innerHTML = "";
 
   questionEl.innerHTML = `<strong>${gekozenSysteem}<br>Bereken de prijs</strong>`;
 
@@ -645,6 +652,7 @@ function toonPrijsInvoer() {
     btn.classList.add("ruimte-knop");
 
     btn.onclick = async () => {
+      // UI state
       document.querySelectorAll(".ruimte-knop").forEach(b =>
         b.classList.remove("actief")
       );
@@ -655,8 +663,17 @@ function toonPrijsInvoer() {
         document.getElementById("input-m2").value
       );
 
-      // 🔑 ENIGE ACTIE: backend laten rekenen & beslissen
+      if (!gekozenOppervlakte || gekozenOppervlakte <= 0) {
+        resultEl.style.display = "block";
+        resultEl.innerHTML = "Vul eerst een geldige oppervlakte in.";
+        return;
+      }
+
+      // 🔑 Backend berekent
       await herberekenPrijs();
+
+      // 🔑 NIEUW: prijs expliciet tonen
+      toonSysteemPrijsResultaat();
     };
 
     optionsEl.appendChild(btn);
