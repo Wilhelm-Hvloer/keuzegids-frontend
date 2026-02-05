@@ -334,25 +334,24 @@ async function handleAntwoordNode(node) {
 }
 
 // ========================
-// SYSTEM NODE → START PRIJSFASE
+// SYSTEM NODE → START PRIJSFASE (CONDITIONEEL)
 // ========================
 function handleSystemNode(node) {
-  console.log("💰 System-node → start prijsfase", node);
+  console.log("💰 System-node ontvangen", node);
 
-  // 🔑 FIX 4: ALTIJD prijs-state resetten
-  gekozenOppervlakte = null;
-  gekozenRuimtes = null;
-  basisPrijs = null;
-  totaalPrijs = null;
-  prijsPerM2 = null;
-
-  // context vastleggen
   currentSystemNode = node;
   gekozenSysteem = node.system || stripPrefix(node.text) || node.id;
 
-  // 🔑 BACKEND-LEIDEND signaal respecteren
+  // 🔑 ALS prijs al bekend is (bij afweging) → direct verder
+  if (gekozenOppervlakte && gekozenRuimtes && totaalPrijs) {
+    console.log("➡️ Prijs al bekend, systeem direct bevestigen");
+    toonSysteemPrijsResultaat();
+    return;
+  }
+
+  // 🔑 ANDERS: prijsfase starten
   if (node.requires_price || node.ui_mode === "prijs") {
-    toonPrijsInvoer(); // start prijsflow
+    toonPrijsInvoer();
     return;
   }
 
@@ -665,6 +664,7 @@ function toonPrijsInvoer() {
   const resultEl = document.getElementById("result-box");
 
   resetUI();
+
   optionsEl.style.display = "block";
   resultEl.style.display = "none";
   resultEl.innerHTML = "";
@@ -692,9 +692,8 @@ function toonPrijsInvoer() {
 
     btn.onclick = async () => {
       // UI state
-      document.querySelectorAll(".ruimte-knop").forEach(b =>
-        b.classList.remove("actief")
-      );
+      document.querySelectorAll(".ruimte-knop")
+        .forEach(b => b.classList.remove("actief"));
       btn.classList.add("actief");
 
       gekozenRuimtes = aantal;
@@ -711,7 +710,7 @@ function toonPrijsInvoer() {
       // 🔑 Backend berekent
       await herberekenPrijs();
 
-      // 🔑 NIEUW: prijs expliciet tonen
+      // 🔑 ALTIJD eindigen met expliciete systeemkaart
       toonSysteemPrijsResultaat();
     };
 
@@ -719,6 +718,38 @@ function toonPrijsInvoer() {
   });
 }
 
+// ========================
+// SYSTEEMPRIJS RESULTAAT (KLIKBaar)
+// ========================
+function toonSysteemPrijsResultaat() {
+  const resultEl = document.getElementById("result-box");
+
+  resultEl.style.display = "block";
+  resultEl.innerHTML = "";
+
+  const card = document.createElement("div");
+  card.className = "kaart systeem-kaart";
+
+  card.innerHTML = `
+    <strong>${gekozenSysteem}</strong><br>
+    € ${prijsPerM2} / m²<br>
+    <strong>€ ${totaalPrijs},-</strong>
+    <div style="margin-top:10px; font-size:13px; opacity:0.8;">
+      Klik om verder te gaan
+    </div>
+  `;
+
+  card.onclick = async () => {
+    // prijsfase afronden
+    resultEl.innerHTML = "";
+    resultEl.style.display = "none";
+
+    // keuzeboom vervolgen (systeem heeft altijd 1 vervolg)
+    await chooseOption(0);
+  };
+
+  resultEl.appendChild(card);
+}
 
 
 // ========================
