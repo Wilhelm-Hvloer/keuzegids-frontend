@@ -334,7 +334,7 @@ async function handleAntwoordNode(node) {
 }
 
 // ========================
-// SYSTEM NODE → START PRIJSFASE (CONDITIONEEL)
+// SYSTEM NODE → CONDITIONELE AFHANDELING
 // ========================
 function handleSystemNode(node) {
   console.log("💰 System-node ontvangen", node);
@@ -342,14 +342,27 @@ function handleSystemNode(node) {
   currentSystemNode = node;
   gekozenSysteem = node.system || stripPrefix(node.text) || node.id;
 
-  // 🔑 ALS prijs al bekend is (bij afweging) → direct verder
+  // 🔑 FIX: systeem komt uit afweging → direct door, GEEN extra bevestiging
+  if (afwegingNode && afwegingAfgerond) {
+    console.log("➡️ Systeem uit afweging, direct keuzeboom vervolgen");
+
+    // afweging afsluiten
+    afwegingNode = null;
+    afwegingAfgerond = false;
+
+    // systeem-node heeft exact 1 vervolg
+    chooseOption(0);
+    return;
+  }
+
+  // 🔑 Prijs al bekend (maar niet uit afweging) → toon bevestigingskaart
   if (gekozenOppervlakte && gekozenRuimtes && totaalPrijs) {
-    console.log("➡️ Prijs al bekend, systeem direct bevestigen");
+    console.log("➡️ Prijs al bekend, toon systeemkaart");
     toonSysteemPrijsResultaat();
     return;
   }
 
-  // 🔑 ANDERS: prijsfase starten
+  // 🔑 Normale systeem-flow → prijsfase starten
   if (node.requires_price || node.ui_mode === "prijs") {
     toonPrijsInvoer();
     return;
@@ -357,7 +370,6 @@ function handleSystemNode(node) {
 
   console.warn("⚠️ System-node zonder prijsfase", node);
 }
-
 
 
 
