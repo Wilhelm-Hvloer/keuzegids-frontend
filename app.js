@@ -52,7 +52,7 @@ const MEERWERK_TARIEF = 120;
 let afwegingNode = null;
 let afwegingResultaten = [];
 let inAfwegingPrijs = false;
-let afwegingAfgerond = false; // voorkomt oneindige afwegings-loop
+
 
 
 // ========================
@@ -66,6 +66,33 @@ function toonFlow() {
 
   if (home) home.style.display = "none";
   if (flow) flow.style.display = "block";
+}
+
+// ========================
+// START PRIJSLIJST (HOME)
+// ========================
+function startPrijslijst() {
+  console.log("📋 Prijslijst gestart");
+
+  // homescreen → flow
+  toonFlow();
+
+  // state resetten (maar ZONDER keuzeboom)
+  actieveFlow = "prijslijst";
+  afwegingNode = null;
+  gekozenAntwoorden = [];
+  gekozenExtras = [];
+  backendExtras = [];
+
+  gekozenSysteem = null;
+  gekozenOppervlakte = null;
+  gekozenRuimtes = null;
+  basisPrijs = null;
+  totaalPrijs = null;
+  prijsPerM2 = null;
+
+  // 👉 Prijslijst = direct prijs invoeren
+  toonPrijsInvoer();
 }
 
 
@@ -109,6 +136,7 @@ async function startKeuzegids() {
 
 // beschikbaar maken voor HTML
 window.startKeuzegids = startKeuzegids;
+window.startPrijslijst = startPrijslijst;
 
 
 
@@ -1085,9 +1113,6 @@ function stripPrefix(text = "") {
 // ========================
 // HOMESCREEN ACTIES (OPGESCHOOND)
 // ========================
-
-// alleen keuzegids is nog publiek
-window.startKeuzegids = startKeuzegids;
 
 function gaNaarHome() {
   // schermen resetten
