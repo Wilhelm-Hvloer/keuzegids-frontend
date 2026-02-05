@@ -320,8 +320,8 @@ button:empty {
 /* =========================
    PRIMAIRE ACTIE – BEREKEN PRIJS (DEFINITIEF)
    ========================= */
-#options-box button.actie-knop,
-#options-box button.actie-knop:hover {
+button.actie-knop,
+button.actie-knop:hover {
   background-color: var(--accent);
   color: var(--text-main);
   font-weight: 700;
