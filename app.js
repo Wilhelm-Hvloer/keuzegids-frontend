@@ -69,17 +69,19 @@ function toonFlow() {
 }
 
 // ========================
-// START PRIJSLIJST (HOME)
+// START PRIJSLIJST (CORRECT)
 // ========================
 function startPrijslijst() {
   console.log("📋 Prijslijst gestart");
 
-  // homescreen → flow
   toonFlow();
+  resetUI();
 
-  // state resetten (maar ZONDER keuzeboom)
+  // prijslijst = géén keuzeboom
   actieveFlow = "prijslijst";
   afwegingNode = null;
+  currentNode = null;
+
   gekozenAntwoorden = [];
   gekozenExtras = [];
   backendExtras = [];
@@ -91,8 +93,42 @@ function startPrijslijst() {
   totaalPrijs = null;
   prijsPerM2 = null;
 
-  // 👉 Prijslijst = direct prijs invoeren
-  toonPrijsInvoer();
+  // 🔑 STARTPUNT PRIJSLIJST
+  toonPrijslijstSysteemSelectie();
+}
+
+// ========================
+// PRIJSLIJST – SYSTEEMSELECTIE
+// ========================
+function toonPrijslijstSysteemSelectie() {
+  const questionEl = document.getElementById("question-text");
+  const optionsEl = document.getElementById("options-box");
+
+  resetUI();
+  optionsEl.style.display = "block";
+
+  questionEl.innerHTML = `
+    <strong>Kies een coatingsysteem</strong><br>
+    <small>1 systeem = prijs berekenen</small>
+  `;
+
+  const systemen = [
+    "Rolcoating Basic",
+    "Gietcoating Basic",
+    "DOS Basic"
+  ];
+
+  systemen.forEach(systeem => {
+    const btn = document.createElement("button");
+    btn.textContent = systeem;
+
+    btn.onclick = () => {
+      gekozenSysteem = systeem;
+      toonPrijsInvoer(); // 👉 PAS NU
+    };
+
+    optionsEl.appendChild(btn);
+  });
 }
 
 
@@ -710,7 +746,13 @@ function toonPrijsInvoer() {
   resultEl.style.display = "none";
   resultEl.innerHTML = "";
 
-  questionEl.innerHTML = `<strong>${gekozenSysteem}<br>Bereken de prijs</strong>`;
+  // 🔧 FIX 3: robuuste titel (geen "null")
+  questionEl.innerHTML = `
+    <strong>
+      ${gekozenSysteem ? gekozenSysteem + "<br>" : ""}
+      Bereken de prijs
+    </strong>
+  `;
 
   // ===== Oppervlakte =====
   const label = document.createElement("label");
@@ -758,6 +800,7 @@ function toonPrijsInvoer() {
     optionsEl.appendChild(btn);
   });
 }
+
 
 // ========================
 // SYSTEEMPRIJS RESULTAAT (KLIKBaar)
