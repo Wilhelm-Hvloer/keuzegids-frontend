@@ -339,18 +339,26 @@ async function handleAntwoordNode(node) {
 function handleSystemNode(node) {
   console.log("💰 System-node → start prijsfase", node);
 
+  // 🔑 FIX 4: ALTIJD prijs-state resetten
+  gekozenOppervlakte = null;
+  gekozenRuimtes = null;
+  basisPrijs = null;
+  totaalPrijs = null;
+  prijsPerM2 = null;
+
   // context vastleggen
   currentSystemNode = node;
   gekozenSysteem = node.system || stripPrefix(node.text) || node.id;
 
-  // 🔑 BACKEND-LEIDEND SIGNaal respecteren
+  // 🔑 BACKEND-LEIDEND signaal respecteren
   if (node.requires_price || node.ui_mode === "prijs") {
-    toonPrijsInvoer();     // 👈 HIER start de hele prijsflow
+    toonPrijsInvoer(); // start prijsflow
     return;
   }
 
   console.warn("⚠️ System-node zonder prijsfase", node);
 }
+
 
 
 
@@ -478,32 +486,63 @@ async function toonAfwegingMetPrijzen() {
 
 
 
-
 // ========================
-// AFWEGING UI
+// AFWEGING UI – FASE 1 (INVOER)
 // ========================
-
 function toonPrijsInvoerVoorAfweging() {
   const questionEl = document.getElementById("question-text");
   const optionsEl = document.getElementById("options-box");
+  const resultEl = document.getElementById("result-box");
 
-  if (!afwegingNode || !Array.isArray(afwegingNode.next)) {  
-    console.error("Afweging node ontbreekt of heeft geen next-nodes");
+  if (!afwegingNode) {
+    console.error("Afweging node ontbreekt");
     return;
   }
 
+  resetUI();
+  optionsEl.style.display = "block";
+  resultEl.style.display = "none";
+  resultEl.innerHTML = "";
+
   questionEl.innerHTML = `<strong>${stripPrefix(afwegingNode.text)}</strong>`;
-  optionsEl.innerHTML = "";
 
-  afwegingNode.next.forEach((nextNode, index) => {
-    if (nextNode.type !== "systeem") return;
+  // ===== Oppervlakte =====
+  const label = document.createElement("label");
+  label.innerHTML = `
+    Oppervlakte (m²):<br>
+    <input type="number" id="input-m2" min="1">
+  `;
+  optionsEl.appendChild(label);
 
+  // ===== Aantal ruimtes =====
+  const ruimteBlok = document.createElement("div");
+  ruimteBlok.style.marginTop = "16px";
+  ruimteBlok.innerHTML = `<strong>Aantal ruimtes:</strong>`;
+  optionsEl.appendChild(ruimteBlok);
+
+  [1, 2, 3].forEach(aantal => {
     const btn = document.createElement("button");
-    btn.textContent = stripPrefix(nextNode.text);
+    btn.textContent = `${aantal} ruimte${aantal > 1 ? "s" : ""}`;
+    btn.classList.add("ruimte-knop");
 
-    btn.onclick = () => {
-      inAfweging = false;
-      chooseOption(index);
+    btn.onclick = async () => {
+      document.querySelectorAll(".ruimte-knop")
+        .forEach(b => b.classList.remove("actief"));
+      btn.classList.add("actief");
+
+      gekozenRuimtes = aantal;
+      gekozenOppervlakte = parseFloat(
+        document.getElementById("input-m2").value
+      );
+
+      if (!gekozenOppervlakte || gekozenOppervlakte <= 0) {
+        resultEl.style.display = "block";
+        resultEl.innerHTML = "Vul eerst een geldige oppervlakte in.";
+        return;
+      }
+
+      // 🔑 PAS NU: systemen + prijzen tonen
+      await toonAfwegingMetPrijzen();
     };
 
     optionsEl.appendChild(btn);
@@ -683,8 +722,12 @@ function toonPrijsInvoer() {
 
 
 // ========================
-// PRIJS BEREKENEN (BACKEND-LEIDEND)
+// ⚠️ LEGACY – NIET MEER GEBRUIKEN
+// Oude prijsflow. Vervangen door:
+// toonPrijsInvoer → herberekenPrijs → toonSysteemPrijsResultaat
 // ========================
+
+/*
 async function berekenPrijs(ruimtes) {
   const m2Input = document.getElementById("input-m2");
   const resultEl = document.getElementById("result-box");
@@ -698,12 +741,8 @@ async function berekenPrijs(ruimtes) {
     return;
   }
 
-  // 🔑 backend berekent
   await herberekenPrijs();
 
-  // ========================
-  // PRIJS TONEN (INFORMATIEF)
-  // ========================
   resultEl.style.display = "block";
   resultEl.innerHTML = `
     <div class="card">
@@ -714,31 +753,28 @@ async function berekenPrijs(ruimtes) {
     </div>
   `;
 
-  // ========================
-  // 🔑 BEVESTIGINGSKNOP
-  // ========================
   const bevestigBtn = document.createElement("button");
   bevestigBtn.textContent = "Kies dit systeem en ga verder";
-  bevestigBtn.style.marginTop = "16px";
 
   bevestigBtn.onclick = async () => {
-    console.log("➡️ Systeem bevestigd, keuzeboom vervolgen");
-
-    // 🔑 PRIJSFASE AFSLUITEN → kaart opruimen
     resultEl.innerHTML = "";
     resultEl.style.display = "none";
-
-    // systeem-node heeft altijd exact 1 vervolg
     await chooseOption(0);
   };
 
   resultEl.appendChild(bevestigBtn);
-
-  console.log("ℹ️ Prijs berekend — wacht op systeembevestiging");
 }
+*/
 
 
 
+
+// ========================
+// ⚠️ LEGACY – AFWEGING RESULTATEN (NIET MEER GEBRUIKEN)
+// Vervangen door: toonAfwegingMetPrijzen()
+// ========================
+
+/*
 function toonAfwegingResultaten() {
   const resultEl = document.getElementById("afweging-resultaat");
   if (!resultEl) return;
@@ -761,11 +797,18 @@ function toonAfwegingResultaten() {
 
   resultEl.innerHTML = html;
 }
+*/
 
 
+// ========================
+// ⚠️ LEGACY – AFWEGING KEUZE (NIET MEER GEBRUIKEN)
+// Vervangen door: chooseOption(index) vanuit toonAfwegingMetPrijzen()
+// ========================
+
+/*
 async function kiesAfgewogenSysteem(index) {
-  afwegingAfgerond = true;        // ⛔ voorkomt nieuwe afweging
-  inAfwegingPrijs = false;        // ⛔ voorkomt opnieuw m² vragen
+  afwegingAfgerond = true;
+  inAfwegingPrijs = false;
 
   const gekozen = afwegingResultaten[index];
   gekozenSysteem = gekozen.systeem;
@@ -773,12 +816,11 @@ async function kiesAfgewogenSysteem(index) {
   prijsPerM2 = gekozen.prijsPerM2;
   totaalPrijs = basisPrijs;
 
-  gekozenExtras = [];             // reset extras voor nieuw basissysteem
+  gekozenExtras = [];
   backendExtras = [];
-  inOptieFase = true;             // ✅ vanaf hier: normale opties
+  inOptieFase = true;
   inAfweging = false;
 
-  // vervolg de keuzeboom NA de afweging
   const res = await fetch(`${API_BASE}/api/next`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
@@ -791,6 +833,7 @@ async function kiesAfgewogenSysteem(index) {
   const node = await res.json();
   renderNode(node);
 }
+*/
 
 
 
