@@ -1,3 +1,10 @@
+.options-stack {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+
 /* =========================
    BASIS & KLEUREN
    ========================= */
@@ -303,4 +310,14 @@ hr {
   #result-box .totaalprijs {
     font-size: 24px;
   }
+}
+
+/* =========================
+   DEFINITIEVE FIX – ANTWOORDKNOPPEN
+   ========================= */
+
+.antwoord-groep {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
 }

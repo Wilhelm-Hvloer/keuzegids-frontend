@@ -15,12 +15,18 @@ function resetUI() {
 
 console.log("Keuzegids frontend gestart");
 
+function maakAntwoordGroep() {
+  const groep = document.createElement("div");
+  groep.classList.add("antwoord-groep");
+  return groep;
+}
+
+
 // ========================
 // CONFIG
 // ========================
 
 const API_BASE = "https://keuzegids-backend.onrender.com";
-
 
 
 // ========================
@@ -306,16 +312,18 @@ function detectExtraFromText(text = "") {
 
 
 // ========================
-// SYSTEEMSELECTIE (BACKEND-LEIDEND, DOMME RENDERER)
+// SYSTEEMSELECTIE (DEFINITIEF, SPACING-ZEKER)
 // ========================
 function toonSysteemSelectie(node) {
   const questionEl = document.getElementById("question-text");
   const optionsEl = document.getElementById("options-box");
 
+  // UI reset
   resetUI();
   optionsEl.style.display = "block";
   optionsEl.innerHTML = "";
 
+  // Titel
   questionEl.innerHTML = "<strong>Kies een coatingsysteem</strong>";
 
   if (!Array.isArray(node.next) || node.next.length === 0) {
@@ -325,12 +333,14 @@ function toonSysteemSelectie(node) {
 
   node.next.forEach((optie, index) => {
     const btn = document.createElement("button");
+    btn.type = "button";
     btn.textContent = optie.text || "Kies";
 
-    btn.onclick = () => {
+    btn.addEventListener("click", () => {
       chooseOption(index);
-    };
+    });
 
+    // 🔑 DIRECT child van options-box → CSS spacing werkt
     optionsEl.appendChild(btn);
   });
 }
@@ -421,22 +431,31 @@ async function chooseOption(index) {
 
 
 // ========================
-// VRAAG TONEN + OPTIES
+// VRAAG TONEN + OPTIES (DEFINITIEF)
 // ========================
 function toonVraagMetOpties(node) {
   const questionEl = document.getElementById("question-text");
   const optionsEl = document.getElementById("options-box");
 
+  // container resetten
   optionsEl.style.display = "block";
   optionsEl.innerHTML = "";
+
+  // vraagtekst tonen
   questionEl.textContent = stripPrefix(node.text);
 
   if (!Array.isArray(node.next)) return;
 
   node.next.forEach((optie, index) => {
     const btn = document.createElement("button");
+    btn.type = "button";
     btn.textContent = stripPrefix(optie.text || "Verder");
-    btn.onclick = () => chooseOption(index);
+
+    btn.addEventListener("click", () => {
+      chooseOption(index);
+    });
+
+    // 🔑 knop is DIRECT child van options-box → gap werkt
     optionsEl.appendChild(btn);
   });
 }
@@ -600,7 +619,7 @@ function handleEindeNode(node) {
 
 
 // ========================
-// AFWEGING MET PRIJSVERGELIJKING
+// AFWEGING MET PRIJSVERGELIJKING (DEFINITIEF)
 // ========================
 
 async function toonAfwegingMetPrijzen() {
@@ -638,17 +657,16 @@ async function toonAfwegingMetPrijzen() {
     });
 
     const btn = document.createElement("button");
+    btn.type = "button";
     btn.classList.add("systeem-knop");
 
     btn.innerHTML = `
-      <strong>${systeemNaam}</strong><br>
-      <span style="font-size:14px;">
-        € ${resultaat.prijsPerM2} / m²
-      </span><br>
+      <strong>${systeemNaam}</strong>
+      <span style="font-size:14px;">€ ${resultaat.prijsPerM2} / m²</span>
       <strong>€ ${resultaat.totaal},-</strong>
     `;
 
-    btn.onclick = () => {
+    btn.addEventListener("click", () => {
       // prijs vastzetten
       gekozenSysteem = systeemNaam;
       basisPrijs = resultaat.totaal;
@@ -663,18 +681,17 @@ async function toonAfwegingMetPrijzen() {
           n => n.id === systeemNode.id
         );
 
-        // 👉 keuzeboom vervolgen
         chooseOption(index);
       }
 
       if (actieveFlow === "prijslijst") {
-        // ❌ bewust geen vervolg
         console.log(
           "Prijslijst-flow: systeem gekozen, prijzen tonen is eindpunt"
         );
       }
-    };
+    });
 
+    // 🔑 DIRECT child van options-box → spacing werkt
     optionsEl.appendChild(btn);
   }
 }
@@ -856,20 +873,21 @@ function toonPrijsContext() {
 
 
 // ========================
-// PRIJSINVOER (BACKEND-LEIDEND)
+// PRIJSINVOER (DEFINITIEF, SPACING-ZEKER)
 // ========================
 function toonPrijsInvoer() {
   const questionEl = document.getElementById("question-text");
-  const optionsEl = document.getElementById("options-box");
-  const resultEl = document.getElementById("result-box");
+  const optionsEl  = document.getElementById("options-box");
+  const resultEl   = document.getElementById("result-box");
 
   resetUI();
 
   optionsEl.style.display = "block";
+  optionsEl.innerHTML = "";
   resultEl.style.display = "none";
   resultEl.innerHTML = "";
 
-  // 🔧 FIX 3: robuuste titel (geen "null")
+  // Titel
   questionEl.innerHTML = `
     <strong>
       ${gekozenSysteem ? gekozenSysteem + "<br>" : ""}
@@ -878,34 +896,36 @@ function toonPrijsInvoer() {
   `;
 
   // ===== Oppervlakte =====
-  const label = document.createElement("label");
-  label.innerHTML = `
-    Oppervlakte (m²):<br>
-    <input type="number" id="input-m2" min="1">
-  `;
-  optionsEl.appendChild(label);
+  const m2Input = document.createElement("input");
+  m2Input.type = "number";
+  m2Input.id = "input-m2";
+  m2Input.min = "1";
+  m2Input.placeholder = "Oppervlakte in m²";
+  m2Input.classList.add("input-vol");
 
-  // ===== Aantal ruimtes =====
-  const ruimteBlok = document.createElement("div");
-  ruimteBlok.style.marginTop = "16px";
-  ruimteBlok.innerHTML = `<strong>Aantal ruimtes:</strong>`;
-  optionsEl.appendChild(ruimteBlok);
+  optionsEl.appendChild(m2Input);
 
+  // ===== Aantal ruimtes (titel) =====
+  const ruimteTitel = document.createElement("div");
+  ruimteTitel.innerHTML = "<strong>Aantal ruimtes:</strong>";
+  optionsEl.appendChild(ruimteTitel);
+
+  // ===== Ruimte knoppen =====
   [1, 2, 3].forEach(aantal => {
     const btn = document.createElement("button");
+    btn.type = "button";
     btn.textContent = `${aantal} ruimte${aantal > 1 ? "s" : ""}`;
     btn.classList.add("ruimte-knop");
 
-    btn.onclick = async () => {
+    btn.addEventListener("click", async () => {
       // UI state
-      document.querySelectorAll(".ruimte-knop")
+      document
+        .querySelectorAll(".ruimte-knop")
         .forEach(b => b.classList.remove("actief"));
       btn.classList.add("actief");
 
       gekozenRuimtes = aantal;
-      gekozenOppervlakte = parseFloat(
-        document.getElementById("input-m2").value
-      );
+      gekozenOppervlakte = parseFloat(m2Input.value);
 
       if (!gekozenOppervlakte || gekozenOppervlakte <= 0) {
         resultEl.style.display = "block";
@@ -913,16 +933,18 @@ function toonPrijsInvoer() {
         return;
       }
 
-      // 🔑 Backend berekent
+      // Backend berekent
       await herberekenPrijs();
 
-      // 🔑 ALTIJD eindigen met expliciete systeemkaart
+      // Altijd eindigen met systeemkaart
       toonSysteemPrijsResultaat();
-    };
+    });
 
+    // 🔑 DIRECT child → gap werkt
     optionsEl.appendChild(btn);
   });
 }
+
 
 
 // ========================
