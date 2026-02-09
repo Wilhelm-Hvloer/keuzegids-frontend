@@ -123,7 +123,7 @@ function startPrijslijst() {
 }
 
 // ========================
-// PRIJSLIJST – SYSTEEMSELECTIE (FIX 2)
+// PRIJSLIJST – SYSTEEMSELECTIE (DEFINITIEF & CONSISTENT)
 // ========================
 function toonPrijslijstSysteemSelectie() {
   const questionEl = document.getElementById("question-text");
@@ -132,6 +132,7 @@ function toonPrijslijstSysteemSelectie() {
 
   resetUI();
   optionsEl.style.display = "block";
+  optionsEl.innerHTML = "";
   resultEl.style.display = "none";
   resultEl.innerHTML = "";
 
@@ -161,13 +162,17 @@ function toonPrijslijstSysteemSelectie() {
     "DOS-coating Premium"
   ];
 
+  // 🔑 ALLE SYSTEEMKNOPPEN IN ÉÉN ANTWOORD-GROEP
+  const groep = document.createElement("div");
+  groep.className = "antwoord-groep";
+
   systemen.forEach(systeem => {
     const btn = document.createElement("button");
+    btn.type = "button";
     btn.textContent = systeem;
 
     btn.onclick = () => {
       if (geselecteerdePrijslijstSystemen.includes(systeem)) {
-        // deselecteren
         geselecteerdePrijslijstSystemen =
           geselecteerdePrijslijstSystemen.filter(s => s !== systeem);
         btn.classList.remove("actief");
@@ -189,9 +194,12 @@ function toonPrijslijstSysteemSelectie() {
       }
     };
 
-    optionsEl.appendChild(btn);
+    groep.appendChild(btn);
   });
+
+  optionsEl.appendChild(groep);
 }
+
 
 
 // ========================
