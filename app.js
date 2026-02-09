@@ -21,12 +21,7 @@ console.log("Keuzegids frontend gestart");
 
 const API_BASE = "https://keuzegids-backend.onrender.com";
 
-// 👉 FRONTEND → BACKEND VERTALING VOOR EXTRA OPTIES
-// keys = exacte antwoordtekst uit keuzeboom (lowercase, zonder prefix)
-// values = wat backend verwacht
-const EXTRA_MAPPING = {
-  "ja, decoflakes toevoegen": "decoflakes"
-};
+
 
 // ========================
 // STATE
@@ -54,6 +49,8 @@ const MEERWERK_TARIEF = 120;
 let afwegingNode = null;
 let afwegingResultaten = [];
 let inAfwegingPrijs = false;
+
+
 
 // ========================
 // PRIJSLIJST STATE
@@ -225,6 +222,9 @@ function startVergelijking() {
 
 
 
+
+
+
 // ========================
 // START KEUZEGIDS (BACKEND-LEIDEND)
 // ========================
@@ -271,6 +271,23 @@ window.startKeuzegids = startKeuzegids;
 window.startPrijslijst = startPrijslijst;
 
 
+const EXTRA_DETECTIE = [
+  { key: "add_250",     match: ["add250", "add 250"] },
+  { key: "decoflakes",  match: ["decoflakes"] },
+  { key: "durakorrel",  match: ["durakorrel"] },
+  { key: "uitvlaklaag", match: ["uitvlaklaag"] }
+];
+
+function detectExtraFromText(text = "") {
+  const clean = text.toLowerCase();
+  for (const extra of EXTRA_DETECTIE) {
+    if (extra.match.some(m => clean.includes(m))) {
+      return extra.key;
+    }
+  }
+  return null;
+}
+
 
 // ========================
 // SYSTEEMSELECTIE (BACKEND-LEIDEND, DOMME RENDERER)
@@ -309,7 +326,6 @@ function toonSysteemSelectie(node) {
 
 
 
-
 // ========================
 // KEUZE MAKEN (BACKEND-LEIDEND) – DEFINITIEF
 // ========================
@@ -339,12 +355,11 @@ async function chooseOption(index) {
         antwoord: stripPrefix(gekozenOptie.text || "")
       });
 
-      // 2️⃣ Extra opslaan ALS deze optie een extra-key heeft
-      if (gekozenOptie.extra) {
-        if (!gekozenExtras.includes(gekozenOptie.extra)) {
-          gekozenExtras.push(gekozenOptie.extra);
-          console.log("➕ Extra toegevoegd:", gekozenOptie.extra);
-        }
+      // 2️⃣ Extra automatisch herkennen op basis van tekst
+      const extraKey = detectExtraFromText(gekozenOptie.text || "");
+      if (extraKey && !gekozenExtras.includes(extraKey)) {
+        gekozenExtras.push(extraKey);
+        console.log("➕ Extra herkend:", extraKey);
       }
     }
   }
@@ -395,6 +410,7 @@ async function chooseOption(index) {
 
 
 
+
 // ========================
 // VRAAG TONEN + OPTIES
 // ========================
@@ -418,7 +434,7 @@ function toonVraagMetOpties(node) {
 
 
 // ========================
-// NODE RENDEREN (ROUTER)
+// NODE RENDEREN (ROUTER) – GECORRIGEERD
 // ========================
 async function renderNode(node) {
   if (!node) return;
@@ -431,8 +447,16 @@ async function renderNode(node) {
       handleVraagNode(node);
       return;
 
+    // ⚠️ Antwoord-nodes bevatten geen UI meer,
+    // keuzes worden verwerkt via chooseOption()
     case "antwoord":
-      await handleAntwoordNode(node);
+      // direct door naar volgende node
+      if (Array.isArray(node.next) && node.next.length > 0) {
+        const nextNodeId = node.next[0];
+        await gaNaarNode(nextNodeId);
+      } else {
+        handleEindeNode(node);
+      }
       return;
 
     // 🔑 BELANGRIJK: backend gebruikt "systeem"
@@ -461,6 +485,7 @@ async function renderNode(node) {
 
 
 
+
 // ========================
 // VRAAG
 // ========================
@@ -470,40 +495,17 @@ function handleVraagNode(node) {
 }
 
 // ========================
-// ANTWOORD (BACKEND-LEIDEND)
+// ANTWOORD NODE (AUTO-DOORLOOP)
 // ========================
 async function handleAntwoordNode(node) {
-  if (node.text && lastVraagTekst) {
-    const antwoordTekst = stripPrefix(node.text);
+  // Antwoordlogica wordt afgehandeld in chooseOption()
+  // Deze functie is alleen nog verantwoordelijk voor auto-doorloop
 
-    const key = antwoordTekst.toLowerCase().trim();
-    const isExtra = EXTRA_MAPPING[key];
-
-    // ========================
-    // VRAAG / ANTWOORD OPSLAAN
-    // ========================
-    gekozenAntwoorden.push({
-      vraag: lastVraagTekst,
-      antwoord: antwoordTekst
-    });
-
-    // ========================
-    // EXTRA REGISTREREN (bv. DecoFlakes)
-    // ========================
-    if (isExtra && !gekozenExtras.includes(isExtra)) {
-      gekozenExtras.push(isExtra);
-    }
-
-    lastVraagTekst = null;
-  }
-
-  // ========================
-  // AUTO-DOORLOOP
-  // ========================
   if (Array.isArray(node.next) && node.next.length === 1) {
     await chooseOption(0);
   }
 }
+
 
 // ========================
 // SYSTEM NODE → AFHANDELING (DEFINITIEF)
