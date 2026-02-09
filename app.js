@@ -730,12 +730,12 @@ async function toonAfwegingMetPrijzen() {
 
 
 // ========================
-// AFWEGING UI – FASE 1 (INVOER)
+// AFWEGING UI – FASE 1 (INVOER) – DEFINITIEF
 // ========================
 function toonPrijsInvoerVoorAfweging() {
   const questionEl = document.getElementById("question-text");
-  const optionsEl = document.getElementById("options-box");
-  const resultEl = document.getElementById("result-box");
+  const optionsEl  = document.getElementById("options-box");
+  const resultEl   = document.getElementById("result-box");
 
   if (!afwegingNode) {
     console.error("Afweging node ontbreekt");
@@ -744,39 +744,45 @@ function toonPrijsInvoerVoorAfweging() {
 
   resetUI();
   optionsEl.style.display = "block";
+  optionsEl.innerHTML = "";
   resultEl.style.display = "none";
   resultEl.innerHTML = "";
 
   questionEl.innerHTML = `<strong>${stripPrefix(afwegingNode.text)}</strong>`;
 
   // ===== Oppervlakte =====
-  const label = document.createElement("label");
-  label.innerHTML = `
-    Oppervlakte (m²):<br>
-    <input type="number" id="input-m2" min="1">
-  `;
-  optionsEl.appendChild(label);
+  const m2Input = document.createElement("input");
+  m2Input.type = "number";
+  m2Input.id = "input-m2";
+  m2Input.min = "1";
+  m2Input.placeholder = "Oppervlakte in m²";
+  m2Input.classList.add("input-vol");
 
-  // ===== Aantal ruimtes =====
-  const ruimteBlok = document.createElement("div");
-  ruimteBlok.style.marginTop = "16px";
-  ruimteBlok.innerHTML = `<strong>Aantal ruimtes:</strong>`;
-  optionsEl.appendChild(ruimteBlok);
+  optionsEl.appendChild(m2Input);
+
+  // ===== Aantal ruimtes (titel) =====
+  const ruimteTitel = document.createElement("div");
+  ruimteTitel.innerHTML = "<strong>Aantal ruimtes:</strong>";
+  optionsEl.appendChild(ruimteTitel);
+
+  // ===== Ruimte knoppen (ALTIJD GROEP) =====
+  const groep = document.createElement("div");
+  groep.className = "antwoord-groep";
 
   [1, 2, 3].forEach(aantal => {
     const btn = document.createElement("button");
+    btn.type = "button";
     btn.textContent = `${aantal} ruimte${aantal > 1 ? "s" : ""}`;
     btn.classList.add("ruimte-knop");
 
-    btn.onclick = async () => {
-      document.querySelectorAll(".ruimte-knop")
+    btn.addEventListener("click", async () => {
+      groep
+        .querySelectorAll(".ruimte-knop")
         .forEach(b => b.classList.remove("actief"));
       btn.classList.add("actief");
 
       gekozenRuimtes = aantal;
-      gekozenOppervlakte = parseFloat(
-        document.getElementById("input-m2").value
-      );
+      gekozenOppervlakte = parseFloat(m2Input.value);
 
       if (!gekozenOppervlakte || gekozenOppervlakte <= 0) {
         resultEl.style.display = "block";
@@ -784,13 +790,15 @@ function toonPrijsInvoerVoorAfweging() {
         return;
       }
 
-      // 🔑 PAS NU: systemen + prijzen tonen
       await toonAfwegingMetPrijzen();
-    };
+    });
 
-    optionsEl.appendChild(btn);
+    groep.appendChild(btn);
   });
+
+  optionsEl.appendChild(groep);
 }
+
 
 
 // ========================
