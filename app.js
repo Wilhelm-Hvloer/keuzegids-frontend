@@ -1197,9 +1197,8 @@ function toonMeerwerkPagina() {
     groep
   );
 }
-
 // ========================
-// EXTRA MATERIAAL
+// EXTRA MATERIAAL – DEFINITIEF (CONSISTENT)
 // ========================
 function toonMateriaalPagina() {
   const questionEl = document.getElementById("question-text");
@@ -1225,9 +1224,11 @@ function toonMateriaalPagina() {
   toelichtingInput.classList.add("input-vol");
 
   const btnNee = document.createElement("button");
+  btnNee.type = "button";
   btnNee.textContent = "Nee, geen extra materiaal toevoegen";
 
   const btnJa = document.createElement("button");
+  btnJa.type = "button";
   btnJa.textContent = "Ja, extra materiaal toevoegen";
   btnJa.classList.add("actie-knop");
   btnJa.disabled = true;
@@ -1247,9 +1248,9 @@ function toonMateriaalPagina() {
         'Maak invoerveld leeg, of kies "Ja, extra toevoegen"';
       return;
     }
+
     extraMateriaal.bedrag = null;
     extraMateriaal.toelichting = "";
-
     herberekenPrijs().then(toonSamenvatting);
   };
 
@@ -1261,18 +1262,24 @@ function toonMateriaalPagina() {
 
     extraMateriaal.bedrag = parseInt(bedragInput.value);
     extraMateriaal.toelichting = toelichtingInput.value.trim();
-
     herberekenPrijs().then(toonSamenvatting);
   };
+
+  // 🔑 ZELFDE OPLOSSING ALS EXTRA ARBEID
+  const groep = document.createElement("div");
+  groep.className = "antwoord-groep";
+
+  groep.appendChild(btnNee);
+  groep.appendChild(btnJa);
 
   optionsEl.append(
     bedragInput,
     toelichtingInput,
     foutmelding,
-    btnNee,
-    btnJa
+    groep
   );
 }
+
 
 
 // ========================
@@ -1467,29 +1474,31 @@ function stripPrefix(text = "") {
 }
 
 // ========================
-// HOMESCREEN ACTIES (OPGESCHOOND)
+// HOMESCREEN ACTIES (DEFINITIEF & CONSISTENT)
 // ========================
 function gaNaarHome() {
   // schermen resetten
   document.getElementById("flow-screen").style.display = "none";
   document.getElementById("home-screen").style.display = "block";
 
-  // UI leegmaken
+  // tekst resetten
   document.getElementById("question-text").innerHTML = "";
 
   const optionsEl = document.getElementById("options-box");
-  optionsEl.innerHTML = "";
-  optionsEl.style.display = "none";
+  const resultEl = document.getElementById("result-box");
 
-  document.getElementById("result-box").innerHTML = "";
+  // containers opschonen
+  optionsEl.innerHTML = "";
+  optionsEl.style.display = "block";
+  resultEl.innerHTML = "";
+  resultEl.style.display = "none";
 
   // ========================
   // FRONTEND STATE RESET
   // ========================
   currentNode = null;
   actieveFlow = null;
-
-  systeemKeuzeIndex = null; // 🔑 BELANGRIJK: reset voor volgende run
+  systeemKeuzeIndex = null;
 
   gekozenSysteem = null;
   gekozenAntwoorden = [];
@@ -1505,4 +1514,26 @@ function gaNaarHome() {
   meerwerkUren = 0;
 
   lastVraagTekst = null;
+
+  // ========================
+  // HOMESCREEN KNOPPEN OPNIEUW RENDEREN
+  // ========================
+  const groep = document.createElement("div");
+  groep.className = "antwoord-groep";
+
+  const btnKeuzegids = document.createElement("button");
+  btnKeuzegids.type = "button";
+  btnKeuzegids.textContent = "Start keuzegids";
+  btnKeuzegids.onclick = startKeuzegids;
+
+  const btnPrijslijst = document.createElement("button");
+  btnPrijslijst.type = "button";
+  btnPrijslijst.textContent = "Start prijslijst";
+  btnPrijslijst.onclick = startPrijslijst;
+
+  groep.appendChild(btnKeuzegids);
+  groep.appendChild(btnPrijslijst);
+
+  optionsEl.appendChild(groep);
 }
+
