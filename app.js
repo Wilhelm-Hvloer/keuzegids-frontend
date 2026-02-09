@@ -179,12 +179,11 @@ function toonPrijslijstSysteemSelectie() {
 function toonGeefPrijsKnop() {
   const optionsEl = document.getElementById("options-box");
 
-  // voorkom dubbele knop
   if (document.getElementById("btn-geef-prijs")) return;
 
   const btn = document.createElement("button");
   btn.id = "btn-geef-prijs";
-  btn.style.marginTop = "16px";
+  btn.classList.add("actie-knop");
   btn.textContent = "Bereken prijs";
 
   btn.onclick = () => {
@@ -196,9 +195,10 @@ function toonGeefPrijsKnop() {
 }
 
 function verwijderGeefPrijsKnop() {
-  const btn = document.getElementById("btn-geef-prijs");
-  if (btn) btn.remove();
+  document.getElementById("btn-geef-prijs")?.remove();
 }
+
+
 
 
 // ========================
