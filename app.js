@@ -730,7 +730,7 @@ async function toonAfwegingMetPrijzen() {
 
 
 // ========================
-// AFWEGING UI – FASE 1 (INVOER) – DEFINITIEF
+// AFWEGING UI – FASE 1 (INVOER) – DEFINITIEF & CONSISTENT
 // ========================
 function toonPrijsInvoerVoorAfweging() {
   const questionEl = document.getElementById("question-text");
@@ -760,14 +760,15 @@ function toonPrijsInvoerVoorAfweging() {
 
   optionsEl.appendChild(m2Input);
 
-  // ===== Aantal ruimtes (titel) =====
-  const ruimteTitel = document.createElement("div");
-  ruimteTitel.innerHTML = "<strong>Aantal ruimtes:</strong>";
-  optionsEl.appendChild(ruimteTitel);
-
-  // ===== Ruimte knoppen (ALTIJD GROEP) =====
+  // ===== Aantal ruimtes (titel + knoppen = één blok) =====
   const groep = document.createElement("div");
   groep.className = "antwoord-groep";
+
+  const ruimteTitel = document.createElement("div");
+  ruimteTitel.className = "subtitel";
+  ruimteTitel.innerHTML = "<strong>Aantal ruimtes:</strong>";
+
+  groep.appendChild(ruimteTitel);
 
   [1, 2, 3].forEach(aantal => {
     const btn = document.createElement("button");
@@ -798,6 +799,7 @@ function toonPrijsInvoerVoorAfweging() {
 
   optionsEl.appendChild(groep);
 }
+
 
 
 
@@ -908,7 +910,7 @@ function toonPrijsContext() {
 
 
 // ========================
-// PRIJSINVOER (DEFINITIEF, SPACING-ZEKER)
+// PRIJSINVOER – ENKEL SYSTEEM (DEFINITIEF & STABIEL)
 // ========================
 function toonPrijsInvoer() {
   const questionEl = document.getElementById("question-text");
@@ -922,7 +924,9 @@ function toonPrijsInvoer() {
   resultEl.style.display = "none";
   resultEl.innerHTML = "";
 
-  // Titel
+  // ========================
+  // TITEL
+  // ========================
   questionEl.innerHTML = `
     <strong>
       ${gekozenSysteem ? gekozenSysteem + "<br>" : ""}
@@ -930,7 +934,15 @@ function toonPrijsInvoer() {
     </strong>
   `;
 
-  // ===== Oppervlakte =====
+  // ========================
+  // HOOFDCONTAINER (ALLE SPACING HIER)
+  // ========================
+  const hoofdGroep = document.createElement("div");
+  hoofdGroep.className = "antwoord-groep";
+
+  // ========================
+  // OPPERVLAKTE
+  // ========================
   const m2Input = document.createElement("input");
   m2Input.type = "number";
   m2Input.id = "input-m2";
@@ -938,16 +950,22 @@ function toonPrijsInvoer() {
   m2Input.placeholder = "Oppervlakte in m²";
   m2Input.classList.add("input-vol");
 
-  optionsEl.appendChild(m2Input);
+  hoofdGroep.appendChild(m2Input);
 
-  // ===== Aantal ruimtes (titel) =====
+  // ========================
+  // AANTAL RUIMTES – TITEL IN EIGEN BAKJE
+  // ========================
   const ruimteTitel = document.createElement("div");
+  ruimteTitel.className = "antwoord-titel";
   ruimteTitel.innerHTML = "<strong>Aantal ruimtes:</strong>";
-  optionsEl.appendChild(ruimteTitel);
 
-  // ===== Ruimte knoppen → ALTIJD in antwoord-groep =====
-  const groep = document.createElement("div");
-  groep.className = "antwoord-groep";
+  hoofdGroep.appendChild(ruimteTitel);
+
+  // ========================
+  // RUIMTE KNOPPEN (EIGEN GROEP)
+  // ========================
+  const ruimteGroep = document.createElement("div");
+  ruimteGroep.className = "antwoord-groep";
 
   [1, 2, 3].forEach(aantal => {
     const btn = document.createElement("button");
@@ -956,7 +974,7 @@ function toonPrijsInvoer() {
     btn.classList.add("ruimte-knop");
 
     btn.addEventListener("click", async () => {
-      document
+      ruimteGroep
         .querySelectorAll(".ruimte-knop")
         .forEach(b => b.classList.remove("actief"));
       btn.classList.add("actief");
@@ -974,11 +992,17 @@ function toonPrijsInvoer() {
       toonSysteemPrijsResultaat();
     });
 
-    groep.appendChild(btn);
+    ruimteGroep.appendChild(btn);
   });
 
-  optionsEl.appendChild(groep);
+  hoofdGroep.appendChild(ruimteGroep);
+
+  // ========================
+  // IN DOM PLAATSEN
+  // ========================
+  optionsEl.appendChild(hoofdGroep);
 }
+
 
 
 
