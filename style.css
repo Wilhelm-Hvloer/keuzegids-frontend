@@ -170,6 +170,23 @@ label {
 }
 
 /* =========================
+   EXTRA INVOERVELDEN (MEERWERK / MATERIAAL)
+   ========================= */
+
+.input-vol {
+  width: 100%;
+  max-width: 100%;
+  box-sizing: border-box;
+  padding: 14px 16px;
+  margin-bottom: 12px;
+  border-radius: 8px;
+  border: none;
+  font-size: 16px;
+  background: #ededed;
+}
+
+
+/* =========================
    PRIJS CONTEXT BLOK
    ========================= */
 
@@ -244,32 +261,28 @@ hr {
 
 
 /* =========================
-   VERTICALE SPACING VOOR LOSSE KNOPPEN
+   VERTICALE SPACING KNOPPEN (DEFINITIEF)
    ========================= */
 
+/* algemene knoppen: lichte spacing */
 button + button {
   margin-top: 12px;
 }
 
+/* homepage: iets meer lucht */
 #home-screen button + button {
   margin-top: 16px;
 }
 
+/* flow gebruikt GEEN margins maar flex-gap */
 #options-box button + button {
   margin-top: 0;
 }
 
-/* =========================
-   SPACING VOOR FLOW-KNOPPEN
-   ========================= */
-
 #flow-screen button {
-  margin-bottom: 12px;
-}
-
-#options-box button {
   margin-bottom: 0;
 }
+
 
 /* =========================
    VERBERG LOZE KNOPPEN

@@ -1085,7 +1085,7 @@ function toonMeerwerkPagina() {
   optionsEl.style.display = "block";
   optionsEl.innerHTML = "";
 
-  let foutmelding = document.createElement("div");
+  const foutmelding = document.createElement("div");
   foutmelding.style.color = "#BC4C1F";
   foutmelding.style.marginTop = "8px";
 
@@ -1094,9 +1094,11 @@ function toonMeerwerkPagina() {
   urenInput.min = "0";
   urenInput.step = "1";
   urenInput.placeholder = "Aantal uren meerwerk";
+  urenInput.classList.add("input-vol");
 
   const toelichtingInput = document.createElement("textarea");
-  toelichtingInput.placeholder = "Toelichting (verplicht bij ja)";
+  toelichtingInput.placeholder = "Geef toelichting voor meerwerk";
+  toelichtingInput.classList.add("input-vol");
 
   const btnNee = document.createElement("button");
   btnNee.textContent = "Nee, geen meerwerk toevoegen";
@@ -1158,7 +1160,7 @@ function toonMateriaalPagina() {
   optionsEl.style.display = "block";
   optionsEl.innerHTML = "";
 
-  let foutmelding = document.createElement("div");
+  const foutmelding = document.createElement("div");
   foutmelding.style.color = "#BC4C1F";
   foutmelding.style.marginTop = "8px";
 
@@ -1167,9 +1169,11 @@ function toonMateriaalPagina() {
   bedragInput.min = "0";
   bedragInput.step = "1";
   bedragInput.placeholder = "Kosten extra materiaal (€)";
+  bedragInput.classList.add("input-vol");
 
   const toelichtingInput = document.createElement("textarea");
-  toelichtingInput.placeholder = "Toelichting (verplicht bij ja)";
+  toelichtingInput.placeholder = "Geef toelichting voor extra materiaal";
+  toelichtingInput.classList.add("input-vol");
 
   const btnNee = document.createElement("button");
   btnNee.textContent = "Nee, geen extra materiaal toevoegen";
@@ -1220,7 +1224,6 @@ function toonMateriaalPagina() {
     btnJa
   );
 }
-
 
 
 // ========================
