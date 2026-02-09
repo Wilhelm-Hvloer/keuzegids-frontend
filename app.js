@@ -311,9 +311,8 @@ function toonSysteemSelectie(node) {
 
 
 
-
 // ========================
-// KEUZE MAKEN (BACKEND-LEIDEND)
+// KEUZE MAKEN (BACKEND-LEIDEND) – GECORRIGEERD
 // ========================
 async function chooseOption(index) {
   if (!currentNode) {
@@ -327,6 +326,20 @@ async function chooseOption(index) {
   }
 
   console.log("➡️ keuze:", currentNode.id, "index:", index);
+
+  // ========================
+  // 🔑 ANTWOORD REGISTREREN BIJ VRAAG-NODE
+  // (nodig voor samenvatting)
+  // ========================
+  if (currentNode.type === "vraag") {
+    const gekozenOptie = currentNode.next[index];
+    if (gekozenOptie && currentNode.text) {
+      gekozenAntwoorden.push({
+        vraag: stripPrefix(currentNode.text),
+        antwoord: stripPrefix(gekozenOptie.text || "")
+      });
+    }
+  }
 
   try {
     const res = await fetch(`${API_BASE}/api/next`, {
