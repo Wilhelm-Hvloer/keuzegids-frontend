@@ -195,28 +195,35 @@ function toonPrijslijstSysteemSelectie() {
 
 
 // ========================
-// PRIJSLIJST – GEEF PRIJS KNOP
+// PRIJSLIJST – GEEF PRIJS KNOP (DEFINITIEF)
 // ========================
 function toonGeefPrijsKnop() {
   const optionsEl = document.getElementById("options-box");
 
+  // voorkom dubbele knop
   if (document.getElementById("btn-geef-prijs")) return;
 
+  // 🔑 vaste container voor knoppen
+  const groep = document.createElement("div");
+  groep.className = "antwoord-groep";
+
   const btn = document.createElement("button");
+  btn.type = "button";
   btn.id = "btn-geef-prijs";
   btn.classList.add("actie-knop");
   btn.textContent = "Bereken prijs";
 
-  btn.onclick = () => {
+  btn.addEventListener("click", () => {
     gekozenSysteem = geselecteerdePrijslijstSystemen[0];
     toonPrijsInvoer();
-  };
+  });
 
-  optionsEl.appendChild(btn);
+  groep.appendChild(btn);
+  optionsEl.appendChild(groep);
 }
 
 function verwijderGeefPrijsKnop() {
-  document.getElementById("btn-geef-prijs")?.remove();
+  document.getElementById("btn-geef-prijs")?.closest(".antwoord-groep")?.remove();
 }
 
 
@@ -437,14 +444,18 @@ function toonVraagMetOpties(node) {
   const questionEl = document.getElementById("question-text");
   const optionsEl = document.getElementById("options-box");
 
-  // container resetten
+  // reset
   optionsEl.style.display = "block";
   optionsEl.innerHTML = "";
 
-  // vraagtekst tonen
+  // vraagtekst
   questionEl.textContent = stripPrefix(node.text);
 
   if (!Array.isArray(node.next)) return;
+
+  // 🔑 ÉÉN vaste container voor alle antwoordknoppen
+  const groep = document.createElement("div");
+  groep.className = "antwoord-groep";
 
   node.next.forEach((optie, index) => {
     const btn = document.createElement("button");
@@ -455,9 +466,11 @@ function toonVraagMetOpties(node) {
       chooseOption(index);
     });
 
-    // 🔑 knop is DIRECT child van options-box → gap werkt
-    optionsEl.appendChild(btn);
+    groep.appendChild(btn);
   });
+
+  // 🔑 slechts ÉÉN child in options-box
+  optionsEl.appendChild(groep);
 }
 
 
@@ -626,7 +639,7 @@ async function toonAfwegingMetPrijzen() {
   const questionEl = document.getElementById("question-text");
   const optionsEl = document.getElementById("options-box");
 
-  // opties tonen en opschonen
+  // reset
   optionsEl.innerHTML = "";
   optionsEl.style.display = "block";
 
@@ -635,6 +648,10 @@ async function toonAfwegingMetPrijzen() {
   questionEl.innerHTML = `<strong>${stripPrefix(afwegingNode.text)}</strong>`;
 
   afwegingResultaten = [];
+
+  // 🔑 ÉÉN vaste container voor alle systeemknoppen
+  const groep = document.createElement("div");
+  groep.className = "antwoord-groep";
 
   for (const systeemNode of afwegingNode.next) {
     if (systeemNode.type !== "systeem") continue;
@@ -673,7 +690,6 @@ async function toonAfwegingMetPrijzen() {
       prijsPerM2 = resultaat.prijsPerM2;
       totaalPrijs = resultaat.totaal;
 
-      // 🔑 GEDRAG SPLITSEN OP ACTIEVE FLOW
       if (actieveFlow === "keuzegids") {
         inOptieFase = true;
 
@@ -691,10 +707,13 @@ async function toonAfwegingMetPrijzen() {
       }
     });
 
-    // 🔑 DIRECT child van options-box → spacing werkt
-    optionsEl.appendChild(btn);
+    groep.appendChild(btn);
   }
+
+  // 🔑 slechts één child in options-box
+  optionsEl.appendChild(groep);
 }
+
 
 
 
@@ -910,7 +929,10 @@ function toonPrijsInvoer() {
   ruimteTitel.innerHTML = "<strong>Aantal ruimtes:</strong>";
   optionsEl.appendChild(ruimteTitel);
 
-  // ===== Ruimte knoppen =====
+  // ===== Ruimte knoppen → ALTIJD in antwoord-groep =====
+  const groep = document.createElement("div");
+  groep.className = "antwoord-groep";
+
   [1, 2, 3].forEach(aantal => {
     const btn = document.createElement("button");
     btn.type = "button";
@@ -918,7 +940,6 @@ function toonPrijsInvoer() {
     btn.classList.add("ruimte-knop");
 
     btn.addEventListener("click", async () => {
-      // UI state
       document
         .querySelectorAll(".ruimte-knop")
         .forEach(b => b.classList.remove("actief"));
@@ -933,17 +954,16 @@ function toonPrijsInvoer() {
         return;
       }
 
-      // Backend berekent
       await herberekenPrijs();
-
-      // Altijd eindigen met systeemkaart
       toonSysteemPrijsResultaat();
     });
 
-    // 🔑 DIRECT child → gap werkt
-    optionsEl.appendChild(btn);
+    groep.appendChild(btn);
   });
+
+  optionsEl.appendChild(groep);
 }
+
 
 
 
@@ -1097,7 +1117,7 @@ async function kiesAfgewogenSysteem(index) {
 
 
 // ========================
-// EXTRA ARBEID (MEERWERK)
+// EXTRA ARBEID (MEERWERK) – DEFINITIEF
 // ========================
 function toonMeerwerkPagina() {
   const questionEl = document.getElementById("question-text");
@@ -1123,9 +1143,11 @@ function toonMeerwerkPagina() {
   toelichtingInput.classList.add("input-vol");
 
   const btnNee = document.createElement("button");
+  btnNee.type = "button";
   btnNee.textContent = "Nee, geen meerwerk toevoegen";
 
   const btnJa = document.createElement("button");
+  btnJa.type = "button";
   btnJa.textContent = "Ja, meerwerk toevoegen";
   btnJa.classList.add("actie-knop");
   btnJa.disabled = true;
@@ -1161,15 +1183,20 @@ function toonMeerwerkPagina() {
     toonMateriaalPagina();
   };
 
+  // 🔑 KNOPPEN ALTIJD IN ANTWOORD-GROEP
+  const groep = document.createElement("div");
+  groep.className = "antwoord-groep";
+
+  groep.appendChild(btnNee);
+  groep.appendChild(btnJa);
+
   optionsEl.append(
     urenInput,
     toelichtingInput,
     foutmelding,
-    btnNee,
-    btnJa
+    groep
   );
 }
-
 
 // ========================
 // EXTRA MATERIAAL
