@@ -327,16 +327,25 @@ async function chooseOption(index) {
   console.log("➡️ keuze:", currentNode.id, "index:", index);
 
   // ========================
-  // 🔑 ANTWOORD REGISTREREN BIJ VRAAG-NODE
-  // (nodig voor samenvatting)
+  // 🔑 ANTWOORD + EXTRA REGISTREREN BIJ VRAAG-NODE
   // ========================
   if (currentNode.type === "vraag") {
     const gekozenOptie = currentNode.next[index];
+
     if (gekozenOptie && currentNode.text) {
+      // 1️⃣ Vraag/antwoord opslaan (voor samenvatting)
       gekozenAntwoorden.push({
         vraag: stripPrefix(currentNode.text),
         antwoord: stripPrefix(gekozenOptie.text || "")
       });
+
+      // 2️⃣ Extra opslaan ALS deze optie een extra-key heeft
+      if (gekozenOptie.extra) {
+        if (!gekozenExtras.includes(gekozenOptie.extra)) {
+          gekozenExtras.push(gekozenOptie.extra);
+          console.log("➕ Extra toegevoegd:", gekozenOptie.extra);
+        }
+      }
     }
   }
 
@@ -383,6 +392,7 @@ async function chooseOption(index) {
     console.error("❌ Fout bij chooseOption:", err);
   }
 }
+
 
 
 // ========================
