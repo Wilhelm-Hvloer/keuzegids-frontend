@@ -320,16 +320,14 @@ button:empty {
 /* =========================
    PRIMAIRE ACTIE – BEREKEN PRIJS (DEFINITIEF)
    ========================= */
-button.actie-knop,
-button.actie-knop:hover {
+#options-box button.actie-knop,
+#options-box button.actie-knop:hover {
   background-color: var(--accent);
   color: var(--text-main);
   font-weight: 700;
 }
 
+
 #btn-geef-prijs {
   margin-top: 16px;
 }
-
-
-
