@@ -106,14 +106,7 @@ button {
   color: var(--text-main);
   cursor: pointer;
   transition: transform 0.05s ease, background 0.2s ease, box-shadow 0.2s ease;
-}
-
-/* ❗️BELANGRIJK:
-   buttons hebben GEEN margins meer.
-   spacing wordt ALLEEN door containers geregeld.
-*/
-button {
-  margin: 0;
+  margin: 0; /* ❗️buttons hebben NOOIT spacing */
 }
 
 button:hover {
@@ -132,13 +125,12 @@ button:disabled {
 }
 
 /* =========================
-   OPTIES / ANTWOORD-KNOPPEN
+   OPTIES / ANTWOORDEN (CONTAINER)
    ========================= */
 
 #options-box {
   display: flex;
   flex-direction: column;
-  gap: 14px; /* 👈 HIER komt de afstand tussen antwoordknoppen */
 }
 
 /* knoppen die als kaart fungeren */
@@ -175,21 +167,22 @@ label {
   font-size: 14px;
   color: var(--text-muted);
 }
-
 /* =========================
    EXTRA INVOERVELDEN
    ========================= */
 
 .input-vol {
   width: 100%;
-  max-width: 100%;
-  box-sizing: border-box;
   padding: 14px 16px;
-  margin-bottom: 12px;
   border-radius: 8px;
   border: none;
   font-size: 16px;
   background: #ededed;
+}
+
+/* spacing tussen meerdere invoervelden */
+.input-vol + .input-vol {
+  margin-top: 12px;
 }
 
 /* =========================
@@ -199,7 +192,7 @@ label {
 hr {
   border: none;
   border-top: 1px solid #444;
-  margin: 16px 0; /* iets ruimer en consistent */
+  margin: 16px 0;
 }
 
 /* =========================
@@ -212,16 +205,9 @@ hr {
   background: #2b2b2b;
   border-radius: 12px;
 
-  /* 🔑 ALLE verticale spacing komt hier vandaan */
   display: flex;
   flex-direction: column;
-  gap: 16px;
-}
-
-/* titel: “Samenvatting” / subtitels */
-#result-box h3,
-#result-box h4 {
-  margin: 0;
+  gap: 16px; /* 👈 ALLE verticale spacing in samenvatting */
 }
 
 /* systeemnaam */
@@ -243,11 +229,10 @@ hr {
    ========================= */
 
 .qa-regel {
-  display: block;
   line-height: 1.5;
 }
 
-/* spacing tussen antwoordregels */
+/* spacing tussen regels */
 .qa-regel + .qa-regel {
   margin-top: 8px;
 }
@@ -264,16 +249,15 @@ hr {
 }
 
 /* =========================
-   VERWIJDER OUDE LAPMIDDELEN
-   (alles loopt nu via flex + gap)
+   FLOW – DEFINITIEVE SPACING
    ========================= */
 
-/* ❌ oude generieke spacing eruit */
-#flow-screen > * {
-  margin-bottom: 0;
+/* 👇 HIER gebeurt het voor antwoordknoppen */
+#options-box .card {
+  margin-bottom: 14px;
 }
 
-.card {
+#options-box .card:last-child {
   margin-bottom: 0;
 }
 
