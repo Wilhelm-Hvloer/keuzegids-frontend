@@ -142,10 +142,6 @@ function toonPrijslijstSysteemSelectie() {
 
   questionEl.innerHTML = `
     <strong>Kies één of twee coatingsystemen</strong><br>
-    <small>
-      1 systeem = prijs berekenen<br>
-      2 systemen = vergelijken
-    </small>
   `;
 
   const systemen = [
@@ -750,6 +746,10 @@ function toonPrijsInvoerVoorAfweging() {
 
   questionEl.innerHTML = `<strong>${stripPrefix(afwegingNode.text)}</strong>`;
 
+  // 🔑 ÉÉN HOOFDGROEP → gap werkt overal
+  const hoofdGroep = document.createElement("div");
+  hoofdGroep.className = "antwoord-groep";
+
   // ===== Oppervlakte =====
   const m2Input = document.createElement("input");
   m2Input.type = "number";
@@ -758,18 +758,16 @@ function toonPrijsInvoerVoorAfweging() {
   m2Input.placeholder = "Oppervlakte in m²";
   m2Input.classList.add("input-vol");
 
-  optionsEl.appendChild(m2Input);
+  hoofdGroep.appendChild(m2Input);
 
-  // ===== Aantal ruimtes (titel + knoppen = één blok) =====
-  const groep = document.createElement("div");
-  groep.className = "antwoord-groep";
-
+  // ===== Aantal ruimtes (titel in eigen bakje) =====
   const ruimteTitel = document.createElement("div");
   ruimteTitel.className = "subtitel";
   ruimteTitel.innerHTML = "<strong>Aantal ruimtes:</strong>";
 
-  groep.appendChild(ruimteTitel);
+  hoofdGroep.appendChild(ruimteTitel);
 
+  // ===== Ruimte knoppen =====
   [1, 2, 3].forEach(aantal => {
     const btn = document.createElement("button");
     btn.type = "button";
@@ -777,7 +775,7 @@ function toonPrijsInvoerVoorAfweging() {
     btn.classList.add("ruimte-knop");
 
     btn.addEventListener("click", async () => {
-      groep
+      hoofdGroep
         .querySelectorAll(".ruimte-knop")
         .forEach(b => b.classList.remove("actief"));
       btn.classList.add("actief");
@@ -794,10 +792,11 @@ function toonPrijsInvoerVoorAfweging() {
       await toonAfwegingMetPrijzen();
     });
 
-    groep.appendChild(btn);
+    hoofdGroep.appendChild(btn);
   });
 
-  optionsEl.appendChild(groep);
+  // 🔑 SLECHTS ÉÉN CHILD IN options-box
+  optionsEl.appendChild(hoofdGroep);
 }
 
 
