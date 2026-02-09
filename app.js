@@ -310,9 +310,8 @@ function toonSysteemSelectie(node) {
 
 
 
-
 // ========================
-// KEUZE MAKEN (BACKEND-LEIDEND) – GECORRIGEERD
+// KEUZE MAKEN (BACKEND-LEIDEND) – DEFINITIEF
 // ========================
 async function chooseOption(index) {
   if (!currentNode) {
@@ -360,21 +359,30 @@ async function chooseOption(index) {
 
     // ========================
     // 🔑 EINDE KEUZEBOOM
+    // → prijs NU herberekenen (basis + extra’s)
     // ========================
     if (!Array.isArray(nextNode.next) || nextNode.next.length === 0) {
-      console.log("🏁 Einde keuzeboom bereikt");
+      console.log("🏁 Einde keuzeboom bereikt → herbereken prijs");
+
+      try {
+        await herberekenPrijs(); // 🔥 cruciaal
+      } catch (err) {
+        console.error("❌ Fout bij herberekenen prijs:", err);
+      }
+
       toonSamenvatting();
       return;
     }
 
-    // 🔑 normaal vervolg
+    // ========================
+    // 🔑 NORMAAL VERVOLG
+    // ========================
     renderNode(nextNode);
 
   } catch (err) {
     console.error("❌ Fout bij chooseOption:", err);
   }
 }
-
 
 
 // ========================
