@@ -1133,7 +1133,12 @@ function toonSamenvatting() {
   gekozenAntwoorden
     .slice(0, systeemKeuzeIndex)
     .forEach(item => {
-      html += `<div>${item.vraag} ${item.antwoord}</div>`;
+      html += `
+        <div class="qa-regel">
+          <span class="vraag">${item.vraag}</span>
+          <span class="antwoord">${item.antwoord}</span>
+        </div>
+      `;
     });
 
   // ========================
@@ -1141,8 +1146,8 @@ function toonSamenvatting() {
   // ========================
   html += `
     <hr>
-    <div>Aantal m²: ${gekozenOppervlakte} m²</div>
-    <div>Aantal ruimtes: ${gekozenRuimtes} ruimte${gekozenRuimtes > 1 ? "s" : ""}</div>
+    <div>Aantal m²: <strong>${gekozenOppervlakte} m²</strong></div>
+    <div>Aantal ruimtes: <strong>${gekozenRuimtes} ruimte${gekozenRuimtes > 1 ? "s" : ""}</strong></div>
   `;
 
   // ========================
@@ -1151,8 +1156,8 @@ function toonSamenvatting() {
   html += `
     <hr>
     <div class="gekozen-systeem">${gekozenSysteem}</div>
-    <div>Prijs per m²: € ${prijsPerM2},-</div>
-    <div>Basisprijs: € ${basisPrijs},-</div>
+    <div>Prijs per m²: <strong>€ ${prijsPerM2},-</strong></div>
+    <div>Basisprijs: <strong>€ ${basisPrijs},-</strong></div>
   `;
 
   // ========================
@@ -1163,7 +1168,12 @@ function toonSamenvatting() {
   if (optieVragen.length > 0) {
     html += "<hr>";
     optieVragen.forEach(item => {
-      html += `<div>${item.vraag} ${item.antwoord}</div>`;
+      html += `
+        <div class="qa-regel">
+          <span class="vraag">${item.vraag}</span>
+          <span class="antwoord">${item.antwoord}</span>
+        </div>
+      `;
     });
   }
 
@@ -1175,7 +1185,7 @@ function toonSamenvatting() {
   if (backendExtras.length > 0) {
     html += `<div><strong>Meerprijs opties:</strong></div>`;
     backendExtras.forEach(extra => {
-      html += `<div>• ${extra.naam}: € ${extra.totaal},-</div>`;
+      html += `<div>• ${extra.naam}: <strong>€ ${extra.totaal},-</strong></div>`;
     });
   }
 
@@ -1187,6 +1197,7 @@ function toonSamenvatting() {
 
   resultEl.innerHTML = html;
 }
+
 
 // ========================
 // HELPERS

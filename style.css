@@ -331,3 +331,23 @@ button:empty {
 #btn-geef-prijs {
   margin-top: 16px;
 }
+
+/* ========================
+   SAMENVATTING – VRAAG / ANTWOORD
+======================== */
+
+.qa-regel {
+  margin-bottom: 6px;
+}
+
+.qa-regel .vraag {
+  font-style: italic;
+  opacity: 0.8;
+  margin-right: 4px;
+}
+
+.qa-regel .antwoord {
+  font-weight: 700;
+  color: var(--text-main);
+}
+
