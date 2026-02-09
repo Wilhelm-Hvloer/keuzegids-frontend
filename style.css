@@ -28,7 +28,7 @@ body {
 
 #status-bar {
   display: flex;
-  justify-content: center;      /* logo in het midden */
+  justify-content: center;
   align-items: center;
   padding: 12px 20px;
   background: #2f3231;
@@ -58,7 +58,6 @@ body {
   font-size: 14px;
   color: var(--text-muted);
 }
-
 
 /* =========================
    APP CONTAINER
@@ -109,6 +108,14 @@ button {
   transition: transform 0.05s ease, background 0.2s ease, box-shadow 0.2s ease;
 }
 
+/* ❗️BELANGRIJK:
+   buttons hebben GEEN margins meer.
+   spacing wordt ALLEEN door containers geregeld.
+*/
+button {
+  margin: 0;
+}
+
 button:hover {
   background: #1f1f1f;
   box-shadow: 0 4px 10px rgba(0, 0, 0, 0.25);
@@ -125,16 +132,16 @@ button:disabled {
 }
 
 /* =========================
-   OPTIES / KAARTEN
+   OPTIES / ANTWOORD-KNOPPEN
    ========================= */
 
 #options-box {
   display: flex;
   flex-direction: column;
-  gap: 12px;
+  gap: 14px; /* 👈 HIER komt de afstand tussen antwoordknoppen */
 }
 
-/* knoppen die als "kaart" fungeren (prijsvergelijking etc.) */
+/* knoppen die als kaart fungeren */
 #options-box button {
   text-align: left;
   background: #2b2b2b;
@@ -170,7 +177,7 @@ label {
 }
 
 /* =========================
-   EXTRA INVOERVELDEN (MEERWERK / MATERIAAL)
+   EXTRA INVOERVELDEN
    ========================= */
 
 .input-vol {
@@ -185,15 +192,14 @@ label {
   background: #ededed;
 }
 
-
 /* =========================
-   PRIJS CONTEXT BLOK
+   PRIJS CONTEXT / SCHEIDERS
    ========================= */
 
 hr {
   border: none;
   border-top: 1px solid #444;
-  margin: 12px 0;
+  margin: 16px 0; /* iets ruimer en consistent */
 }
 
 /* =========================
@@ -202,147 +208,48 @@ hr {
 
 #result-box {
   margin-top: 24px;
-  padding: 16px;
+  padding: 20px;
   background: #2b2b2b;
   border-radius: 12px;
-}
 
-/* titel: "Gekozen coatingsysteem" → normaal */
-#result-box .titel-coatingsysteem {
-  font-size: 16px;
-  font-weight: 600;
-  color: var(--text-main);
-  margin-bottom: 4px;
-}
-
-/* systeemnaam: "Rolcoating Basic" → groter + oranje */
-#result-box .gekozen-systeem {
-  font-size: 22px;
-  font-weight: 700;
-  color: var(--accent);
-  margin-bottom: 12px;
-}
-
-/* totaalprijs: "€ 3.692,-" → grootste focus */
-#result-box .totaalprijs {
-  font-size: 26px;
-  font-weight: 800;
-  color: var(--accent);
-  margin-top: 12px;
-}
-
-/* =========================
-   MOBIEL
-   ========================= */
-
-@media (max-width: 480px) {
-  h2 {
-    font-size: 20px;
-  }
-
-  button {
-    font-size: 15px;
-    padding: 14px;
-  }
-
-  #status-bar {
-    padding: 10px 14px;
-  }
-
-  /* ook mobiel netjes schalen */
-  #result-box .gekozen-systeem {
-    font-size: 20px;
-  }
-
-  #result-box .totaalprijs {
-    font-size: 24px;
-  }
-}
-
-
-/* =========================
-   VERTICALE SPACING – FLOW (DEFINITIEF & SIMPEL)
-   ========================= */
-
-#options-box {
-  display: flex;
-  flex-direction: column;
-  gap: 14px; /* ← hier regel je ALLE afstand */
-}
-
-/* homepage iets ruimer */
-#home-screen {
+  /* 🔑 ALLE verticale spacing komt hier vandaan */
   display: flex;
   flex-direction: column;
   gap: 16px;
 }
 
-
-
-/* =========================
-   VERBERG LOZE KNOPPEN
-   ========================= */
-
-button:empty {
-  display: none;
+/* titel: “Samenvatting” / subtitels */
+#result-box h3,
+#result-box h4 {
+  margin: 0;
 }
 
-/* =========================
-   DEFINITIEVE FIX: AANTAL RUIMTES SPACING
-   ========================= */
-
-#flow-screen > * {
-  margin-bottom: 16px;
-}
-
-#flow-screen > *:last-child {
-  margin-bottom: 0;
-}
-
-
-/* =========================
-   HERSTEL SPACING VOOR CARD-BLOKKEN
-   ========================= */
-
-.card {
-  margin-bottom: 16px;
-}
-
-.card:last-child {
-  margin-bottom: 0;
-}
-
-/* =========================
-   ACTIEVE RUIMTE KNOP
-   ========================= */
-
-.ruimte-knop.actief {
-  background: #BC4C1F;
-  color: #F6F6F6;
-  border: 2px solid #BC4C1F;
-}
-
-/* =========================
-   PRIMAIRE ACTIE – BEREKEN PRIJS (DEFINITIEF)
-   ========================= */
-#options-box button.actie-knop,
-#options-box button.actie-knop:hover {
-  background-color: var(--accent);
-  color: var(--text-main);
+/* systeemnaam */
+#result-box .gekozen-systeem {
+  font-size: 22px;
   font-weight: 700;
+  color: var(--accent);
 }
 
-
-#btn-geef-prijs {
-  margin-top: 16px;
+/* totaalprijs */
+#result-box .totaalprijs {
+  font-size: 26px;
+  font-weight: 800;
+  color: var(--accent);
 }
 
-/* ========================
+/* =========================
    SAMENVATTING – VRAAG / ANTWOORD
-======================== */
+   ========================= */
 
 .qa-regel {
-  margin-bottom: 6px;
+  display: block;
+  line-height: 1.5;
+}
+
+/* spacing tussen antwoordregels */
+.qa-regel + .qa-regel {
+  margin-top: 8px;
 }
 
 .qa-regel .vraag {
@@ -356,3 +263,60 @@ button:empty {
   color: var(--text-main);
 }
 
+/* =========================
+   VERWIJDER OUDE LAPMIDDELEN
+   (alles loopt nu via flex + gap)
+   ========================= */
+
+/* ❌ oude generieke spacing eruit */
+#flow-screen > * {
+  margin-bottom: 0;
+}
+
+.card {
+  margin-bottom: 0;
+}
+
+/* =========================
+   ACTIEVE RUIMTE KNOP
+   ========================= */
+
+.ruimte-knop.actief {
+  background: var(--accent);
+  color: var(--text-main);
+  border: 2px solid var(--accent);
+}
+
+/* =========================
+   PRIMAIRE ACTIEKNOP
+   ========================= */
+
+#options-box button.actie-knop,
+#options-box button.actie-knop:hover {
+  background-color: var(--accent);
+  color: var(--text-main);
+  font-weight: 700;
+}
+
+#btn-geef-prijs {
+  margin-top: 16px;
+}
+
+/* =========================
+   MOBIEL
+   ========================= */
+
+@media (max-width: 480px) {
+  #result-box {
+    padding: 16px;
+    gap: 14px;
+  }
+
+  #result-box .gekozen-systeem {
+    font-size: 20px;
+  }
+
+  #result-box .totaalprijs {
+    font-size: 24px;
+  }
+}
