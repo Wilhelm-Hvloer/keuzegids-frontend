@@ -30,7 +30,7 @@ let prijsPerM2 = null;
 let currentNode = null;
 let gekozenSysteem = null;
 let gekozenAntwoorden = [];
-let gekozenExtras = [];
+let gekozenExtras = [];        // xtr / keuzeboom extra’s
 let basisPrijs = null;
 let totaalPrijs = null;
 let backendExtras = [];
@@ -40,12 +40,28 @@ let gekozenRuimtes = null;
 let actieveFlow = null;
 let systeemKeuzeIndex = null;
 
-
-// meerwerk (xtr)
-let meerwerkUren = 0;
+// ========================
+// XTR (BESTAAND – BLIJFT)
+// ========================
+let meerwerkUren = 0;          // gebruikt door xtr-flow
 const MEERWERK_TARIEF = 120;
 
-// afweging (afw)
+// ========================
+// EXTRA ARBEID & MATERIAAL (NIEUW)
+// ========================
+let extraMeerwerk = {
+  uren: null,                 // hele uren, handmatig
+  toelichting: ""             // verplicht bij Ja
+};
+
+let extraMateriaal = {
+  bedrag: null,               // handmatig bedrag
+  toelichting: ""             // verplicht bij Ja
+};
+
+// ========================
+// AFWEGING (afw)
+// ========================
 let afwegingNode = null;
 let afwegingResultaten = [];
 let inAfwegingPrijs = false;
@@ -325,7 +341,6 @@ function toonSysteemSelectie(node) {
 
 
 
-
 // ========================
 // KEUZE MAKEN (BACKEND-LEIDEND) – DEFINITIEF
 // ========================
@@ -355,7 +370,7 @@ async function chooseOption(index) {
         antwoord: stripPrefix(gekozenOptie.text || "")
       });
 
-      // 2️⃣ Extra automatisch herkennen op basis van tekst
+      // 2️⃣ Extra automatisch herkennen op basis van tekst (xtr blijft werken)
       const extraKey = detectExtraFromText(gekozenOptie.text || "");
       if (extraKey && !gekozenExtras.includes(extraKey)) {
         gekozenExtras.push(extraKey);
@@ -383,18 +398,12 @@ async function chooseOption(index) {
 
     // ========================
     // 🔑 EINDE KEUZEBOOM
-    // → prijs NU herberekenen (basis + extra’s)
+    // → start extra arbeid flow (NIEUW)
     // ========================
     if (!Array.isArray(nextNode.next) || nextNode.next.length === 0) {
-      console.log("🏁 Einde keuzeboom bereikt → herbereken prijs");
+      console.log("🏁 Einde keuzeboom → start extra arbeid");
 
-      try {
-        await herberekenPrijs(); // 🔥 cruciaal
-      } catch (err) {
-        console.error("❌ Fout bij herberekenen prijs:", err);
-      }
-
-      toonSamenvatting();
+      toonMeerwerkPagina(); // 👈 NIEUW STARTPUNT
       return;
     }
 
@@ -1065,6 +1074,154 @@ async function kiesAfgewogenSysteem(index) {
 */
 
 
+// ========================
+// EXTRA ARBEID (MEERWERK)
+// ========================
+function toonMeerwerkPagina() {
+  const questionEl = document.getElementById("question-text");
+  const optionsEl = document.getElementById("options-box");
+
+  questionEl.innerHTML = "<strong>Extra arbeid toevoegen?</strong>";
+  optionsEl.style.display = "block";
+  optionsEl.innerHTML = "";
+
+  let foutmelding = document.createElement("div");
+  foutmelding.style.color = "#BC4C1F";
+  foutmelding.style.marginTop = "8px";
+
+  const urenInput = document.createElement("input");
+  urenInput.type = "number";
+  urenInput.min = "0";
+  urenInput.step = "1";
+  urenInput.placeholder = "Aantal uren meerwerk";
+
+  const toelichtingInput = document.createElement("textarea");
+  toelichtingInput.placeholder = "Toelichting (verplicht bij ja)";
+
+  const btnNee = document.createElement("button");
+  btnNee.textContent = "Nee, geen meerwerk toevoegen";
+
+  const btnJa = document.createElement("button");
+  btnJa.textContent = "Ja, meerwerk toevoegen";
+  btnJa.classList.add("actie-knop");
+  btnJa.disabled = true;
+
+  function validate() {
+    const uren = urenInput.value;
+    const toel = toelichtingInput.value.trim();
+    btnJa.disabled = !(uren && parseInt(uren) > 0 && toel.length > 0);
+  }
+
+  urenInput.addEventListener("input", validate);
+  toelichtingInput.addEventListener("input", validate);
+
+  btnNee.onclick = () => {
+    if (urenInput.value) {
+      foutmelding.textContent =
+        'Maak invoerveld leeg, of kies "Ja, extra toevoegen"';
+      return;
+    }
+    extraMeerwerk.uren = null;
+    extraMeerwerk.toelichting = "";
+    toonMateriaalPagina();
+  };
+
+  btnJa.onclick = () => {
+    if (!toelichtingInput.value.trim()) {
+      foutmelding.textContent = "Geef toelichting voor extra";
+      return;
+    }
+
+    extraMeerwerk.uren = parseInt(urenInput.value);
+    extraMeerwerk.toelichting = toelichtingInput.value.trim();
+    toonMateriaalPagina();
+  };
+
+  optionsEl.append(
+    urenInput,
+    toelichtingInput,
+    foutmelding,
+    btnNee,
+    btnJa
+  );
+}
+
+
+// ========================
+// EXTRA MATERIAAL
+// ========================
+function toonMateriaalPagina() {
+  const questionEl = document.getElementById("question-text");
+  const optionsEl = document.getElementById("options-box");
+
+  questionEl.innerHTML = "<strong>Extra materiaal toevoegen?</strong>";
+  optionsEl.style.display = "block";
+  optionsEl.innerHTML = "";
+
+  let foutmelding = document.createElement("div");
+  foutmelding.style.color = "#BC4C1F";
+  foutmelding.style.marginTop = "8px";
+
+  const bedragInput = document.createElement("input");
+  bedragInput.type = "number";
+  bedragInput.min = "0";
+  bedragInput.step = "1";
+  bedragInput.placeholder = "Kosten extra materiaal (€)";
+
+  const toelichtingInput = document.createElement("textarea");
+  toelichtingInput.placeholder = "Toelichting (verplicht bij ja)";
+
+  const btnNee = document.createElement("button");
+  btnNee.textContent = "Nee, geen extra materiaal toevoegen";
+
+  const btnJa = document.createElement("button");
+  btnJa.textContent = "Ja, extra materiaal toevoegen";
+  btnJa.classList.add("actie-knop");
+  btnJa.disabled = true;
+
+  function validate() {
+    const bedrag = bedragInput.value;
+    const toel = toelichtingInput.value.trim();
+    btnJa.disabled = !(bedrag && parseInt(bedrag) > 0 && toel.length > 0);
+  }
+
+  bedragInput.addEventListener("input", validate);
+  toelichtingInput.addEventListener("input", validate);
+
+  btnNee.onclick = () => {
+    if (bedragInput.value) {
+      foutmelding.textContent =
+        'Maak invoerveld leeg, of kies "Ja, extra toevoegen"';
+      return;
+    }
+    extraMateriaal.bedrag = null;
+    extraMateriaal.toelichting = "";
+
+    herberekenPrijs().then(toonSamenvatting);
+  };
+
+  btnJa.onclick = () => {
+    if (!toelichtingInput.value.trim()) {
+      foutmelding.textContent = "Geef toelichting voor extra";
+      return;
+    }
+
+    extraMateriaal.bedrag = parseInt(bedragInput.value);
+    extraMateriaal.toelichting = toelichtingInput.value.trim();
+
+    herberekenPrijs().then(toonSamenvatting);
+  };
+
+  optionsEl.append(
+    bedragInput,
+    toelichtingInput,
+    foutmelding,
+    btnNee,
+    btnJa
+  );
+}
+
+
 
 // ========================
 // PRIJS HERBEREKENEN (BACKEND IS ENIGE WAARHEID)
@@ -1073,6 +1230,8 @@ async function herberekenPrijs() {
   if (!gekozenSysteem || !gekozenOppervlakte || !gekozenRuimtes) return;
 
   console.log("📤 herberekenPrijs → extras:", gekozenExtras);
+  console.log("📤 meerwerk:", extraMeerwerk);
+  console.log("📤 extra materiaal:", extraMateriaal);
 
   const res = await fetch(`${API_BASE}/api/price`, {
     method: "POST",
@@ -1081,7 +1240,21 @@ async function herberekenPrijs() {
       systeem: gekozenSysteem,
       oppervlakte: gekozenOppervlakte,
       ruimtes: gekozenRuimtes,
-      extras: gekozenExtras // 👈 cruciaal
+      extras: gekozenExtras, // xtr / keuzeboom extra’s
+
+      // ========================
+      // EXTRA ARBEID (FRONTEND BEREKEND)
+      // ========================
+      meerwerk_bedrag: extraMeerwerk.uren
+        ? extraMeerwerk.uren * MEERWERK_TARIEF
+        : 0,
+      meerwerk_toelichting: extraMeerwerk.toelichting || "",
+
+      // ========================
+      // EXTRA MATERIAAL
+      // ========================
+      materiaal_bedrag: extraMateriaal.bedrag || 0,
+      materiaal_toelichting: extraMateriaal.toelichting || ""
     })
   });
 
@@ -1095,7 +1268,7 @@ async function herberekenPrijs() {
   basisPrijs    = data.basisprijs;
   prijsPerM2    = data.prijs_per_m2;
   backendExtras = data.extras || [];
-  totaalPrijs   = data.totaalprijs; // 👈 NOOIT zelf rekenen
+  totaalPrijs   = data.totaalprijs; // 🔑 NOOIT zelf rekenen
 
   console.log("📥 backendExtras:", backendExtras);
   console.log("💰 totaalPrijs:", totaalPrijs);
@@ -1155,8 +1328,8 @@ function toonSamenvatting() {
     .forEach(item => {
       html += `
         <div class="qa-regel">
-          <span class="vraag">${item.vraag}</span>
-          <span class="antwoord">${item.antwoord}</span>
+          <span class="vraag"><em>${item.vraag}</em></span><br>
+          <span class="antwoord"><strong>${item.antwoord}</strong></span>
         </div>
       `;
     });
@@ -1190,25 +1363,33 @@ function toonSamenvatting() {
     optieVragen.forEach(item => {
       html += `
         <div class="qa-regel">
-          <span class="vraag">${item.vraag}</span>
-          <span class="antwoord">${item.antwoord}</span>
+          <span class="vraag"><em>${item.vraag}</em></span><br>
+          <span class="antwoord"><strong>${item.antwoord}</strong></span>
         </div>
       `;
     });
   }
 
   // ========================
-  // OPTIES + TOTAALPRIJS
+  // EXTRA'S (UIT BACKEND)
   // ========================
-  html += "<hr>";
-
   if (backendExtras.length > 0) {
-    html += `<div><strong>Meerprijs opties:</strong></div>`;
+    html += "<hr><div><strong>Extra’s</strong></div>";
+
     backendExtras.forEach(extra => {
-      html += `<div>• ${extra.naam}: <strong>€ ${extra.totaal},-</strong></div>`;
+      html += `
+        <div class="extra-blok">
+          <div><strong>${extra.naam}</strong></div>
+          ${extra.toelichting ? `<div class="extra-toelichting">${extra.toelichting}</div>` : ""}
+          <div class="extra-bedrag">€ ${extra.totaal},-</div>
+        </div>
+      `;
     });
   }
 
+  // ========================
+  // TOTAALPRIJS
+  // ========================
   html += `
     <hr>
     <div>Totaalprijs:</div>
