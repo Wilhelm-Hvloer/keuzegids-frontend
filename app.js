@@ -1474,24 +1474,27 @@ function stripPrefix(text = "") {
 }
 
 // ========================
-// HOMESCREEN ACTIES (DEFINITIEF & CONSISTENT)
+// HOMESCREEN ACTIES (DEFINITIEF & CORRECT)
 // ========================
 function gaNaarHome() {
-  // schermen resetten
-  document.getElementById("flow-screen").style.display = "none";
-  document.getElementById("home-screen").style.display = "block";
-
-  // tekst resetten
-  document.getElementById("question-text").innerHTML = "";
-
+  const homeEl = document.getElementById("home-screen");
+  const flowEl = document.getElementById("flow-screen");
   const optionsEl = document.getElementById("options-box");
   const resultEl = document.getElementById("result-box");
 
-  // containers opschonen
+  // ========================
+  // SCHERMEN RESETTEN
+  // ========================
+  flowEl.style.display = "none";
+  homeEl.style.display = "block";
+
+  // flow containers leeg
   optionsEl.innerHTML = "";
-  optionsEl.style.display = "block";
+  optionsEl.style.display = "none";
   resultEl.innerHTML = "";
   resultEl.style.display = "none";
+
+  document.getElementById("question-text").innerHTML = "";
 
   // ========================
   // FRONTEND STATE RESET
@@ -1516,8 +1519,10 @@ function gaNaarHome() {
   lastVraagTekst = null;
 
   // ========================
-  // HOMESCREEN KNOPPEN OPNIEUW RENDEREN
+  // HOMESCREEN OPNIEUW OPBOUWEN
   // ========================
+  homeEl.innerHTML = "";
+
   const groep = document.createElement("div");
   groep.className = "antwoord-groep";
 
@@ -1531,9 +1536,8 @@ function gaNaarHome() {
   btnPrijslijst.textContent = "Start prijslijst";
   btnPrijslijst.onclick = startPrijslijst;
 
-  groep.appendChild(btnKeuzegids);
-  groep.appendChild(btnPrijslijst);
-
-  optionsEl.appendChild(groep);
+  groep.append(btnKeuzegids, btnPrijslijst);
+  homeEl.appendChild(groep);
 }
+
 
