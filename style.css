@@ -261,27 +261,22 @@ hr {
 
 
 /* =========================
-   VERTICALE SPACING KNOPPEN (DEFINITIEF)
+   VERTICALE SPACING – FLOW (DEFINITIEF & SIMPEL)
    ========================= */
 
-/* algemene knoppen: lichte spacing */
-button + button {
-  margin-top: 12px;
+#options-box {
+  display: flex;
+  flex-direction: column;
+  gap: 14px; /* ← hier regel je ALLE afstand */
 }
 
-/* homepage: iets meer lucht */
-#home-screen button + button {
-  margin-top: 16px;
+/* homepage iets ruimer */
+#home-screen {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
 }
 
-/* flow gebruikt GEEN margins maar flex-gap */
-#options-box button + button {
-  margin-top: 0;
-}
-
-#flow-screen button {
-  margin-bottom: 0;
-}
 
 
 /* =========================
@@ -304,9 +299,6 @@ button:empty {
   margin-bottom: 0;
 }
 
-#options-box > * {
-  margin-bottom: 0;
-}
 
 /* =========================
    HERSTEL SPACING VOOR CARD-BLOKKEN
