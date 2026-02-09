@@ -43,6 +43,8 @@ let inOptieFase = false;
 let gekozenOppervlakte = null;
 let gekozenRuimtes = null;
 let actieveFlow = null;
+let systeemKeuzeIndex = null;
+
 
 // meerwerk (xtr)
 let meerwerkUren = 0;
@@ -234,6 +236,8 @@ async function startKeuzegids() {
   // ========================
   // STATE RESETTEN
   // ========================
+  systeemKeuzeIndex = null; // 🔑 reset voor nieuwe flow
+
   gekozenSysteem = null;
   gekozenAntwoorden = [];
   gekozenExtras = [];
@@ -260,6 +264,7 @@ async function startKeuzegids() {
     console.error("❌ Fout bij starten keuzegids:", err);
   }
 }
+
 
 // beschikbaar maken voor HTML
 window.startKeuzegids = startKeuzegids;
@@ -478,6 +483,11 @@ function handleSystemNode(node) {
   currentSystemNode = node;
   gekozenSysteem = node.system || stripPrefix(node.text) || node.id;
 
+  // 🔑 moment vastleggen waarop systeem gekozen is (exact één keer)
+  if (systeemKeuzeIndex === null) {
+    systeemKeuzeIndex = gekozenAntwoorden.length;
+  }
+
   // 🔑 KRITIEKE FIX:
   // Als we in een afweging zitten → NOOIT systeemkaart tonen
   if (afwegingNode) {
@@ -506,7 +516,6 @@ function handleSystemNode(node) {
 
   console.warn("⚠️ System-node zonder prijsfase", node);
 }
-
 
 
 
@@ -1088,18 +1097,10 @@ async function berekenBasisPrijsVoorSysteem(systeemNaam, m2, ruimtes) {
 }
 
 
-
-
 // ========================
-// SAMENVATTING TONEN
+// SAMENVATTING TONEN (DEFINITIEF)
 // ========================
-async function toonSamenvatting() {
-  // 🔑 ALTIJD herberekenen bij starten samenvatting
-  if (gekozenSysteem && gekozenOppervlakte && gekozenRuimtes) {
-    console.log("🔁 Herbereken prijs bij starten samenvatting");
-    await herberekenPrijs();
-  }
-
+function toonSamenvatting() {
   const questionEl = document.getElementById("question-text");
   const optionsEl = document.getElementById("options-box");
   const resultEl = document.getElementById("result-box");
@@ -1114,101 +1115,65 @@ async function toonSamenvatting() {
   let html = "";
 
   // ========================
-  // GEMAAKTE KEUZES
+  // BASISVRAGEN (vóór systeemkeuze)
   // ========================
-  if (Array.isArray(gekozenAntwoorden) && gekozenAntwoorden.length > 0) {
-    html += "<h3>Gemaakte keuzes</h3><ul>";
-    gekozenAntwoorden.forEach(item => {
-      html += `
-        <li>
-          <strong>${item.vraag}</strong><br>
-          ${item.antwoord}
-        </li>
-      `;
+  gekozenAntwoorden
+    .slice(0, systeemKeuzeIndex)
+    .forEach(item => {
+      html += `<div>${item.vraag} ${item.antwoord}</div>`;
     });
-    html += "</ul>";
-  }
 
   // ========================
   // m² & RUIMTES
   // ========================
-  if (gekozenOppervlakte && gekozenRuimtes) {
-    html += `
-      <hr>
-      <strong>Aantal m²:</strong> ${gekozenOppervlakte}<br>
-      <strong>${gekozenRuimtes} ruimte${gekozenRuimtes > 1 ? "s" : ""}</strong>
-    `;
+  html += `
+    <hr>
+    <div>Aantal m²: ${gekozenOppervlakte} m²</div>
+    <div>Aantal ruimtes: ${gekozenRuimtes} ruimte${gekozenRuimtes > 1 ? "s" : ""}</div>
+  `;
+
+  // ========================
+  // GEKOZEN SYSTEEM + BASISPRIJS
+  // ========================
+  html += `
+    <hr>
+    <div class="gekozen-systeem">${gekozenSysteem}</div>
+    <div>Prijs per m²: € ${prijsPerM2},-</div>
+    <div>Basisprijs: € ${basisPrijs},-</div>
+  `;
+
+  // ========================
+  // OPTIEVRAGEN (ná systeemkeuze)
+  // ========================
+  const optieVragen = gekozenAntwoorden.slice(systeemKeuzeIndex);
+
+  if (optieVragen.length > 0) {
+    html += "<hr>";
+    optieVragen.forEach(item => {
+      html += `<div>${item.vraag} ${item.antwoord}</div>`;
+    });
   }
 
   // ========================
-  // EXTRA VRAGEN (NA PRIJSFASE)
+  // OPTIES + TOTAALPRIJS
   // ========================
-  if (Array.isArray(gekozenAntwoorden) && gekozenAntwoorden.length > 0) {
-    const extraVragen = gekozenAntwoorden.filter(item =>
-      item.vraag.toLowerCase().includes("antislip") ||
-      item.vraag.toLowerCase().includes("versiering")
-    );
+  html += "<hr>";
 
-    if (extraVragen.length > 0) {
-      html += "<hr><ul>";
-      extraVragen.forEach(item => {
-        html += `
-          <li>
-            <strong>${item.vraag}</strong><br>
-            ${item.antwoord}
-          </li>
-        `;
-      });
-      html += "</ul>";
-    }
+  if (backendExtras.length > 0) {
+    html += `<div><strong>Meerprijs opties:</strong></div>`;
+    backendExtras.forEach(extra => {
+      html += `<div>• ${extra.naam}: € ${extra.totaal},-</div>`;
+    });
   }
 
-  // ========================
-  // GEKOZEN SYSTEEM
-  // ========================
-  if (gekozenSysteem) {
-    html += `
-      <hr>
-      <div class="titel-coatingsysteem">Gekozen coatingsysteem</div>
-      <div class="gekozen-systeem">${gekozenSysteem}</div>
-    `;
-  }
-
-  // ========================
-  // PRIJSOVERZICHT
-  // ========================
-  if (basisPrijs !== null && totaalPrijs !== null) {
-    html += `
-      <h3>Prijsoverzicht</h3>
-      <p>Prijs per m²: <strong>€ ${prijsPerM2},-</strong></p>
-      <p>Basisprijs: <strong>€ ${basisPrijs},-</strong></p>
-    `;
-
-    // ========================
-    // OPTIES
-    // ========================
-    if (Array.isArray(backendExtras) && backendExtras.length > 0) {
-      html += "<p><strong>Opties:</strong></p><ul>";
-      backendExtras.forEach(extra => {
-        html += `<li>${extra.naam}: € ${extra.totaal},-</li>`;
-      });
-      html += "</ul>";
-    }
-
-    // ========================
-    // TOTAALPRIJS
-    // ========================
-    html += `
-      <div class="titel-coatingsysteem">Totaalprijs</div>
-      <div class="totaalprijs">€ ${totaalPrijs},-</div>
-    `;
-  }
+  html += `
+    <hr>
+    <div>Totaalprijs:</div>
+    <div class="totaalprijs">€ ${totaalPrijs},-</div>
+  `;
 
   resultEl.innerHTML = html;
 }
-
-
-
 
 // ========================
 // HELPERS
@@ -1224,11 +1189,9 @@ function stripPrefix(text = "") {
     .trim();
 }
 
-
 // ========================
 // HOMESCREEN ACTIES (OPGESCHOOND)
 // ========================
-
 function gaNaarHome() {
   // schermen resetten
   document.getElementById("flow-screen").style.display = "none";
@@ -1249,6 +1212,8 @@ function gaNaarHome() {
   currentNode = null;
   actieveFlow = null;
 
+  systeemKeuzeIndex = null; // 🔑 BELANGRIJK: reset voor volgende run
+
   gekozenSysteem = null;
   gekozenAntwoorden = [];
   gekozenExtras = [];
@@ -1264,4 +1229,3 @@ function gaNaarHome() {
 
   lastVraagTekst = null;
 }
-
