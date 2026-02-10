@@ -36,10 +36,10 @@ let prijsPerM2 = null;
 let currentNode = null;
 let gekozenSysteem = null;
 let gekozenAntwoorden = [];
-let gekozenExtras = [];        // xtr / keuzeboom extra’s
+let gekozenExtras = [];        // alleen keuzeboom-extras (add_250, decoflakes, etc.)
 let basisPrijs = null;
 let totaalPrijs = null;
-let backendExtras = [];
+let backendExtras = [];        // komt UIT backend (inclusief xtr)
 let inOptieFase = false;
 let gekozenOppervlakte = null;
 let gekozenRuimtes = null;
@@ -47,10 +47,11 @@ let actieveFlow = null;
 let systeemKeuzeIndex = null;
 
 // ========================
-// XTR (BESTAAND – BLIJFT)
+// XTR – MEERWERK COATING VERWIJDEREN
 // ========================
-let meerwerkUren = 0;          // gebruikt door xtr-flow
-const MEERWERK_TARIEF = 120;
+// ⚠️ Frontend bewaart ALLEEN input (uren)
+// ⚠️ Backend rekent prijs
+let xtrCoatingVerwijderenUren = 0;
 
 // ========================
 // EXTRA ARBEID & MATERIAAL (NIEUW)
@@ -599,10 +600,44 @@ function handleSystemNode(node) {
 
 
 // ========================
-// XTR → MEERWERK
+// XTR → MEERWERK COATING VERWIJDEREN
 // ========================
 function handleXtrNode(node) {
-  toonMeerwerkInvoer(stripPrefix(node.text));
+  // xtr is een expliciete tussenstap met eigen UI
+  // frontend verzamelt ALLEEN input (uren)
+  // backend rekent prijs
+
+  const questionEl = document.getElementById("question-text");
+  const optionsEl  = document.getElementById("options-box");
+
+  resetUI();
+  optionsEl.style.display = "block";
+
+  questionEl.innerHTML = "<strong>Meerwerk coating verwijderen</strong>";
+
+  const groep = document.createElement("div");
+  groep.className = "antwoord-groep";
+
+  const input = document.createElement("input");
+  input.type = "number";
+  input.min = "0";
+  input.placeholder = "Aantal uren";
+  input.classList.add("input-vol");
+  input.value = xtrCoatingVerwijderenUren || "";
+
+  const btn = document.createElement("button");
+  btn.textContent = "Bevestigen";
+
+  btn.onclick = async () => {
+    xtrCoatingVerwijderenUren = Number(input.value || 0);
+
+    // keuzeboom vervolgen (xtr heeft altijd exact 1 vervolg)
+    await chooseOption(0);
+  };
+
+  groep.appendChild(input);
+  groep.appendChild(btn);
+  optionsEl.appendChild(groep);
 }
 
 // ========================
@@ -618,7 +653,7 @@ function handleAfwNode(node) {
   afwegingResultaten = [];
   inAfwegingPrijs = true;
 
-  // 🔑 FASE 1: m² + ruimtes invoeren
+  // FASE 1: m² + ruimtes invoeren
   toonPrijsInvoerVoorAfweging();
 }
 
@@ -800,84 +835,6 @@ function toonPrijsInvoerVoorAfweging() {
 }
 
 
-
-
-// ========================
-// MEERWERK INVOER
-// ========================
-
-function toonMeerwerkInvoer(omschrijving) {
-  const questionEl = document.getElementById("question-text");
-  const optionsEl = document.getElementById("options-box");
-
-  // opties resetten
-  optionsEl.innerHTML = "";
-  optionsEl.style.display = "block";
-
-  questionEl.innerHTML = `<strong>${omschrijving}</strong>`;
-
-  const label = document.createElement("label");
-  label.innerHTML = `
-    Extra meerwerk (optioneel):<br>
-    <input type="number" id="meerwerk-bedrag" min="0" step="1">
-  `;
-  optionsEl.appendChild(label);
-
-  const btn = document.createElement("button");
-  btn.textContent = "Ga verder";
-
-  btn.onclick = async () => {
-    const waarde = document.getElementById("meerwerk-bedrag").value;
-
-    if (waarde && Number(waarde) > 0) {
-      totaalPrijs += Number(waarde);
-      gekozenExtras.push(`Meerwerk: € ${waarde},-`);
-    }
-
-    // ✅ KEUZEBOOM VERVOLGEN NA XTR
-    if (Array.isArray(currentNode.next) && currentNode.next.length > 0) {
-      await chooseOption(0);
-    } else {
-      // alleen als xtr écht het eindpunt is
-      toonSamenvatting();
-    }
-  };
-
-  optionsEl.appendChild(btn);
-}
-
-// ========================
-// MEERWERK VERWERKEN + FLOW HERVATTEN
-// ========================
-// ⚠️ Wordt momenteel niet gebruikt in de flow
-async function verwerkMeerwerk() {
-  const input = document.getElementById("meerwerk-uren");
-  if (!input) return;
-
-  const uren = parseFloat(input.value);
-
-  if (!uren || uren <= 0) {
-    alert("Vul een geldig aantal uren in");
-    return;
-  }
-
-  meerwerkUren += uren;
-  gekozenExtras.push(`Meerwerk verwijderen bestaande coating: ${uren} uur`);
-
-  await herberekenPrijs();
-
-  const res = await fetch(`${API_BASE}/api/next`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({
-      node_id: currentNode.id,
-      choice: 0
-    })
-  });
-
-  const node = await res.json();
-  renderNode(node);
-}
 
 // ========================
 // PRIJS CONTEXT
@@ -1236,6 +1193,9 @@ function toonMeerwerkPagina() {
     groep
   );
 }
+
+
+
 // ========================
 // EXTRA MATERIAAL – DEFINITIEF (CONSISTENT)
 // ========================
@@ -1328,7 +1288,7 @@ async function herberekenPrijs() {
   if (!gekozenSysteem || !gekozenOppervlakte || !gekozenRuimtes) return;
 
   console.log("📤 herberekenPrijs → extras:", gekozenExtras);
-  console.log("📤 meerwerk:", extraMeerwerk);
+  console.log("📤 xtr coating verwijderen (uren):", xtrCoatingVerwijderenUren);
   console.log("📤 extra materiaal:", extraMateriaal);
 
   const res = await fetch(`${API_BASE}/api/price`, {
@@ -1338,18 +1298,15 @@ async function herberekenPrijs() {
       systeem: gekozenSysteem,
       oppervlakte: gekozenOppervlakte,
       ruimtes: gekozenRuimtes,
-      extras: gekozenExtras, // xtr / keuzeboom extra’s
+      extras: gekozenExtras,
 
       // ========================
-      // EXTRA ARBEID (FRONTEND BEREKEND)
+      // XTR – MEERWERK COATING VERWIJDEREN
       // ========================
-      meerwerk_bedrag: extraMeerwerk.uren
-        ? extraMeerwerk.uren * MEERWERK_TARIEF
-        : 0,
-      meerwerk_toelichting: extraMeerwerk.toelichting || "",
+      xtr_coating_verwijderen_uren: xtrCoatingVerwijderenUren,
 
       // ========================
-      // EXTRA MATERIAAL
+      // EXTRA MATERIAAL (HANDMATIG)
       // ========================
       materiaal_bedrag: extraMateriaal.bedrag || 0,
       materiaal_toelichting: extraMateriaal.toelichting || ""
@@ -1371,9 +1328,6 @@ async function herberekenPrijs() {
   console.log("📥 backendExtras:", backendExtras);
   console.log("💰 totaalPrijs:", totaalPrijs);
 }
-
-
-
 
 // ========================
 // HULPFUNCTIE – BASISPRIJS PER SYSTEEM (AFWEGING)
@@ -1553,7 +1507,11 @@ function gaNaarHome() {
 
   gekozenOppervlakte = null;
   gekozenRuimtes = null;
-  meerwerkUren = 0;
+
+  // 🔑 XTR & ALGEMEEN MEERWERK RESET
+  xtrCoatingVerwijderenUren = 0;
+  extraMeerwerk.uren = null;
+  extraMeerwerk.toelichting = "";
 
   lastVraagTekst = null;
 
@@ -1578,5 +1536,3 @@ function gaNaarHome() {
   groep.append(btnKeuzegids, btnPrijslijst);
   homeEl.appendChild(groep);
 }
-
-
