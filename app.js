@@ -906,7 +906,7 @@ function toonPrijsContext() {
 
 
 // ========================
-// PRIJSINVOER – ENKEL SYSTEEM (DEFINITIEF & STABIEL)
+// PRIJSINVOER – ENKEL SYSTEEM / AFWEGING (DEFINITIEF)
 // ========================
 function toonPrijsInvoer() {
   const questionEl = document.getElementById("question-text");
@@ -931,7 +931,7 @@ function toonPrijsInvoer() {
   `;
 
   // ========================
-  // HOOFDCONTAINER (ALLE SPACING HIER)
+  // HOOFDCONTAINER
   // ========================
   const hoofdGroep = document.createElement("div");
   hoofdGroep.className = "antwoord-groep";
@@ -949,7 +949,7 @@ function toonPrijsInvoer() {
   hoofdGroep.appendChild(m2Input);
 
   // ========================
-  // AANTAL RUIMTES – TITEL IN EIGEN BAKJE
+  // AANTAL RUIMTES – TITEL
   // ========================
   const ruimteTitel = document.createElement("div");
   ruimteTitel.className = "antwoord-titel";
@@ -958,7 +958,7 @@ function toonPrijsInvoer() {
   hoofdGroep.appendChild(ruimteTitel);
 
   // ========================
-  // RUIMTE KNOPPEN (EIGEN GROEP)
+  // RUIMTE KNOPPEN
   // ========================
   const ruimteGroep = document.createElement("div");
   ruimteGroep.className = "antwoord-groep";
@@ -985,19 +985,24 @@ function toonPrijsInvoer() {
       }
 
       await herberekenPrijs();
-      toonSysteemPrijsResultaat();
+
+      // 🔑 CRUCIALE SPLITSING
+      if (afwegingNode) {
+        console.log("⚖️ Afweging actief → toon vergelijking");
+        toonAfwegingMetPrijzen();
+      } else {
+        console.log("💰 Enkel systeem → toon resultaat");
+        toonSysteemPrijsResultaat();
+      }
     });
 
     ruimteGroep.appendChild(btn);
   });
 
   hoofdGroep.appendChild(ruimteGroep);
-
-  // ========================
-  // IN DOM PLAATSEN
-  // ========================
   optionsEl.appendChild(hoofdGroep);
 }
+
 
 
 
