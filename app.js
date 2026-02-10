@@ -738,7 +738,16 @@ async function toonAfwegingMetPrijzen() {
   for (const systeemNode of afwegingNode.next) {
     if (systeemNode.type !== "systeem") continue;
 
-    const systeemNaam = stripPrefix(systeemNode.text);
+    // 🔑 FIX: robuuste systeemnaam
+    const systeemNaam =
+      systeemNode.system ||
+      stripPrefix(systeemNode.text);
+
+    if (!systeemNaam) {
+      console.error("❌ Geen systeemnaam uit node", systeemNode);
+      continue;
+    }
+
     const systeemForcedKeys = Array.isArray(systeemNode.forced_extras)
       ? systeemNode.forced_extras
       : [];
@@ -836,7 +845,6 @@ async function toonAfwegingMetPrijzen() {
 
   optionsEl.appendChild(groep);
 }
-
 
 
 
