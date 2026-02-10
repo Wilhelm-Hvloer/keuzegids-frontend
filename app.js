@@ -36,10 +36,14 @@ let prijsPerM2 = null;
 let currentNode = null;
 let gekozenSysteem = null;
 let gekozenAntwoorden = [];
-let gekozenExtras = [];        // alleen keuzeboom-extras (add_250, decoflakes, etc.)
+
+let gekozenExtras = [];        // alle extras (keuze + forced)
+let forcedExtras = [];         // verplichte extras (uit systeemnode)
+
 let basisPrijs = null;
 let totaalPrijs = null;
-let backendExtras = [];        // komt UIT backend (inclusief xtr)
+let backendExtras = [];        // komt UIT backend (incl. forced/xtr)
+
 let inOptieFase = false;
 let gekozenOppervlakte = null;
 let gekozenRuimtes = null;
@@ -275,6 +279,7 @@ async function startKeuzegids() {
   gekozenSysteem = null;
   gekozenAntwoorden = [];
   gekozenExtras = [];
+  forcedExtras = [];        // 🔑 VERPLICHT RESETTEN
   backendExtras = [];
 
   basisPrijs = null;
@@ -300,27 +305,8 @@ async function startKeuzegids() {
 }
 
 
-// beschikbaar maken voor HTML
-window.startKeuzegids = startKeuzegids;
-window.startPrijslijst = startPrijslijst;
 
-
-const EXTRA_DETECTIE = [
-  { key: "add_250",     match: ["add250", "add 250"] },
-  { key: "decoflakes",  match: ["decoflakes"] },
-  { key: "durakorrel",  match: ["durakorrel"] },
-  { key: "uitvlaklaag", match: ["uitvlaklaag"] }
-];
-
-function detectExtraFromText(text = "") {
-  const clean = text.toLowerCase();
-  for (const extra of EXTRA_DETECTIE) {
-    if (extra.match.some(m => clean.includes(m))) {
-      return extra.key;
-    }
-  }
-  return null;
-}
+ 
 
 
 // ========================
@@ -392,11 +378,18 @@ async function chooseOption(index) {
         antwoord: stripPrefix(gekozenOptie.text || "")
       });
 
-      // 2️⃣ Extra automatisch herkennen op basis van tekst (xtr blijft werken)
+      // 2️⃣ EXTRA HERKENNING OP BASIS VAN TEKST (LEGACY / BEGRENST)
+      // ⚠️ Alleen voor optionele extras
+      // ⚠️ Forced extras komen UIT systeemnode metadata
       const extraKey = detectExtraFromText(gekozenOptie.text || "");
-      if (extraKey && !gekozenExtras.includes(extraKey)) {
+
+      if (
+        extraKey &&
+        !gekozenExtras.includes(extraKey) &&
+        !forcedExtras.includes(extraKey) // 🔑 voorkomt overlap met forced extras
+      ) {
         gekozenExtras.push(extraKey);
-        console.log("➕ Extra herkend:", extraKey);
+        console.log("➕ Extra herkend (tekst-detectie):", extraKey);
       }
     }
   }
@@ -420,12 +413,12 @@ async function chooseOption(index) {
 
     // ========================
     // 🔑 EINDE KEUZEBOOM
-    // → start extra arbeid flow (NIEUW)
+    // → start extra arbeid flow
     // ========================
     if (!Array.isArray(nextNode.next) || nextNode.next.length === 0) {
       console.log("🏁 Einde keuzeboom → start extra arbeid");
 
-      toonMeerwerkPagina(); // 👈 NIEUW STARTPUNT
+      toonMeerwerkPagina();
       return;
     }
 
@@ -438,6 +431,7 @@ async function chooseOption(index) {
     console.error("❌ Fout bij chooseOption:", err);
   }
 }
+
 
 
 
@@ -561,6 +555,20 @@ function handleSystemNode(node) {
 
   currentSystemNode = node;
   gekozenSysteem = node.system || stripPrefix(node.text) || node.id;
+
+  // ========================
+  // FORCED EXTRAS UIT SYSTEEMNODE
+  // ========================
+  if (Array.isArray(node.forced_extras)) {
+    node.forced_extras.forEach(extraKey => {
+      if (!forcedExtras.includes(extraKey)) {
+        forcedExtras.push(extraKey);
+      }
+      if (!gekozenExtras.includes(extraKey)) {
+        gekozenExtras.push(extraKey);
+      }
+    });
+  }
 
   // 🔑 moment vastleggen waarop systeem gekozen is (exact één keer)
   if (systeemKeuzeIndex === null) {
@@ -835,12 +843,20 @@ function toonPrijsInvoerVoorAfweging() {
 }
 
 
-
 // ========================
-// PRIJS CONTEXT
+// PRIJS CONTEXT (GEDEACTIVEERD – LEGACY)
 // ========================
+// ⚠️ Deze functie wordt niet meer gebruikt in de huidige flow.
+// ⚠️ Prijsweergave loopt nu via:
+//    - toonSysteemPrijsResultaat()
+//    - toonSamenvatting()
+// ⚠️ Deze code is bewust uitgeschakeld om dubbele of verwarrende UI te voorkomen.
 
+/*
 function toonPrijsContext() {
+  return ""; // bewust leeg – functie gedeactiveerd
+
+  // --- oude implementatie (bewust uitgeschakeld) ---
   if (!basisPrijs) return "";
 
   const prijsM2Tekst =
@@ -862,6 +878,8 @@ function toonPrijsContext() {
   html += `<strong>Totaalprijs: € ${totaalPrijs},-</strong><hr></div>`;
   return html;
 }
+*/
+
 
 
 
@@ -964,7 +982,7 @@ function toonPrijsInvoer() {
 
 
 // ========================
-// SYSTEEMPRIJS RESULTAAT (KLIKBaar)
+// SYSTEEMPRIJS RESULTAAT (KLIKBAAR)
 // ========================
 function toonSysteemPrijsResultaat() {
   const resultEl = document.getElementById("result-box");
@@ -975,14 +993,37 @@ function toonSysteemPrijsResultaat() {
   const card = document.createElement("div");
   card.className = "kaart systeem-kaart";
 
-  card.innerHTML = `
+  // forced extras uit backend
+  const forced = backendExtras.filter(e => e.forced === true);
+
+  // basisweergave (altijd)
+  let html = `
     <strong>${gekozenSysteem}</strong><br>
     € ${prijsPerM2} / m²<br>
-    <strong>€ ${totaalPrijs},-</strong>
+    Basisprijs: € ${basisPrijs},-<br>
+  `;
+
+  // alleen uitbreiden ALS er verplichte extra’s zijn
+  if (forced.length > 0) {
+    html += `<br><strong>Verplichte extra’s:</strong><br>`;
+
+    forced.forEach(extra => {
+      html += `– ${extra.naam} (+ € ${extra.totaal},-)<br>`;
+    });
+
+    const subtotaal =
+      basisPrijs + forced.reduce((sum, e) => sum + e.totaal, 0);
+
+    html += `<br><strong>Subtotaal systeem: € ${subtotaal},-</strong><br>`;
+  }
+
+  html += `
     <div style="margin-top:10px; font-size:13px; opacity:0.8;">
       Klik om verder te gaan
     </div>
   `;
+
+  card.innerHTML = html;
 
   card.onclick = async () => {
     // prijsfase afronden
@@ -995,6 +1036,7 @@ function toonSysteemPrijsResultaat() {
 
   resultEl.appendChild(card);
 }
+
 
 
 // ========================
@@ -1288,6 +1330,7 @@ async function herberekenPrijs() {
   if (!gekozenSysteem || !gekozenOppervlakte || !gekozenRuimtes) return;
 
   console.log("📤 herberekenPrijs → extras:", gekozenExtras);
+  console.log("📤 herberekenPrijs → forcedExtras:", forcedExtras);
   console.log("📤 xtr coating verwijderen (uren):", xtrCoatingVerwijderenUren);
   console.log("📤 algemeen meerwerk:", extraMeerwerk);
   console.log("📤 extra materiaal:", extraMateriaal);
@@ -1299,7 +1342,12 @@ async function herberekenPrijs() {
       systeem: gekozenSysteem,
       oppervlakte: gekozenOppervlakte,
       ruimtes: gekozenRuimtes,
+
+      // ========================
+      // EXTRAS
+      // ========================
       extras: gekozenExtras,
+      forced_extras: forcedExtras,
 
       // ========================
       // XTR – MEERWERK COATING VERWIJDEREN
@@ -1335,6 +1383,7 @@ async function herberekenPrijs() {
   console.log("📥 backendExtras:", backendExtras);
   console.log("💰 totaalPrijs:", totaalPrijs);
 }
+
 
 
 // ========================
@@ -1439,7 +1488,11 @@ function toonSamenvatting() {
     backendExtras.forEach(extra => {
       html += `
         <div class="extra-blok">
-          <div><strong>${extra.naam}</strong></div>
+          <div>
+            <strong>
+              ${extra.naam}${extra.forced ? " <span style='opacity:0.7'>(verplicht)</span>" : ""}
+            </strong>
+          </div>
           ${extra.toelichting ? `<div class="extra-toelichting">${extra.toelichting}</div>` : ""}
           <div class="extra-bedrag">€ ${extra.totaal},-</div>
         </div>
@@ -1507,6 +1560,7 @@ function gaNaarHome() {
   gekozenSysteem = null;
   gekozenAntwoorden = [];
   gekozenExtras = [];
+  forcedExtras = [];          // 🔑 VERPLICHT RESETTEN
   backendExtras = [];
 
   basisPrijs = null;
