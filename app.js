@@ -366,31 +366,30 @@ async function chooseOption(index) {
   console.log("➡️ keuze:", currentNode.id, "index:", index);
 
   // ========================
-  // 🔑 ANTWOORD + EXTRA REGISTREREN BIJ VRAAG-NODE
+  // 🔑 ANTWOORD REGISTREREN BIJ VRAAG-NODE
   // ========================
   if (currentNode.type === "vraag") {
     const gekozenOptie = currentNode.next[index];
 
     if (gekozenOptie && currentNode.text) {
-      // 1️⃣ Vraag/antwoord opslaan (voor samenvatting)
+      // Vraag/antwoord opslaan (voor samenvatting)
       gekozenAntwoorden.push({
         vraag: stripPrefix(currentNode.text),
         antwoord: stripPrefix(gekozenOptie.text || "")
       });
 
-      // 2️⃣ EXTRA HERKENNING OP BASIS VAN TEKST (LEGACY / BEGRENST)
-      // ⚠️ Alleen voor optionele extras
-      // ⚠️ Forced extras komen UIT systeemnode metadata
-      const extraKey = detectExtraFromText(gekozenOptie.text || "");
-
-      if (
-        extraKey &&
-        !gekozenExtras.includes(extraKey) &&
-        !forcedExtras.includes(extraKey) // 🔑 voorkomt overlap met forced extras
-      ) {
-        gekozenExtras.push(extraKey);
-        console.log("➕ Extra herkend (tekst-detectie):", extraKey);
-      }
+      // ⚠️ LEGACY EXTRA-DETECTIE UITGESCHAKELD
+      // ------------------------------------
+      // Vroeger werden extras automatisch herkend op basis van tekst.
+      // Dit is bewust uitgezet omdat extras nu lopen via:
+      // - systeemnode.forced_extras
+      // - expliciete xtr-nodes
+      // - handmatige invoer (meerwerk / materiaal)
+      //
+      // Hierdoor:
+      // - geen dubbele extras
+      // - geen verborgen prijslogica
+      // - geen crashes door ontbrekende functies
     }
   }
 
@@ -431,6 +430,7 @@ async function chooseOption(index) {
     console.error("❌ Fout bij chooseOption:", err);
   }
 }
+
 
 
 
