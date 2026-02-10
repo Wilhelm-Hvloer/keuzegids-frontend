@@ -695,19 +695,35 @@ function handleXtrNode(node) {
   optionsEl.appendChild(groep);
 }
 
+
+
+
 // ========================
-// AFW → AFWEGING (GEUNIFICEERDE FLOW)
+// AFW → AFWEGING (GEUNIFICEERDE & CORRECTE FLOW)
 // ========================
 function handleAfwNode(node) {
   console.log("⚖️ Afweging-node → start prijsinvoer", node);
 
-  afwegingNode = node;
   actieveFlow = "keuzegids";
-
-  // reset eventuele oude afweging
   afwegingResultaten = [];
 
-  // 🔑 ÉÉN invoerfunctie voor alles
+  // 🔑 KRITIEKE FIX:
+  // next moet ECHTE systeemnodes zijn, geen uitgeklede data
+  const echteSysteemNodes = node.next
+    .map(n => (typeof n === "string" ? getNodeById(n) : n))
+    .filter(n => n && n.type === "systeem");
+
+  if (echteSysteemNodes.length === 0) {
+    console.error("❌ Afweging zonder geldige systeemnodes", node);
+    return;
+  }
+
+  afwegingNode = {
+    ...node,
+    next: echteSysteemNodes
+  };
+
+  // 🔑 ÉÉN invoerfase (zelfde als enkel systeem)
   toonPrijsInvoer();
 }
 
