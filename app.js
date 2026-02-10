@@ -99,7 +99,7 @@ function toonFlow() {
 }
 
 // ========================
-// START PRIJSLIJST (CORRECT)
+// START PRIJSLIJST (GECORRIGEERD & VEILIG)
 // ========================
 function startPrijslijst() {
   console.log("📋 Prijslijst gestart");
@@ -107,15 +107,31 @@ function startPrijslijst() {
   toonFlow();
   resetUI();
 
-  // prijslijst = géén keuzeboom
+  // ========================
+  // FLOW INSTELLING
+  // ========================
   actieveFlow = "prijslijst";
+
+  // ========================
+  // 🔑 AFWEGING STATE RESET (CRUCIAAL)
+  // ========================
   afwegingNode = null;
+  afwegingNodeOriginal = null;
+  afwegingResultaten = [];
+
   currentNode = null;
 
+  // ========================
+  // KEUZES & EXTRAS RESET
+  // ========================
   gekozenAntwoorden = [];
   gekozenExtras = [];
+  forcedExtras = [];
   backendExtras = [];
 
+  // ========================
+  // PRIJS STATE RESET
+  // ========================
   gekozenSysteem = null;
   gekozenOppervlakte = null;
   gekozenRuimtes = null;
@@ -123,9 +139,19 @@ function startPrijslijst() {
   totaalPrijs = null;
   prijsPerM2 = null;
 
-  // 🔑 STARTPUNT PRIJSLIJST
+  // ========================
+  // XTR & MEERWERK RESET
+  // ========================
+  xtrCoatingVerwijderenUren = 0;
+  extraMeerwerk.uren = null;
+  extraMeerwerk.toelichting = "";
+
+  // ========================
+  // START PRIJSLIJST
+  // ========================
   toonPrijslijstSysteemSelectie();
 }
+
 
 // ========================
 // PRIJSLIJST – SYSTEEMSELECTIE (DEFINITIEF & CONSISTENT)
@@ -472,7 +498,6 @@ function toonVraagMetOpties(node) {
   optionsEl.appendChild(groep);
 }
 
-
 // ========================
 // NODE RENDEREN (ROUTER) – GECORRIGEERD
 // ========================
@@ -522,6 +547,7 @@ async function renderNode(node) {
       return;
   }
 }
+
 
 
 
@@ -687,11 +713,11 @@ function handleEindeNode(node) {
 
 
 // ========================
-// AFWEGING MET PRIJSVERGELIJKING (MET FORCED EXTRAS)
+// AFWEGING MET PRIJSVERGELIJKING (MET FORCED EXTRAS) – GECORRIGEERD
 // ========================
 async function toonAfwegingMetPrijzen() {
   const questionEl = document.getElementById("question-text");
-  const optionsEl = document.getElementById("options-box");
+  const optionsEl  = document.getElementById("options-box");
 
   optionsEl.innerHTML = "";
   optionsEl.style.display = "block";
@@ -709,11 +735,13 @@ async function toonAfwegingMetPrijzen() {
     if (systeemNode.type !== "systeem") continue;
 
     const systeemNaam = stripPrefix(systeemNode.text);
-    const forced = Array.isArray(systeemNode.forced_extras)
+    const systeemForcedKeys = Array.isArray(systeemNode.forced_extras)
       ? systeemNode.forced_extras
       : [];
 
-    // 🔑 BEREKEN PRIJS VIA BACKEND (INCLUSIEF FORCED EXTRAS)
+    // ========================
+    // 🔑 PRIJS BEREKENEN VIA BACKEND
+    // ========================
     const res = await fetch(`${API_BASE}/api/price`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -721,15 +749,18 @@ async function toonAfwegingMetPrijzen() {
         systeem: systeemNaam,
         oppervlakte: gekozenOppervlakte,
         ruimtes: gekozenRuimtes,
-        extras: [],               // geen optionele extras bij vergelijking
-        forced_extras: forced     // 🔑 WEL forced extras
+        extras: [],                       // geen optionele extras
+        forced_extras: systeemForcedKeys  // 🔑 forced extras mee
       })
     });
 
     const data = await res.json();
     if (data.error) continue;
 
-    const forcedExtras = (data.extras || []).filter(e => e.forced === true);
+    const backendForcedExtras =
+      Array.isArray(data.extras)
+        ? data.extras.filter(e => e.forced === true)
+        : [];
 
     afwegingResultaten.push({
       systeem: systeemNaam,
@@ -747,9 +778,9 @@ async function toonAfwegingMetPrijzen() {
       Basisprijs: € ${data.basisprijs},-<br>
     `;
 
-    if (forcedExtras.length > 0) {
+    if (backendForcedExtras.length > 0) {
       html += `<br><strong>Verplichte extra’s:</strong><br>`;
-      forcedExtras.forEach(extra => {
+      backendForcedExtras.forEach(extra => {
         html += `– ${extra.naam} (+ € ${extra.totaal},-)<br>`;
       });
 
@@ -763,17 +794,19 @@ async function toonAfwegingMetPrijzen() {
     btn.classList.add("systeem-knop");
     btn.innerHTML = html;
 
+    // ========================
+    // 🔑 KLIK → STATE CORRECT VASTZETTEN
+    // ========================
     btn.addEventListener("click", () => {
       gekozenSysteem = systeemNaam;
-      basisPrijs = data.basisprijs;
-      prijsPerM2 = data.prijs_per_m2;
-      totaalPrijs = data.totaalprijs;
+      basisPrijs    = data.basisprijs;
+      prijsPerM2    = data.prijs_per_m2;
+      totaalPrijs   = data.totaalprijs;
 
-      forcedExtras.forEach(extra => {
-        if (!forcedExtras.includes(extra.key)) {
-          forcedExtras.push(extra.key);
-        }
-      });
+      // 🔑 forced extras definitief vastleggen (keys!)
+      forcedExtras  = [...systeemForcedKeys];
+      gekozenExtras = [...systeemForcedKeys];
+      backendExtras = data.extras;
 
       if (actieveFlow === "keuzegids") {
         inOptieFase = true;
@@ -798,89 +831,8 @@ async function toonAfwegingMetPrijzen() {
 
 
 
-// ========================
-// AFWEGING MET PRIJSVERGELIJKING (MET FORCED EXTRAS)
-// ========================
-async function toonAfwegingMetPrijzen() {
-  const questionEl = document.getElementById("question-text");
-  const optionsEl = document.getElementById("options-box");
+afwegingNodeOriginal = afwegingNode;
 
-  optionsEl.innerHTML = "";
-  optionsEl.style.display = "block";
-
-  if (!afwegingNode || !Array.isArray(afwegingNode.next)) return;
-
-  questionEl.innerHTML = `<strong>${stripPrefix(afwegingNode.text)}</strong>`;
-
-  const groep = document.createElement("div");
-  groep.className = "antwoord-groep";
-
-  for (const systeemNode of afwegingNode.next) {
-    if (systeemNode.type !== "systeem") continue;
-
-    const systeemNaam = stripPrefix(systeemNode.text);
-    const forced = Array.isArray(systeemNode.forced_extras)
-      ? systeemNode.forced_extras
-      : [];
-
-    // 🔑 BACKEND is enige waarheid → ook hier
-    const res = await fetch(`${API_BASE}/api/price`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        systeem: systeemNaam,
-        oppervlakte: gekozenOppervlakte,
-        ruimtes: gekozenRuimtes,
-        extras: [],
-        forced_extras: forced
-      })
-    });
-
-    const data = await res.json();
-    if (data.error) continue;
-
-    const forcedExtras = data.extras.filter(e => e.forced);
-    const forcedTotaal = forcedExtras.reduce((s, e) => s + e.totaal, 0);
-    const subtotaal = data.basisprijs + forcedTotaal;
-
-    const btn = document.createElement("button");
-    btn.type = "button";
-    btn.classList.add("systeem-knop");
-
-    let html = `
-      <strong>${systeemNaam}</strong>
-      <div>€ ${data.prijs_per_m2} / m²</div>
-      <div>Basisprijs: € ${data.basisprijs},-</div>
-    `;
-
-    if (forcedExtras.length > 0) {
-      html += `<div style="margin-top:6px;"><strong>Verplichte extra’s:</strong></div>`;
-      forcedExtras.forEach(e => {
-        html += `<div>– ${e.naam} (+ € ${e.totaal},-)</div>`;
-      });
-      html += `<div style="margin-top:6px;"><strong>Subtotaal: € ${subtotaal},-</strong></div>`;
-    } else {
-      html += `<div><strong>Systeemprijs: € ${data.basisprijs},-</strong></div>`;
-    }
-
-    btn.innerHTML = html;
-
-    btn.onclick = () => {
-      gekozenSysteem = systeemNaam;
-      basisPrijs = data.basisprijs;
-      prijsPerM2 = data.prijs_per_m2;
-      backendExtras = data.extras;
-      totaalPrijs = data.totaalprijs;
-
-      const index = afwegingNode.next.findIndex(n => n.id === systeemNode.id);
-      chooseOption(index);
-    };
-
-    groep.appendChild(btn);
-  }
-
-  optionsEl.appendChild(groep);
-}
 
 // ========================
 // PRIJS CONTEXT (GEDEACTIVEERD – LEGACY)
@@ -1574,7 +1526,7 @@ function stripPrefix(text = "") {
 }
 
 // ========================
-// HOMESCREEN ACTIES (DEFINITIEF & CORRECT)
+// HOMESCREEN ACTIES (DEFINITIEF & GECORRIGEERD)
 // ========================
 function gaNaarHome() {
   const homeEl = document.getElementById("home-screen");
@@ -1588,7 +1540,6 @@ function gaNaarHome() {
   flowEl.style.display = "none";
   homeEl.style.display = "block";
 
-  // flow containers leeg
   optionsEl.innerHTML = "";
   optionsEl.style.display = "none";
   resultEl.innerHTML = "";
@@ -1606,7 +1557,7 @@ function gaNaarHome() {
   gekozenSysteem = null;
   gekozenAntwoorden = [];
   gekozenExtras = [];
-  forcedExtras = [];          // 🔑 VERPLICHT RESETTEN
+  forcedExtras = [];           // 🔑 verplicht resetten
   backendExtras = [];
 
   basisPrijs = null;
@@ -1616,7 +1567,16 @@ function gaNaarHome() {
   gekozenOppervlakte = null;
   gekozenRuimtes = null;
 
-  // 🔑 XTR & ALGEMEEN MEERWERK RESET
+  // ========================
+  // 🔑 AFWEGING STATE RESET (CRUCIAAL)
+  // ========================
+  afwegingNode = null;
+  afwegingNodeOriginal = null;
+  afwegingResultaten = [];
+
+  // ========================
+  // XTR & MEERWERK RESET
+  // ========================
   xtrCoatingVerwijderenUren = 0;
   extraMeerwerk.uren = null;
   extraMeerwerk.toelichting = "";
