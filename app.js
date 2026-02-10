@@ -262,28 +262,37 @@ function verwijderGeefPrijsKnop() {
 }
 
 
-
-
 // ========================
-// PRIJSLIJST – VERGELIJKING START
+// PRIJSLIJST – VERGELIJKING START (ROBUST)
 // ========================
 function startVergelijking() {
   console.log("🔀 Prijslijst vergelijking gestart");
 
-  // we hergebruiken bestaande afweging-prijsflow
+  // 🔑 Afweging-node consistent opbouwen
   afwegingNode = {
+    id: "PRIJSLIJST_AFWEGING",
     type: "afw",
+    text: "Vergelijk systemen",
     next: geselecteerdePrijslijstSystemen.map(s => ({
+      id: `PL_${s}`,
       type: "systeem",
       system: s,
       text: `Sys: ${s}`,
-      requires_price: true
+      requires_price: true,
+      forced_extras: [] // 🔑 expliciet, voorkomt undefined
     }))
   };
 
-  toonPrijsInvoerVoorAfweging();
+  // 🔑 ALTJD via dezelfde route als keuzeboom
+  if (typeof toonPrijsInvoerVoorAfweging === "function") {
+    toonPrijsInvoerVoorAfweging();
+  } else {
+    console.error(
+      "❌ toonPrijsInvoerVoorAfweging ontbreekt – fallback naar normale afweging"
+    );
+    toonAfwegingMetPrijzen();
+  }
 }
-
 
 
 
