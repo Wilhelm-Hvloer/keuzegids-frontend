@@ -707,11 +707,10 @@ function handleAfwNode(node) {
   actieveFlow = "keuzegids";
   afwegingResultaten = [];
 
-  // 🔑 KRITIEKE FIX:
-  // next moet ECHTE systeemnodes zijn, geen uitgeklede data
-  const echteSysteemNodes = node.next
-    .map(n => (typeof n === "string" ? getNodeById(n) : n))
-    .filter(n => n && n.type === "systeem");
+  // 🔑 FIX: backend levert al volledige systeemnodes
+  const echteSysteemNodes = Array.isArray(node.next)
+    ? node.next.filter(n => n && n.type === "systeem")
+    : [];
 
   if (echteSysteemNodes.length === 0) {
     console.error("❌ Afweging zonder geldige systeemnodes", node);
@@ -726,6 +725,7 @@ function handleAfwNode(node) {
   // 🔑 ÉÉN invoerfase (zelfde als enkel systeem)
   toonPrijsInvoer();
 }
+
 
 
 
