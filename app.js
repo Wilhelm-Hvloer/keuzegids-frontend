@@ -263,12 +263,12 @@ function verwijderGeefPrijsKnop() {
 
 
 // ========================
-// PRIJSLIJST – VERGELIJKING START (ROBUST)
+// PRIJSLIJST – VERGELIJKING START (GEUNIFICEERD)
 // ========================
 function startVergelijking() {
   console.log("🔀 Prijslijst vergelijking gestart");
 
-  // 🔑 Afweging-node consistent opbouwen
+  // 🔑 Afweging-node opbouwen
   afwegingNode = {
     id: "PRIJSLIJST_AFWEGING",
     type: "afw",
@@ -279,19 +279,12 @@ function startVergelijking() {
       system: s,
       text: `Sys: ${s}`,
       requires_price: true,
-      forced_extras: [] // 🔑 expliciet, voorkomt undefined
+      forced_extras: [] // expliciet, voorkomt undefined
     }))
   };
 
-  // 🔑 ALTJD via dezelfde route als keuzeboom
-  if (typeof toonPrijsInvoerVoorAfweging === "function") {
-    toonPrijsInvoerVoorAfweging();
-  } else {
-    console.error(
-      "❌ toonPrijsInvoerVoorAfweging ontbreekt – fallback naar normale afweging"
-    );
-    toonAfwegingMetPrijzen();
-  }
+  // 🔑 ÉÉN invoerroute voor alles (single & afweging)
+  toonPrijsInvoer();
 }
 
 
@@ -682,7 +675,7 @@ function handleXtrNode(node) {
   btn.onclick = async () => {
     xtrCoatingVerwijderenUren = Number(input.value || 0);
 
-    // keuzeboom vervolgen (xtr heeft altijd exact 1 vervolg)
+    // xtr heeft altijd exact 1 vervolg
     await chooseOption(0);
   };
 
@@ -692,21 +685,21 @@ function handleXtrNode(node) {
 }
 
 // ========================
-// AFW → AFWEGING (2-FASE FLOW)
+// AFW → AFWEGING (GEUNIFICEERDE FLOW)
 // ========================
 function handleAfwNode(node) {
-  console.log("⚖️ Afweging-node → eerst invoer, daarna prijzen", node);
+  console.log("⚖️ Afweging-node → start prijsinvoer", node);
 
   afwegingNode = node;
   actieveFlow = "keuzegids";
 
   // reset eventuele oude afweging
   afwegingResultaten = [];
-  inAfwegingPrijs = true;
 
-  // FASE 1: m² + ruimtes invoeren
-  toonPrijsInvoerVoorAfweging();
+  // 🔑 ÉÉN invoerfunctie voor alles
+  toonPrijsInvoer();
 }
+
 
 
 
@@ -722,7 +715,7 @@ function handleEindeNode(node) {
 
 
 // ========================
-// AFWEGING MET PRIJSVERGELIJKING (MET FORCED EXTRAS) – GECORRIGEERD
+// AFWEGING MET PRIJSVERGELIJKING (MET FORCED EXTRAS) – DEFINITIEF
 // ========================
 async function toonAfwegingMetPrijzen() {
   const questionEl = document.getElementById("question-text");
@@ -731,10 +724,12 @@ async function toonAfwegingMetPrijzen() {
   optionsEl.innerHTML = "";
   optionsEl.style.display = "block";
 
-  if (!afwegingNode || !Array.isArray(afwegingNode.next)) return;
+  if (!afwegingNode || !Array.isArray(afwegingNode.next)) {
+    console.warn("⚠️ Afweging-node ongeldig:", afwegingNode);
+    return;
+  }
 
   questionEl.innerHTML = `<strong>${stripPrefix(afwegingNode.text)}</strong>`;
-
   afwegingResultaten = [];
 
   const groep = document.createElement("div");
@@ -749,7 +744,7 @@ async function toonAfwegingMetPrijzen() {
       : [];
 
     // ========================
-    // 🔑 PRIJS BEREKENEN VIA BACKEND
+    // 🔑 PRIJS VIA BACKEND (ENIGE WAARHEID)
     // ========================
     const res = await fetch(`${API_BASE}/api/price`, {
       method: "POST",
@@ -758,22 +753,31 @@ async function toonAfwegingMetPrijzen() {
         systeem: systeemNaam,
         oppervlakte: gekozenOppervlakte,
         ruimtes: gekozenRuimtes,
-        extras: [],                       // geen optionele extras
-        forced_extras: systeemForcedKeys  // 🔑 forced extras mee
+        extras: [],
+        forced_extras: systeemForcedKeys
       })
     });
 
     const data = await res.json();
-    if (data.error) continue;
+    if (data.error) {
+      console.error("❌ prijsfout:", data.error);
+      continue;
+    }
 
-    const backendForcedExtras =
-      Array.isArray(data.extras)
-        ? data.extras.filter(e => e.forced === true)
-        : [];
+    const backendForcedExtras = Array.isArray(data.extras)
+      ? data.extras.filter(e => e.forced === true)
+      : [];
+
+    const forcedTotaal = backendForcedExtras.reduce(
+      (sum, e) => sum + (e.totaal || 0),
+      0
+    );
+
+    const subtotaal = data.basisprijs + forcedTotaal;
 
     afwegingResultaten.push({
       systeem: systeemNaam,
-      prijs: data.totaalprijs,
+      prijs: subtotaal,
       prijsPerM2: data.prijs_per_m2,
       nodeId: systeemNode.id
     });
@@ -793,7 +797,7 @@ async function toonAfwegingMetPrijzen() {
         html += `– ${extra.naam} (+ € ${extra.totaal},-)<br>`;
       });
 
-      html += `<br><strong>Subtotaal: € ${data.totaalprijs},-</strong>`;
+      html += `<br><strong>Subtotaal: € ${subtotaal},-</strong>`;
     } else {
       html += `<br><strong>Systeemprijs: € ${data.basisprijs},-</strong>`;
     }
@@ -804,18 +808,17 @@ async function toonAfwegingMetPrijzen() {
     btn.innerHTML = html;
 
     // ========================
-    // 🔑 KLIK → STATE CORRECT VASTZETTEN
+    // 🔑 KLIK → DEFINITIEVE STATE
     // ========================
     btn.addEventListener("click", () => {
       gekozenSysteem = systeemNaam;
       basisPrijs    = data.basisprijs;
       prijsPerM2    = data.prijs_per_m2;
-      totaalPrijs   = data.totaalprijs;
+      totaalPrijs   = subtotaal;
 
-      // 🔑 forced extras definitief vastleggen (keys!)
       forcedExtras  = [...systeemForcedKeys];
       gekozenExtras = [...systeemForcedKeys];
-      backendExtras = data.extras;
+      backendExtras = data.extras || [];
 
       if (actieveFlow === "keuzegids") {
         inOptieFase = true;
