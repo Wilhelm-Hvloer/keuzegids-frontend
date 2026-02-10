@@ -798,81 +798,89 @@ async function toonAfwegingMetPrijzen() {
 
 
 
-
 // ========================
-// AFWEGING UI – FASE 1 (INVOER) – DEFINITIEF & CONSISTENT
+// AFWEGING MET PRIJSVERGELIJKING (MET FORCED EXTRAS)
 // ========================
-function toonPrijsInvoerVoorAfweging() {
+async function toonAfwegingMetPrijzen() {
   const questionEl = document.getElementById("question-text");
-  const optionsEl  = document.getElementById("options-box");
-  const resultEl   = document.getElementById("result-box");
+  const optionsEl = document.getElementById("options-box");
 
-  if (!afwegingNode) {
-    console.error("Afweging node ontbreekt");
-    return;
-  }
-
-  resetUI();
-  optionsEl.style.display = "block";
   optionsEl.innerHTML = "";
-  resultEl.style.display = "none";
-  resultEl.innerHTML = "";
+  optionsEl.style.display = "block";
+
+  if (!afwegingNode || !Array.isArray(afwegingNode.next)) return;
 
   questionEl.innerHTML = `<strong>${stripPrefix(afwegingNode.text)}</strong>`;
 
-  // 🔑 ÉÉN HOOFDGROEP → gap werkt overal
-  const hoofdGroep = document.createElement("div");
-  hoofdGroep.className = "antwoord-groep";
+  const groep = document.createElement("div");
+  groep.className = "antwoord-groep";
 
-  // ===== Oppervlakte =====
-  const m2Input = document.createElement("input");
-  m2Input.type = "number";
-  m2Input.id = "input-m2";
-  m2Input.min = "1";
-  m2Input.placeholder = "Oppervlakte in m²";
-  m2Input.classList.add("input-vol");
+  for (const systeemNode of afwegingNode.next) {
+    if (systeemNode.type !== "systeem") continue;
 
-  hoofdGroep.appendChild(m2Input);
+    const systeemNaam = stripPrefix(systeemNode.text);
+    const forced = Array.isArray(systeemNode.forced_extras)
+      ? systeemNode.forced_extras
+      : [];
 
-  // ===== Aantal ruimtes (titel in eigen bakje) =====
-  const ruimteTitel = document.createElement("div");
-  ruimteTitel.className = "subtitel";
-  ruimteTitel.innerHTML = "<strong>Aantal ruimtes:</strong>";
-
-  hoofdGroep.appendChild(ruimteTitel);
-
-  // ===== Ruimte knoppen =====
-  [1, 2, 3].forEach(aantal => {
-    const btn = document.createElement("button");
-    btn.type = "button";
-    btn.textContent = `${aantal} ruimte${aantal > 1 ? "s" : ""}`;
-    btn.classList.add("ruimte-knop");
-
-    btn.addEventListener("click", async () => {
-      hoofdGroep
-        .querySelectorAll(".ruimte-knop")
-        .forEach(b => b.classList.remove("actief"));
-      btn.classList.add("actief");
-
-      gekozenRuimtes = aantal;
-      gekozenOppervlakte = parseFloat(m2Input.value);
-
-      if (!gekozenOppervlakte || gekozenOppervlakte <= 0) {
-        resultEl.style.display = "block";
-        resultEl.innerHTML = "Vul eerst een geldige oppervlakte in.";
-        return;
-      }
-
-      await toonAfwegingMetPrijzen();
+    // 🔑 BACKEND is enige waarheid → ook hier
+    const res = await fetch(`${API_BASE}/api/price`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        systeem: systeemNaam,
+        oppervlakte: gekozenOppervlakte,
+        ruimtes: gekozenRuimtes,
+        extras: [],
+        forced_extras: forced
+      })
     });
 
-    hoofdGroep.appendChild(btn);
-  });
+    const data = await res.json();
+    if (data.error) continue;
 
-  // 🔑 SLECHTS ÉÉN CHILD IN options-box
-  optionsEl.appendChild(hoofdGroep);
+    const forcedExtras = data.extras.filter(e => e.forced);
+    const forcedTotaal = forcedExtras.reduce((s, e) => s + e.totaal, 0);
+    const subtotaal = data.basisprijs + forcedTotaal;
+
+    const btn = document.createElement("button");
+    btn.type = "button";
+    btn.classList.add("systeem-knop");
+
+    let html = `
+      <strong>${systeemNaam}</strong>
+      <div>€ ${data.prijs_per_m2} / m²</div>
+      <div>Basisprijs: € ${data.basisprijs},-</div>
+    `;
+
+    if (forcedExtras.length > 0) {
+      html += `<div style="margin-top:6px;"><strong>Verplichte extra’s:</strong></div>`;
+      forcedExtras.forEach(e => {
+        html += `<div>– ${e.naam} (+ € ${e.totaal},-)</div>`;
+      });
+      html += `<div style="margin-top:6px;"><strong>Subtotaal: € ${subtotaal},-</strong></div>`;
+    } else {
+      html += `<div><strong>Systeemprijs: € ${data.basisprijs},-</strong></div>`;
+    }
+
+    btn.innerHTML = html;
+
+    btn.onclick = () => {
+      gekozenSysteem = systeemNaam;
+      basisPrijs = data.basisprijs;
+      prijsPerM2 = data.prijs_per_m2;
+      backendExtras = data.extras;
+      totaalPrijs = data.totaalprijs;
+
+      const index = afwegingNode.next.findIndex(n => n.id === systeemNode.id);
+      chooseOption(index);
+    };
+
+    groep.appendChild(btn);
+  }
+
+  optionsEl.appendChild(groep);
 }
-
 
 // ========================
 // PRIJS CONTEXT (GEDEACTIVEERD – LEGACY)
