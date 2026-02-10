@@ -1289,6 +1289,7 @@ async function herberekenPrijs() {
 
   console.log("📤 herberekenPrijs → extras:", gekozenExtras);
   console.log("📤 xtr coating verwijderen (uren):", xtrCoatingVerwijderenUren);
+  console.log("📤 algemeen meerwerk:", extraMeerwerk);
   console.log("📤 extra materiaal:", extraMateriaal);
 
   const res = await fetch(`${API_BASE}/api/price`, {
@@ -1306,7 +1307,13 @@ async function herberekenPrijs() {
       xtr_coating_verwijderen_uren: xtrCoatingVerwijderenUren,
 
       // ========================
-      // EXTRA MATERIAAL (HANDMATIG)
+      // ALGEMEEN MEERWERK (HANDMATIG)
+      // ========================
+      meerwerk_bedrag: extraMeerwerk.uren || 0,
+      meerwerk_toelichting: extraMeerwerk.toelichting || "",
+
+      // ========================
+      // EXTRA MATERIAAL
       // ========================
       materiaal_bedrag: extraMateriaal.bedrag || 0,
       materiaal_toelichting: extraMateriaal.toelichting || ""
@@ -1328,6 +1335,7 @@ async function herberekenPrijs() {
   console.log("📥 backendExtras:", backendExtras);
   console.log("💰 totaalPrijs:", totaalPrijs);
 }
+
 
 // ========================
 // HULPFUNCTIE – BASISPRIJS PER SYSTEEM (AFWEGING)
