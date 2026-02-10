@@ -548,7 +548,7 @@ async function handleAntwoordNode(node) {
 
 
 // ========================
-// SYSTEM NODE → AFHANDELING (DEFINITIEF)
+// SYSTEM NODE → AFHANDELING (MET FORCED EXTRAS & HERBEREKENING)
 // ========================
 function handleSystemNode(node) {
   console.log("💰 System-node ontvangen", node);
@@ -559,43 +559,51 @@ function handleSystemNode(node) {
   // ========================
   // FORCED EXTRAS UIT SYSTEEMNODE
   // ========================
+  forcedExtras = [];
+
   if (Array.isArray(node.forced_extras)) {
     node.forced_extras.forEach(extraKey => {
-      if (!forcedExtras.includes(extraKey)) {
-        forcedExtras.push(extraKey);
-      }
+      forcedExtras.push(extraKey);
+
       if (!gekozenExtras.includes(extraKey)) {
         gekozenExtras.push(extraKey);
       }
     });
   }
 
-  // 🔑 moment vastleggen waarop systeem gekozen is (exact één keer)
+  console.log("⚙️ Forced extras actief:", forcedExtras);
+
+  // ========================
+  // moment vastleggen waarop systeem gekozen is
+  // ========================
   if (systeemKeuzeIndex === null) {
     systeemKeuzeIndex = gekozenAntwoorden.length;
   }
 
-  // 🔑 KRITIEKE FIX:
-  // Als we in een afweging zitten → NOOIT systeemkaart tonen
+  // ========================
+  // AFWEGING: NOOIT SYSTEEMKAART TONEN
+  // ========================
   if (afwegingNode) {
     console.log("➡️ System-node uit afweging → direct keuzeboom vervolgen");
 
-    // afweging is nu echt klaar
     afwegingNode = null;
-
-    // systeem-node heeft altijd exact 1 vervolg
     chooseOption(0);
     return;
   }
 
-  // 🔑 Normale flow: prijs al bekend → toon kaart
-  if (gekozenOppervlakte && gekozenRuimtes && totaalPrijs) {
-    console.log("➡️ Prijs al bekend, toon systeemkaart");
-    toonSysteemPrijsResultaat();
+  // ========================
+  // PRIJS AL BEKEND? → ALTIJD OPNIEUW BEREKENEN
+  // ========================
+  if (gekozenOppervlakte && gekozenRuimtes) {
+    herberekenPrijs().then(() => {
+      toonSysteemPrijsResultaat();
+    });
     return;
   }
 
-  // 🔑 Anders: start prijsfase
+  // ========================
+  // START PRIJSFASE
+  // ========================
   if (node.requires_price || node.ui_mode === "prijs") {
     toonPrijsInvoer();
     return;
@@ -679,14 +687,12 @@ function handleEindeNode(node) {
 
 
 // ========================
-// AFWEGING MET PRIJSVERGELIJKING (DEFINITIEF)
+// AFWEGING MET PRIJSVERGELIJKING (MET FORCED EXTRAS)
 // ========================
-
 async function toonAfwegingMetPrijzen() {
   const questionEl = document.getElementById("question-text");
   const optionsEl = document.getElementById("options-box");
 
-  // reset
   optionsEl.innerHTML = "";
   optionsEl.style.display = "block";
 
@@ -696,7 +702,6 @@ async function toonAfwegingMetPrijzen() {
 
   afwegingResultaten = [];
 
-  // 🔑 ÉÉN vaste container voor alle systeemknoppen
   const groep = document.createElement("div");
   groep.className = "antwoord-groep";
 
@@ -704,38 +709,71 @@ async function toonAfwegingMetPrijzen() {
     if (systeemNode.type !== "systeem") continue;
 
     const systeemNaam = stripPrefix(systeemNode.text);
+    const forced = Array.isArray(systeemNode.forced_extras)
+      ? systeemNode.forced_extras
+      : [];
 
-    const resultaat = await berekenBasisPrijsVoorSysteem(
-      systeemNaam,
-      gekozenOppervlakte,
-      gekozenRuimtes
-    );
+    // 🔑 BEREKEN PRIJS VIA BACKEND (INCLUSIEF FORCED EXTRAS)
+    const res = await fetch(`${API_BASE}/api/price`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        systeem: systeemNaam,
+        oppervlakte: gekozenOppervlakte,
+        ruimtes: gekozenRuimtes,
+        extras: [],               // geen optionele extras bij vergelijking
+        forced_extras: forced     // 🔑 WEL forced extras
+      })
+    });
 
-    if (!resultaat) continue;
+    const data = await res.json();
+    if (data.error) continue;
+
+    const forcedExtras = (data.extras || []).filter(e => e.forced === true);
 
     afwegingResultaten.push({
       systeem: systeemNaam,
-      prijs: resultaat.totaal,
-      prijsPerM2: resultaat.prijsPerM2,
+      prijs: data.totaalprijs,
+      prijsPerM2: data.prijs_per_m2,
       nodeId: systeemNode.id
     });
+
+    // ========================
+    // UI OPBOUW
+    // ========================
+    let html = `
+      <strong>${systeemNaam}</strong><br>
+      <span style="font-size:14px;">€ ${data.prijs_per_m2} / m²</span><br>
+      Basisprijs: € ${data.basisprijs},-<br>
+    `;
+
+    if (forcedExtras.length > 0) {
+      html += `<br><strong>Verplichte extra’s:</strong><br>`;
+      forcedExtras.forEach(extra => {
+        html += `– ${extra.naam} (+ € ${extra.totaal},-)<br>`;
+      });
+
+      html += `<br><strong>Subtotaal: € ${data.totaalprijs},-</strong>`;
+    } else {
+      html += `<br><strong>Systeemprijs: € ${data.basisprijs},-</strong>`;
+    }
 
     const btn = document.createElement("button");
     btn.type = "button";
     btn.classList.add("systeem-knop");
-
-    btn.innerHTML = `
-      <strong>${systeemNaam}</strong>
-      <span style="font-size:14px;">€ ${resultaat.prijsPerM2} / m²</span>
-      <strong>€ ${resultaat.totaal},-</strong>
-    `;
+    btn.innerHTML = html;
 
     btn.addEventListener("click", () => {
-      // prijs vastzetten
       gekozenSysteem = systeemNaam;
-      basisPrijs = resultaat.totaal;
-      prijsPerM2 = resultaat.prijsPerM2;
-      totaalPrijs = resultaat.totaal;
+      basisPrijs = data.basisprijs;
+      prijsPerM2 = data.prijs_per_m2;
+      totaalPrijs = data.totaalprijs;
+
+      forcedExtras.forEach(extra => {
+        if (!forcedExtras.includes(extra.key)) {
+          forcedExtras.push(extra.key);
+        }
+      });
 
       if (actieveFlow === "keuzegids") {
         inOptieFase = true;
@@ -746,18 +784,11 @@ async function toonAfwegingMetPrijzen() {
 
         chooseOption(index);
       }
-
-      if (actieveFlow === "prijslijst") {
-        console.log(
-          "Prijslijst-flow: systeem gekozen, prijzen tonen is eindpunt"
-        );
-      }
     });
 
     groep.appendChild(btn);
   }
 
-  // 🔑 slechts één child in options-box
   optionsEl.appendChild(groep);
 }
 
@@ -1329,8 +1360,12 @@ function toonMateriaalPagina() {
 async function herberekenPrijs() {
   if (!gekozenSysteem || !gekozenOppervlakte || !gekozenRuimtes) return;
 
-  console.log("📤 herberekenPrijs → extras:", gekozenExtras);
-  console.log("📤 herberekenPrijs → forcedExtras:", forcedExtras);
+  // 🔑 Defensief: altijd arrays
+  const extrasPayload = Array.isArray(gekozenExtras) ? [...gekozenExtras] : [];
+  const forcedPayload = Array.isArray(forcedExtras) ? [...forcedExtras] : [];
+
+  console.log("📤 herberekenPrijs → extras:", extrasPayload);
+  console.log("📤 herberekenPrijs → forcedExtras:", forcedPayload);
   console.log("📤 xtr coating verwijderen (uren):", xtrCoatingVerwijderenUren);
   console.log("📤 algemeen meerwerk:", extraMeerwerk);
   console.log("📤 extra materiaal:", extraMateriaal);
@@ -1346,25 +1381,25 @@ async function herberekenPrijs() {
       // ========================
       // EXTRAS
       // ========================
-      extras: gekozenExtras,
-      forced_extras: forcedExtras,
+      extras: extrasPayload,
+      forced_extras: forcedPayload,
 
       // ========================
       // XTR – MEERWERK COATING VERWIJDEREN
       // ========================
-      xtr_coating_verwijderen_uren: xtrCoatingVerwijderenUren,
+      xtr_coating_verwijderen_uren: xtrCoatingVerwijderenUren || 0,
 
       // ========================
-      // ALGEMEEN MEERWERK (HANDMATIG)
+      // ALGEMEEN MEERWERK (UREN)
       // ========================
-      meerwerk_bedrag: extraMeerwerk.uren || 0,
-      meerwerk_toelichting: extraMeerwerk.toelichting || "",
+      meerwerk_bedrag: extraMeerwerk?.uren || 0,
+      meerwerk_toelichting: extraMeerwerk?.toelichting || "",
 
       // ========================
       // EXTRA MATERIAAL
       // ========================
-      materiaal_bedrag: extraMateriaal.bedrag || 0,
-      materiaal_toelichting: extraMateriaal.toelichting || ""
+      materiaal_bedrag: extraMateriaal?.bedrag || 0,
+      materiaal_toelichting: extraMateriaal?.toelichting || ""
     })
   });
 
@@ -1375,10 +1410,13 @@ async function herberekenPrijs() {
     return;
   }
 
+  // ========================
+  // 🔑 BACKEND = ENIGE WAARHEID
+  // ========================
   basisPrijs    = data.basisprijs;
   prijsPerM2    = data.prijs_per_m2;
-  backendExtras = data.extras || [];
-  totaalPrijs   = data.totaalprijs; // 🔑 NOOIT zelf rekenen
+  backendExtras = Array.isArray(data.extras) ? data.extras : [];
+  totaalPrijs   = data.totaalprijs;
 
   console.log("📥 backendExtras:", backendExtras);
   console.log("💰 totaalPrijs:", totaalPrijs);
