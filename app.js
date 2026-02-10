@@ -576,23 +576,45 @@ async function handleAntwoordNode(node) {
 
 
 // ========================
-// SYSTEM NODE → AFHANDELING (MET FORCED EXTRAS & HERBEREKENING)
+// SYSTEM NODE → AFHANDELING (DEFINITIEF & VEILIG)
 // ========================
 function handleSystemNode(node) {
   console.log("💰 System-node ontvangen", node);
 
+  // ========================
+  // ⛔ AFWEGING: SYSTEMNODE NOOIT ZELF AFHANDELEN
+  // ========================
+  if (afwegingNode) {
+    console.log("⛔ System-node genegeerd (afweging actief)");
+    return;
+  }
+
+  // ========================
+  // SYSTEEM DEFINITIEF KIEZEN
+  // ========================
   currentSystemNode = node;
-  gekozenSysteem = node.system || stripPrefix(node.text) || node.id;
+
+  gekozenSysteem =
+    node.system ||
+    stripPrefix(node.text) ||
+    node.id;
+
+  if (!gekozenSysteem) {
+    console.error("❌ Geen systeemnaam bepaald", node);
+    return;
+  }
 
   // ========================
   // FORCED EXTRAS UIT SYSTEEMNODE
   // ========================
   forcedExtras = [];
+  gekozenExtras = gekozenExtras || [];
 
   if (Array.isArray(node.forced_extras)) {
     node.forced_extras.forEach(extraKey => {
-      forcedExtras.push(extraKey);
-
+      if (!forcedExtras.includes(extraKey)) {
+        forcedExtras.push(extraKey);
+      }
       if (!gekozenExtras.includes(extraKey)) {
         gekozenExtras.push(extraKey);
       }
@@ -602,38 +624,27 @@ function handleSystemNode(node) {
   console.log("⚙️ Forced extras actief:", forcedExtras);
 
   // ========================
-  // moment vastleggen waarop systeem gekozen is
+  // MOMENT VAN SYSTEEMKEUZE VASTLEGGEN
   // ========================
   if (systeemKeuzeIndex === null) {
     systeemKeuzeIndex = gekozenAntwoorden.length;
   }
 
   // ========================
-  // AFWEGING: NOOIT SYSTEEMKAART TONEN
+  // PRIJSFASE
   // ========================
-  if (afwegingNode) {
-    console.log("➡️ System-node uit afweging → direct keuzeboom vervolgen");
-
-    afwegingNode = null;
-    chooseOption(0);
+  if (node.requires_price || node.ui_mode === "prijs") {
+    toonPrijsInvoer();
     return;
   }
 
   // ========================
-  // PRIJS AL BEKEND? → ALTIJD OPNIEUW BEREKENEN
+  // PRIJS AL BEKEND → HERBEREKENEN
   // ========================
   if (gekozenOppervlakte && gekozenRuimtes) {
     herberekenPrijs().then(() => {
       toonSysteemPrijsResultaat();
     });
-    return;
-  }
-
-  // ========================
-  // START PRIJSFASE
-  // ========================
-  if (node.requires_price || node.ui_mode === "prijs") {
-    toonPrijsInvoer();
     return;
   }
 
