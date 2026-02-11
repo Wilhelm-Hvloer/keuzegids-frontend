@@ -58,6 +58,17 @@ let actieveFlow = null;
 let systeemKeuzeIndex = null;
 
 
+// ========================
+// DURAKORREL STATE
+// ========================
+
+let durakorrelActief = false;
+let durakorrelM2 = 0;
+let durakorrelPrijsPerM2 = 0;
+let durakorrelTotaal = 0;
+
+
+
 
 // ========================
 // XTR – MEERWERK COATING VERWIJDEREN
@@ -111,6 +122,7 @@ function toonFlow() {
 // START PRIJSLIJST (GECORRIGEERD & VEILIG)
 // ========================
 function startPrijslijst() {
+
   console.log("📋 Prijslijst gestart");
 
   toonFlow();
@@ -122,12 +134,14 @@ function startPrijslijst() {
   actieveFlow = "prijslijst";
 
   // ========================
-  // 🔑 AFWEGING STATE RESET (CRUCIAAL)
+  // AFWEGING STATE RESET
   // ========================
   afwegingNode = null;
   afwegingResultaten = [];
+  potentieleSystemen = [];
 
   currentNode = null;
+  currentSystemNode = null;
 
   // ========================
   // KEUZES & EXTRAS RESET
@@ -146,6 +160,14 @@ function startPrijslijst() {
   basisPrijs = null;
   totaalPrijs = null;
   prijsPerM2 = null;
+
+  systeemKeuzeIndex = null;
+
+  // ========================
+  // VARIABLE EXTRA RESET
+  // ========================
+  pendingExtra = null;
+  pendingNextNodeId = null;
 
   // ========================
   // XTR & MEERWERK RESET
@@ -303,19 +325,25 @@ function startVergelijking() {
 // START KEUZEGIDS (BACKEND-LEIDEND)
 // ========================
 async function startKeuzegids() {
-  // UI reset (neutraal)
+
+  // UI reset
   resetUI();
-  toonFlow(); // 👈 CRUCIAAL: homescreen → flow
+  toonFlow();
 
   // ========================
   // STATE RESETTEN
   // ========================
-  systeemKeuzeIndex = null; // 🔑 reset voor nieuwe flow
+  systeemKeuzeIndex = null;
+
+  currentNode = null;
+  currentSystemNode = null;
+  potentieleSystemen = [];
 
   gekozenSysteem = null;
   gekozenAntwoorden = [];
+
   gekozenExtras = [];
-  forcedExtras = [];        // 🔑 VERPLICHT RESETTEN
+  forcedExtras = [];
   backendExtras = [];
 
   basisPrijs = null;
@@ -327,14 +355,17 @@ async function startKeuzegids() {
 
   lastVraagTekst = null;
 
+  // 🔑 Variable extra reset
+  pendingExtra = null;
+  pendingNextNodeId = null;
+
   // ========================
   // KEUZEGIDS STARTEN (BACKEND)
   // ========================
   try {
     const res = await fetch(`${API_BASE}/api/start`);
     const node = await res.json();
-
-    renderNode(node); // 🔑 backend bepaalt wat dit is
+    renderNode(node);
   } catch (err) {
     console.error("❌ Fout bij starten keuzegids:", err);
   }
@@ -386,39 +417,90 @@ function toonSysteemSelectie(node) {
 
 
 // ========================
-// KEUZE MAKEN (BACKEND-LEIDEND)
+// KEUZE MAKEN (BACKEND-LEIDEND + CHOSEN_EXTRA ROUTER)
 // ========================
 async function chooseOption(index) {
+
   if (!currentNode) {
     console.warn("⚠️ Geen currentNode bij chooseOption");
     return;
   }
 
-  if (!Array.isArray(currentNode.next)) {
-    console.warn("⚠️ currentNode heeft geen geldige next-array:", currentNode);
-    return;
-  }
-
-  if (index < 0 || index >= currentNode.next.length) {
+  if (!Array.isArray(currentNode.next) ||
+      index < 0 ||
+      index >= currentNode.next.length) {
     console.warn("⚠️ Ongeldige keuze-index:", index, currentNode);
     return;
   }
 
   console.log("➡️ keuze:", currentNode.id, "index:", index);
 
-  // ========================
-  // ANTWOORD REGISTREREN (alleen bij vraag)
-  // ========================
-  if (currentNode.type === "vraag") {
-    const gekozenOptie = currentNode.next[index];
+  const gekozenOptie = currentNode.next[index];
 
-    if (gekozenOptie && currentNode.text) {
-      gekozenAntwoorden.push({
-        vraag: stripPrefix(currentNode.text),
-        antwoord: stripPrefix(gekozenOptie.text || "")
-      });
-    }
+  // ========================
+  // ANTWOORD REGISTREREN
+  // ========================
+  if (currentNode.type === "vraag" && gekozenOptie) {
+    gekozenAntwoorden.push({
+      vraag: stripPrefix(currentNode.text),
+      antwoord: stripPrefix(gekozenOptie.text || "")
+    });
   }
+
+  // ========================
+  // 🔑 CHOSEN_EXTRAS ROUTER
+  // ========================
+  if (gekozenOptie && Array.isArray(gekozenOptie.chosen_extras)) {
+
+    console.log("🟢 chosen_extras gedetecteerd:", gekozenOptie.chosen_extras);
+
+    // Sla vervolg-node tijdelijk op
+    const vervolgNodeId = gekozenOptie.next?.[0] || null;
+
+    // Start per extra de juiste flow
+    gekozenOptie.chosen_extras.forEach(extra => {
+      startChosenExtraFlow(extra, vervolgNodeId);
+    });
+
+    return; // Pauzeer normale backend-flow
+  }
+
+  // ========================
+  // NORMALE BACKEND FLOW
+  // ========================
+  try {
+    const res = await fetch(`${API_BASE}/api/next`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        node_id: currentNode.id,
+        choice: index
+      })
+    });
+
+    const nextNode = await res.json();
+
+    if (nextNode.error) {
+      console.error("Backend fout:", nextNode.error);
+      return;
+    }
+
+    // Einde keuzeboom
+    if (!Array.isArray(nextNode.next) || nextNode.next.length === 0) {
+      console.log("🏁 Einde keuzeboom → start extra arbeid");
+      toonMeerwerkPagina();
+      return;
+    }
+
+    renderNode(nextNode);
+
+  } catch (err) {
+    console.error("❌ Fout bij chooseOption:", err);
+  }
+}
+
+
+
 
   try {
     const res = await fetch(`${API_BASE}/api/next`, {
@@ -1222,6 +1304,152 @@ async function kiesAfgewogenSysteem(index) {
 */
 
 
+
+
+
+// ========================
+// VARIABLE SURFACE EXTRA FLOW
+// ========================
+
+let pendingExtra = null;       // tijdelijk gekozen extra
+let pendingNextNodeId = null;  // vervolg node na extra
+
+
+function startChosenExtraFlow(extra, vervolgNodeId) {
+
+  // Alleen variable_surface behandelen hier
+  if (extra.type !== "variable_surface") {
+    console.warn("Onbekend extra-type:", extra);
+    return;
+  }
+
+  pendingExtra = extra;
+  pendingNextNodeId = vervolgNodeId;
+
+  toonVariableSurfaceInvoer(extra.key);
+}
+
+
+
+// ========================
+// VARIABLE SURFACE INVOER UI
+// ========================
+function toonVariableSurfaceInvoer(extraKey) {
+
+  const questionEl = document.getElementById("question-text");
+  const optionsEl  = document.getElementById("options-box");
+
+  resetUI();
+  optionsEl.style.display = "block";
+
+  questionEl.innerHTML = `<strong>${extraKey} toepassen</strong>`;
+
+  const container = document.createElement("div");
+  container.className = "antwoord-groep";
+
+  const heleBtn = document.createElement("button");
+  heleBtn.type = "button";
+  heleBtn.textContent = "Hele oppervlakte";
+  heleBtn.classList.add("systeem-knop");
+
+  const label = document.createElement("div");
+  label.style.marginTop = "20px";
+  label.innerHTML = "<strong>Hoeveel m²?</strong>";
+
+  const input = document.createElement("input");
+  input.type = "number";
+  input.placeholder = "Aantal m²";
+  input.style.marginTop = "10px";
+  input.style.width = "100%";
+  input.style.padding = "10px";
+  input.min = 0;
+  input.max = gekozenOppervlakte || 9999;
+
+  const bevestigBtn = document.createElement("button");
+  bevestigBtn.type = "button";
+  bevestigBtn.textContent = "Oppervlakte bevestigen";
+  bevestigBtn.classList.add("systeem-knop");
+  bevestigBtn.style.marginTop = "15px";
+  bevestigBtn.style.display = "none";
+
+
+  // ========================
+  // INTERACTIE LOGICA
+  // ========================
+
+  input.addEventListener("input", () => {
+    if (input.value && Number(input.value) > 0) {
+      bevestigBtn.style.display = "block";
+      heleBtn.disabled = true;
+    } else {
+      bevestigBtn.style.display = "none";
+      heleBtn.disabled = false;
+    }
+  });
+
+  heleBtn.addEventListener("click", () => {
+    if (input.value && Number(input.value) > 0) {
+      alert("Om hele oppervlakte te kiezen, verwijder ingevoerd m² uit invoerveld");
+      return;
+    }
+
+    registreerVariableSurfaceExtra(extraKey, gekozenOppervlakte);
+  });
+
+  bevestigBtn.addEventListener("click", () => {
+    const m2 = Number(input.value);
+
+    if (!m2 || m2 <= 0) return;
+
+    if (gekozenOppervlakte && m2 > gekozenOppervlakte) {
+      alert("Ingevoerde m² kan niet groter zijn dan totale oppervlakte");
+      return;
+    }
+
+    registreerVariableSurfaceExtra(extraKey, m2);
+  });
+
+  container.appendChild(heleBtn);
+  container.appendChild(label);
+  container.appendChild(input);
+  container.appendChild(bevestigBtn);
+
+  optionsEl.appendChild(container);
+}
+
+
+
+// ========================
+// REGISTREREN VARIABLE SURFACE EXTRA
+// ========================
+function registreerVariableSurfaceExtra(extraKey, m2) {
+
+  if (!extraKey || !m2) return;
+
+  // Opslaan in gekozenExtras als object
+  gekozenExtras.push({
+    key: extraKey,
+    type: "variable_surface",
+    m2: m2
+  });
+
+  // Na registratie → normale flow hervatten
+  if (pendingNextNodeId) {
+
+    fetch(`${API_BASE}/api/node/${pendingNextNodeId}`)
+      .then(res => res.json())
+      .then(nextNode => {
+        renderNode(nextNode);
+      });
+  }
+
+  pendingExtra = null;
+  pendingNextNodeId = null;
+}
+
+
+
+
 // ========================
 // EXTRA ARBEID (MEERWERK) – DEFINITIEF
 // ========================
@@ -1395,17 +1623,17 @@ function toonMateriaalPagina() {
 // PRIJS HERBEREKENEN (BACKEND IS ENIGE WAARHEID)
 // ========================
 async function herberekenPrijs() {
+
   if (!gekozenSysteem || !gekozenOppervlakte || !gekozenRuimtes) return;
 
-  // 🔑 Defensief: altijd arrays
-  const extrasPayload = Array.isArray(gekozenExtras) ? [...gekozenExtras] : [];
-  const forcedPayload = Array.isArray(forcedExtras) ? [...forcedExtras] : [];
+  // 🔑 Alleen vaste extras naar backend sturen
+  const extrasPayload = Array.isArray(gekozenExtras)
+    ? gekozenExtras.filter(e => typeof e === "string")
+    : [];
 
-  console.log("📤 herberekenPrijs → extras:", extrasPayload);
-  console.log("📤 herberekenPrijs → forcedExtras:", forcedPayload);
-  console.log("📤 xtr coating verwijderen (uren):", xtrCoatingVerwijderenUren);
-  console.log("📤 algemeen meerwerk:", extraMeerwerk);
-  console.log("📤 extra materiaal:", extraMateriaal);
+  const forcedPayload = Array.isArray(forcedExtras)
+    ? [...forcedExtras]
+    : [];
 
   const res = await fetch(`${API_BASE}/api/price`, {
     method: "POST",
@@ -1415,26 +1643,14 @@ async function herberekenPrijs() {
       oppervlakte: gekozenOppervlakte,
       ruimtes: gekozenRuimtes,
 
-      // ========================
-      // EXTRAS
-      // ========================
       extras: extrasPayload,
       forced_extras: forcedPayload,
 
-      // ========================
-      // XTR – MEERWERK COATING VERWIJDEREN
-      // ========================
       xtr_coating_verwijderen_uren: xtrCoatingVerwijderenUren || 0,
 
-      // ========================
-      // ALGEMEEN MEERWERK (UREN)
-      // ========================
       meerwerk_bedrag: extraMeerwerk?.uren || 0,
       meerwerk_toelichting: extraMeerwerk?.toelichting || "",
 
-      // ========================
-      // EXTRA MATERIAAL
-      // ========================
       materiaal_bedrag: extraMateriaal?.bedrag || 0,
       materiaal_toelichting: extraMateriaal?.toelichting || ""
     })
@@ -1448,16 +1664,44 @@ async function herberekenPrijs() {
   }
 
   // ========================
-  // 🔑 BACKEND = ENIGE WAARHEID
+  // BACKEND RESULTAAT
   // ========================
   basisPrijs    = data.basisprijs;
   prijsPerM2    = data.prijs_per_m2;
   backendExtras = Array.isArray(data.extras) ? data.extras : [];
   totaalPrijs   = data.totaalprijs;
 
-  console.log("📥 backendExtras:", backendExtras);
-  console.log("💰 totaalPrijs:", totaalPrijs);
+  // ========================
+  // VARIABLE_SURFACE EXTRAS (FRONTEND BOVENOP)
+  // ========================
+  const variableExtras = Array.isArray(gekozenExtras)
+    ? gekozenExtras.filter(e => typeof e === "object" && e.type === "variable_surface")
+    : [];
+
+  if (variableExtras.length > 0) {
+
+    variableExtras.forEach(extra => {
+
+      const prijsData = PRIJS_DATA?.extras?.[extra.key];
+
+      if (!prijsData || prijsData.type !== "per_m2") {
+        console.warn("⚠️ Geen geldige prijs gevonden voor extra:", extra.key);
+        return;
+      }
+
+      const prijsPerM2Extra = prijsData.prijs;
+      const totaalExtra = extra.m2 * prijsPerM2Extra;
+
+      totaalPrijs += totaalExtra;
+
+      console.log(`➕ Variable extra toegevoegd (${extra.key}):`, totaalExtra);
+    });
+  }
+
+  console.log("💰 totaalPrijs inclusief variable extras:", totaalPrijs);
 }
+
+
 
 
 
@@ -1487,13 +1731,18 @@ async function berekenBasisPrijsVoorSysteem(systeemNaam, m2, ruimtes) {
 }
 
 
+
+
+
+
 // ========================
 // SAMENVATTING TONEN (DEFINITIEF)
 // ========================
 function toonSamenvatting() {
+
   const questionEl = document.getElementById("question-text");
-  const optionsEl = document.getElementById("options-box");
-  const resultEl = document.getElementById("result-box");
+  const optionsEl  = document.getElementById("options-box");
+  const resultEl   = document.getElementById("result-box");
 
   // UI opschonen
   questionEl.innerHTML = "<strong>Samenvatting</strong>";
@@ -1558,6 +1807,7 @@ function toonSamenvatting() {
   // EXTRA'S (UIT BACKEND)
   // ========================
   if (backendExtras.length > 0) {
+
     html += "<hr><div><strong>Extra’s</strong></div>";
 
     backendExtras.forEach(extra => {
@@ -1576,6 +1826,37 @@ function toonSamenvatting() {
   }
 
   // ========================
+  // VARIABLE_SURFACE EXTRA'S (FRONTEND)
+  // ========================
+  const variableExtras = Array.isArray(gekozenExtras)
+    ? gekozenExtras.filter(e => typeof e === "object" && e.type === "variable_surface")
+    : [];
+
+  if (variableExtras.length > 0) {
+
+    html += "<hr>";
+
+    variableExtras.forEach(extra => {
+
+      const prijsData = PRIJS_DATA?.extras?.[extra.key];
+
+      if (!prijsData || prijsData.type !== "per_m2") {
+        console.warn("⚠️ Geen geldige prijs gevonden voor extra:", extra.key);
+        return;
+      }
+
+      const totaalExtra = extra.m2 * prijsData.prijs;
+
+      html += `
+        <div class="extra-blok">
+          <div><strong>${prijsData.naam}</strong></div>
+          <div class="extra-bedrag">€ ${totaalExtra},-</div>
+        </div>
+      `;
+    });
+  }
+
+  // ========================
   // TOTAALPRIJS
   // ========================
   html += `
@@ -1586,6 +1867,11 @@ function toonSamenvatting() {
 
   resultEl.innerHTML = html;
 }
+
+
+
+
+
 
 
 // ========================
@@ -1606,10 +1892,11 @@ function stripPrefix(text = "") {
 // HOMESCREEN ACTIES (DEFINITIEF & GECORRIGEERD)
 // ========================
 function gaNaarHome() {
-  const homeEl = document.getElementById("home-screen");
-  const flowEl = document.getElementById("flow-screen");
+
+  const homeEl   = document.getElementById("home-screen");
+  const flowEl   = document.getElementById("flow-screen");
   const optionsEl = document.getElementById("options-box");
-  const resultEl = document.getElementById("result-box");
+  const resultEl  = document.getElementById("result-box");
 
   // ========================
   // SCHERMEN RESETTEN
@@ -1619,6 +1906,7 @@ function gaNaarHome() {
 
   optionsEl.innerHTML = "";
   optionsEl.style.display = "none";
+
   resultEl.innerHTML = "";
   resultEl.style.display = "none";
 
@@ -1628,13 +1916,17 @@ function gaNaarHome() {
   // FRONTEND STATE RESET
   // ========================
   currentNode = null;
+  currentSystemNode = null;
+  potentieleSystemen = [];
+
   actieveFlow = null;
   systeemKeuzeIndex = null;
 
   gekozenSysteem = null;
   gekozenAntwoorden = [];
+
   gekozenExtras = [];
-  forcedExtras = [];           // 🔑 verplicht resetten
+  forcedExtras = [];
   backendExtras = [];
 
   basisPrijs = null;
@@ -1645,15 +1937,22 @@ function gaNaarHome() {
   gekozenRuimtes = null;
 
   // ========================
-  // 🔑 AFWEGING STATE RESET (CRUCIAAL)
+  // AFWEGING STATE RESET
   // ========================
   afwegingNode = null;
   afwegingResultaten = [];
 
   // ========================
+  // VARIABLE EXTRA RESET
+  // ========================
+  pendingExtra = null;
+  pendingNextNodeId = null;
+
+  // ========================
   // XTR & MEERWERK RESET
   // ========================
   xtrCoatingVerwijderenUren = 0;
+
   extraMeerwerk.uren = null;
   extraMeerwerk.toelichting = "";
 
@@ -1680,3 +1979,4 @@ function gaNaarHome() {
   groep.append(btnKeuzegids, btnPrijslijst);
   homeEl.appendChild(groep);
 }
+
