@@ -448,21 +448,23 @@ async function chooseOption(index) {
   }
 
   // ========================
-  // 🔑 CHOSEN_EXTRAS ROUTER
+  // 🔑 CHOSEN_EXTRA ROUTER (ENKELVOUD, STRING)
   // ========================
-  if (gekozenOptie && Array.isArray(gekozenOptie.chosen_extras)) {
+  if (gekozenOptie && gekozenOptie.chosen_extra) {
 
-    console.log("🟢 chosen_extras gedetecteerd:", gekozenOptie.chosen_extras);
+    console.log("🟢 chosen_extra gedetecteerd:", gekozenOptie.chosen_extra);
 
-    // Sla vervolg-node tijdelijk op
     const vervolgNodeId = gekozenOptie.next?.[0] || null;
 
-    // Start per extra de juiste flow
-    gekozenOptie.chosen_extras.forEach(extra => {
-      startChosenExtraFlow(extra, vervolgNodeId);
-    });
+    startChosenExtraFlow(
+      {
+        key: gekozenOptie.chosen_extra,
+        type: "variable_surface"
+      },
+      vervolgNodeId
+    );
 
-    return; // Pauzeer normale backend-flow
+    return; // ⛔ Pauzeer normale backend-flow
   }
 
   // ========================
@@ -481,17 +483,22 @@ async function chooseOption(index) {
     const nextNode = await res.json();
 
     if (nextNode.error) {
-      console.error("Backend fout:", nextNode.error);
+      console.error("❌ Backend fout:", nextNode.error);
       return;
     }
 
-    // Einde keuzeboom
+    // ========================
+    // EINDE KEUZEBOOM
+    // ========================
     if (!Array.isArray(nextNode.next) || nextNode.next.length === 0) {
       console.log("🏁 Einde keuzeboom → start extra arbeid");
       toonMeerwerkPagina();
       return;
     }
 
+    // ========================
+    // NORMALE VERVOLG FLOW
+    // ========================
     renderNode(nextNode);
 
   } catch (err) {
@@ -580,33 +587,29 @@ function toonVraagMetOpties(node) {
   optionsEl.appendChild(groep);
 }
 
+
+
+
 // ========================
-// NODE RENDEREN (ROUTER) – GECORRIGEERD
+// NODE RENDEREN (ROUTER) – DEFINITIEF
 // ========================
 async function renderNode(node) {
+
   if (!node) return;
 
   currentNode = node;
   console.log("▶ renderNode:", node.type, node);
 
   switch (node.type) {
+
     case "vraag":
       handleVraagNode(node);
       return;
 
-    // ⚠️ Antwoord-nodes bevatten geen UI meer,
-    // keuzes worden verwerkt via chooseOption()
     case "antwoord":
-      // direct door naar volgende node
-      if (Array.isArray(node.next) && node.next.length > 0) {
-        const nextNodeId = node.next[0];
-        await gaNaarNode(nextNodeId);
-      } else {
-        handleEindeNode(node);
-      }
+      await handleAntwoordNode(node);
       return;
 
-    // 🔑 BELANGRIJK: backend gebruikt "systeem"
     case "system":
     case "systeem":
       handleSystemNode(node);
@@ -642,17 +645,39 @@ function handleVraagNode(node) {
   toonVraagMetOpties(node);
 }
 
+
+
 // ========================
-// ANTWOORD NODE (AUTO-DOORLOOP)
+// ANTWOORD NODE (FRONTEND DOORLOOP & TRIGGERS)
 // ========================
 async function handleAntwoordNode(node) {
-  // Antwoordlogica wordt afgehandeld in chooseOption()
-  // Deze functie is alleen nog verantwoordelijk voor auto-doorloop
 
+  console.log("📩 Antwoord-node ontvangen:", node.id);
+
+  // ========================
+  // 🔥 CHOSEN EXTRA TRIGGER
+  // ========================
+  if (node.chosen_extra) {
+
+    console.log("🎯 Chosen extra gedetecteerd:", node.chosen_extra);
+
+    if (node.chosen_extra === "DuraKorrel") {
+      toonDuraKorrelInvoer();
+      return; // ⛔ stop hier, wacht op invoer
+    }
+  }
+
+  // ========================
+  // 🔁 NORMALE AUTO-DOORLOOP
+  // ========================
   if (Array.isArray(node.next) && node.next.length === 1) {
     await chooseOption(0);
+    return;
   }
+
+  console.warn("⚠️ Antwoord-node zonder geldige vervolg:", node);
 }
+
 
 
 
