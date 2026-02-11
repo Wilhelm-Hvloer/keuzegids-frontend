@@ -420,6 +420,8 @@ function toonSysteemSelectie(node) {
 // ========================
 async function chooseOption(index) {
 
+  console.log("chooseOption gestart");
+
   if (!currentNode) {
     console.warn("⚠️ Geen currentNode bij chooseOption");
     return;
@@ -435,6 +437,8 @@ async function chooseOption(index) {
   console.log("➡️ keuze:", currentNode.id, "index:", index);
 
   const gekozenOptie = currentNode.next[index];
+
+  console.log("gekozenOptie object:", gekozenOptie);
 
   // ========================
   // ANTWOORD REGISTREREN
@@ -505,6 +509,7 @@ async function chooseOption(index) {
     console.error("❌ Fout bij chooseOption:", err);
   }
 }
+
 
 
 
