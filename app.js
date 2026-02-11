@@ -1423,6 +1423,12 @@ function toonVariableSurfaceInvoer(extraKey) {
 // ========================
 async function registreerVariableSurfaceExtra(extraKey, m2) {
 
+  console.log("=== registreerVariableSurfaceExtra START ===");
+  console.log("Ontvangen extraKey:", extraKey);
+  console.log("Ontvangen m2:", m2);
+  console.log("Huidige pendingNextNodeId:", pendingNextNodeId);
+  console.log("Huidige gekozenExtras (voor push):", gekozenExtras);
+
   if (!extraKey || !m2) {
     console.warn("⚠️ Ongeldige extra registratie");
     return;
@@ -1439,36 +1445,52 @@ async function registreerVariableSurfaceExtra(extraKey, m2) {
     m2: m2
   });
 
+  console.log("gekozenExtras (na push):", gekozenExtras);
+
   const nextNodeId = pendingNextNodeId;
+
+  console.log("nextNodeId gekopieerd naar lokale variabele:", nextNodeId);
 
   // Reset tijdelijke state
   pendingExtra = null;
   pendingNextNodeId = null;
 
+  console.log("pendingExtra en pendingNextNodeId gereset");
+
   // ========================
   // PRIJS HERBEREKENEN
   // ========================
+  console.log("➡️ herberekenPrijs starten");
   await herberekenPrijs();
+  console.log("✅ herberekenPrijs afgerond");
+  console.log("Nieuwe totaalPrijs:", totaalPrijs);
 
   // ========================
   // FLOW HERVATTEN
   // ========================
 
+  console.log("Flow hervatten met nextNodeId:", nextNodeId);
+
   // 🔑 CASE 1: END → direct afronden
-  if (nextNodeId === "END") {
+  if (nextNodeId && nextNodeId.toUpperCase() === "END") {
 
     console.log("🏁 END bereikt na variable extra → toon samenvatting");
 
     toonSamenvatting();
+    console.log("=== registreerVariableSurfaceExtra EINDE (END) ===");
     return;
   }
 
   // 🔑 CASE 2: Normale vervolgnode
   if (nextNodeId) {
 
+    console.log("➡️ Vervolgnode ophalen via API:", nextNodeId);
+
     try {
       const res = await fetch(`${API_BASE}/api/node/${nextNodeId}`);
       const nextNode = await res.json();
+
+      console.log("Ontvangen vervolgnode:", nextNode);
 
       if (!nextNode || nextNode.error) {
         console.error("❌ Fout bij ophalen vervolgnode:", nextNode);
@@ -1476,6 +1498,7 @@ async function registreerVariableSurfaceExtra(extraKey, m2) {
       }
 
       renderNode(nextNode);
+      console.log("=== registreerVariableSurfaceExtra EINDE (vervolgnode) ===");
 
     } catch (err) {
       console.error("❌ Fout bij vervolg ophalen:", err);
@@ -1487,8 +1510,8 @@ async function registreerVariableSurfaceExtra(extraKey, m2) {
   // 🔑 CASE 3: Geen vervolgnode → fallback
   console.warn("⚠️ Geen vervolgnode gevonden → toon meerwerk");
   toonMeerwerkPagina();
+  console.log("=== registreerVariableSurfaceExtra EINDE (fallback) ===");
 }
-
 
 
 
