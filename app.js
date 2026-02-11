@@ -573,6 +573,7 @@ async function handleAntwoordNode(node) {
 }
 
 
+
 // ========================
 // SYSTEM NODE → AFHANDELING (DEFINITIEF & VEILIG)
 // ========================
@@ -627,18 +628,37 @@ function handleSystemNode(node) {
   // ========================
   if (node.requires_price || node.ui_mode === "prijs") {
 
-    // 🔑 Als prijs al bekend is (bij afweging) → niet opnieuw vragen
+    // 🔑 Als prijs al bekend is (bij afweging) → direct door naar volgende node
     if (gekozenOppervlakte && gekozenRuimtes) {
-      console.log("💡 Prijs al bekend → prijsfase overslaan");
+      console.log("💡 Prijs al bekend → direct vervolg ophalen");
+
+      fetch(`${API_BASE}/api/next`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          node_id: node.id,
+          choice: 0
+        })
+      })
+      .then(res => res.json())
+      .then(nextNode => {
+        if (!nextNode || nextNode.error) {
+          console.error("❌ Fout bij automatisch vervolg:", nextNode);
+          return;
+        }
+        renderNode(nextNode);
+      });
+
       return;
     }
 
+    // Normale prijsflow
     toonPrijsInvoer();
     return;
   }
 
   // ========================
-  // PRIJS AL BEKEND → HERBEREKENEN
+  // PRIJS AL BEKEND → HERBEREKENEN (fallback)
   // ========================
   if (gekozenOppervlakte && gekozenRuimtes) {
     herberekenPrijs().then(() => {
@@ -649,7 +669,6 @@ function handleSystemNode(node) {
 
   console.warn("⚠️ System-node zonder prijsfase", node);
 }
-
 
 
 
