@@ -125,7 +125,6 @@ function startPrijslijst() {
   // 🔑 AFWEGING STATE RESET (CRUCIAAL)
   // ========================
   afwegingNode = null;
-  afwegingNodeOriginal = null;
   afwegingResultaten = [];
 
   currentNode = null;
@@ -387,7 +386,7 @@ function toonSysteemSelectie(node) {
 
 
 // ========================
-// KEUZE MAKEN (BACKEND-LEIDEND) – DEFINITIEF
+// KEUZE MAKEN (BACKEND-LEIDEND)
 // ========================
 async function chooseOption(index) {
   if (!currentNode) {
@@ -395,7 +394,12 @@ async function chooseOption(index) {
     return;
   }
 
-  if (!Array.isArray(currentNode.next) || !currentNode.next[index]) {
+  if (!Array.isArray(currentNode.next)) {
+    console.warn("⚠️ currentNode heeft geen geldige next-array:", currentNode);
+    return;
+  }
+
+  if (index < 0 || index >= currentNode.next.length) {
     console.warn("⚠️ Ongeldige keuze-index:", index, currentNode);
     return;
   }
@@ -403,30 +407,16 @@ async function chooseOption(index) {
   console.log("➡️ keuze:", currentNode.id, "index:", index);
 
   // ========================
-  // 🔑 ANTWOORD REGISTREREN BIJ VRAAG-NODE
+  // ANTWOORD REGISTREREN (alleen bij vraag)
   // ========================
   if (currentNode.type === "vraag") {
     const gekozenOptie = currentNode.next[index];
 
     if (gekozenOptie && currentNode.text) {
-      // Vraag/antwoord opslaan (voor samenvatting)
       gekozenAntwoorden.push({
         vraag: stripPrefix(currentNode.text),
         antwoord: stripPrefix(gekozenOptie.text || "")
       });
-
-      // ⚠️ LEGACY EXTRA-DETECTIE UITGESCHAKELD
-      // ------------------------------------
-      // Vroeger werden extras automatisch herkend op basis van tekst.
-      // Dit is bewust uitgezet omdat extras nu lopen via:
-      // - systeemnode.forced_extras
-      // - expliciete xtr-nodes
-      // - handmatige invoer (meerwerk / materiaal)
-      //
-      // Hierdoor:
-      // - geen dubbele extras
-      // - geen verborgen prijslogica
-      // - geen crashes door ontbrekende functies
     }
   }
 
@@ -448,18 +438,16 @@ async function chooseOption(index) {
     }
 
     // ========================
-    // 🔑 EINDE KEUZEBOOM
-    // → start extra arbeid flow
+    // EINDE KEUZEBOOM
     // ========================
     if (!Array.isArray(nextNode.next) || nextNode.next.length === 0) {
       console.log("🏁 Einde keuzeboom → start extra arbeid");
-
       toonMeerwerkPagina();
       return;
     }
 
     // ========================
-    // 🔑 NORMAAL VERVOLG
+    // NORMAAL VERVOLG
     // ========================
     renderNode(nextNode);
 
@@ -467,6 +455,7 @@ async function chooseOption(index) {
     console.error("❌ Fout bij chooseOption:", err);
   }
 }
+
 
 
 
@@ -826,7 +815,6 @@ async function toonAfwegingMetPrijzen() {
       backendForcedExtras.forEach(extra => {
         html += `– ${extra.naam} (+ € ${extra.totaal},-)<br>`;
       });
-
       html += `<br><strong>Subtotaal: € ${subtotaal},-</strong>`;
     } else {
       html += `<br><strong>Systeemprijs: € ${data.basisprijs},-</strong>`;
@@ -848,11 +836,18 @@ async function toonAfwegingMetPrijzen() {
 
       if (!gekozenNode) return;
 
-      // 🔑 Volledige node opslaan
+      // 🔑 Eerst context herstellen naar afweging-node
+      currentNode = afwegingNode;
+
+      // 🔑 Daarna afweging-state resetten
+      afwegingNode = null;
+      potentieleSystemen = [];
+
+      // 🔑 Gekozen systeem definitief opslaan
       currentSystemNode = gekozenNode;
 
       gekozenSysteem = gekozenNode.system;
-      forcedExtras   = Array.isArray(gekozenNode.forced_extras)
+      forcedExtras = Array.isArray(gekozenNode.forced_extras)
         ? [...gekozenNode.forced_extras]
         : [];
 
@@ -863,14 +858,15 @@ async function toonAfwegingMetPrijzen() {
       totaalPrijs = subtotaal;
       backendExtras = data.extras || [];
 
-      if (actieveFlow === "keuzegids") {
-        inOptieFase = true;
+      // 🔑 Nu normale flow vervolgen
+      const index = currentNode.next.findIndex(
+        n => n.id === gekozenNode.id
+      );
 
-        const index = afwegingNode.next.findIndex(
-          n => n.id === gekozenNode.id
-        );
-
+      if (index >= 0) {
         chooseOption(index);
+      } else {
+        console.warn("⚠️ Geen geldige index gevonden");
       }
     });
 
@@ -1628,7 +1624,6 @@ function gaNaarHome() {
   // 🔑 AFWEGING STATE RESET (CRUCIAAL)
   // ========================
   afwegingNode = null;
-  afwegingNodeOriginal = null;
   afwegingResultaten = [];
 
   // ========================
