@@ -605,8 +605,6 @@ function handleSystemNode(node) {
   // ========================
   // FORCED EXTRAS UIT SYSTEEMNODE
   // ========================
-
-  // 🔑 Reset altijd schoon bij nieuwe systeemkeuze
   forcedExtras = [];
   gekozenExtras = [];
 
@@ -628,6 +626,13 @@ function handleSystemNode(node) {
   // PRIJSFASE
   // ========================
   if (node.requires_price || node.ui_mode === "prijs") {
+
+    // 🔑 Als prijs al bekend is (bij afweging) → niet opnieuw vragen
+    if (gekozenOppervlakte && gekozenRuimtes) {
+      console.log("💡 Prijs al bekend → prijsfase overslaan");
+      return;
+    }
+
     toonPrijsInvoer();
     return;
   }
