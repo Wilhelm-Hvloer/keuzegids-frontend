@@ -29,11 +29,18 @@ function maakAntwoordGroep() {
 const API_BASE = "https://keuzegids-backend.onrender.com";
 
 
+
 // ========================
 // STATE
 // ========================
+
 let prijsPerM2 = null;
 let currentNode = null;
+
+// 🔑 ÉÉN WAARHEID VOOR SYSTEEM
+let currentSystemNode = null;      // volledige systeemnode (single of gekozen uit afweging)
+let potentieleSystemen = [];       // tijdelijke systeemnodes bij afweging
+
 let gekozenSysteem = null;
 let gekozenAntwoorden = [];
 
@@ -49,6 +56,8 @@ let gekozenOppervlakte = null;
 let gekozenRuimtes = null;
 let actieveFlow = null;
 let systeemKeuzeIndex = null;
+
+
 
 // ========================
 // XTR – MEERWERK COATING VERWIJDEREN
@@ -607,18 +616,14 @@ function handleSystemNode(node) {
   // ========================
   // FORCED EXTRAS UIT SYSTEEMNODE
   // ========================
+
+  // 🔑 Reset altijd schoon bij nieuwe systeemkeuze
   forcedExtras = [];
-  gekozenExtras = gekozenExtras || [];
+  gekozenExtras = [];
 
   if (Array.isArray(node.forced_extras)) {
-    node.forced_extras.forEach(extraKey => {
-      if (!forcedExtras.includes(extraKey)) {
-        forcedExtras.push(extraKey);
-      }
-      if (!gekozenExtras.includes(extraKey)) {
-        gekozenExtras.push(extraKey);
-      }
-    });
+    forcedExtras = [...node.forced_extras];
+    gekozenExtras = [...node.forced_extras];
   }
 
   console.log("⚙️ Forced extras actief:", forcedExtras);
@@ -650,6 +655,9 @@ function handleSystemNode(node) {
 
   console.warn("⚠️ System-node zonder prijsfase", node);
 }
+
+
+
 
 
 
@@ -699,7 +707,7 @@ function handleXtrNode(node) {
 
 
 // ========================
-// AFW → AFWEGING (GEUNIFICEERDE & CORRECTE FLOW)
+// AFW → AFWEGING (GEUNIFICEERDE FLOW)
 // ========================
 function handleAfwNode(node) {
   console.log("⚖️ Afweging-node → start prijsinvoer", node);
@@ -707,22 +715,20 @@ function handleAfwNode(node) {
   actieveFlow = "keuzegids";
   afwegingResultaten = [];
 
-  // 🔑 FIX: backend levert al volledige systeemnodes
-  const echteSysteemNodes = Array.isArray(node.next)
+  // 🔑 Volledige systeemnodes tijdelijk opslaan
+  potentieleSystemen = Array.isArray(node.next)
     ? node.next.filter(n => n && n.type === "systeem")
     : [];
 
-  if (echteSysteemNodes.length === 0) {
-    console.error("❌ Afweging zonder geldige systeemnodes", node);
+  if (potentieleSystemen.length === 0) {
+    console.error("❌ Geen geldige systeemnodes in afweging", node);
     return;
   }
 
-  afwegingNode = {
-    ...node,
-    next: echteSysteemNodes
-  };
+  // Alleen context bewaren (niet overschrijven)
+  afwegingNode = node;
 
-  // 🔑 ÉÉN invoerfase (zelfde als enkel systeem)
+  // ÉÉN invoerfase (zelfde als enkel systeem)
   toonPrijsInvoer();
 }
 
@@ -742,7 +748,7 @@ function handleEindeNode(node) {
 
 
 // ========================
-// AFWEGING MET PRIJSVERGELIJKING (MET FORCED EXTRAS) – DEFINITIEF
+// AFWEGING MET PRIJSVERGELIJKING
 // ========================
 async function toonAfwegingMetPrijzen() {
   const questionEl = document.getElementById("question-text");
@@ -751,7 +757,7 @@ async function toonAfwegingMetPrijzen() {
   optionsEl.innerHTML = "";
   optionsEl.style.display = "block";
 
-  if (!afwegingNode || !Array.isArray(afwegingNode.next)) {
+  if (!afwegingNode || !Array.isArray(potentieleSystemen)) {
     console.warn("⚠️ Afweging-node ongeldig:", afwegingNode);
     return;
   }
@@ -762,10 +768,8 @@ async function toonAfwegingMetPrijzen() {
   const groep = document.createElement("div");
   groep.className = "antwoord-groep";
 
-  for (const systeemNode of afwegingNode.next) {
-    if (systeemNode.type !== "systeem") continue;
+  for (const systeemNode of potentieleSystemen) {
 
-    // 🔑 FIX: robuuste systeemnaam
     const systeemNaam =
       systeemNode.system ||
       stripPrefix(systeemNode.text);
@@ -780,7 +784,7 @@ async function toonAfwegingMetPrijzen() {
       : [];
 
     // ========================
-    // 🔑 PRIJS VIA BACKEND (ENIGE WAARHEID)
+    // PRIJS VIA BACKEND
     // ========================
     const res = await fetch(`${API_BASE}/api/price`, {
       method: "POST",
@@ -811,16 +815,6 @@ async function toonAfwegingMetPrijzen() {
 
     const subtotaal = data.basisprijs + forcedTotaal;
 
-    afwegingResultaten.push({
-      systeem: systeemNaam,
-      prijs: subtotaal,
-      prijsPerM2: data.prijs_per_m2,
-      nodeId: systeemNode.id
-    });
-
-    // ========================
-    // UI OPBOUW
-    // ========================
     let html = `
       <strong>${systeemNaam}</strong><br>
       <span style="font-size:14px;">€ ${data.prijs_per_m2} / m²</span><br>
@@ -844,23 +838,36 @@ async function toonAfwegingMetPrijzen() {
     btn.innerHTML = html;
 
     // ========================
-    // 🔑 KLIK → DEFINITIEVE STATE
+    // KLIK → DEFINITIEVE KEUZE
     // ========================
     btn.addEventListener("click", () => {
-      gekozenSysteem = systeemNaam;
-      basisPrijs    = data.basisprijs;
-      prijsPerM2    = data.prijs_per_m2;
-      totaalPrijs   = subtotaal;
 
-      forcedExtras  = [...systeemForcedKeys];
-      gekozenExtras = [...systeemForcedKeys];
+      const gekozenNode = potentieleSystemen.find(
+        n => n.id === systeemNode.id
+      );
+
+      if (!gekozenNode) return;
+
+      // 🔑 Volledige node opslaan
+      currentSystemNode = gekozenNode;
+
+      gekozenSysteem = gekozenNode.system;
+      forcedExtras   = Array.isArray(gekozenNode.forced_extras)
+        ? [...gekozenNode.forced_extras]
+        : [];
+
+      gekozenExtras = [...forcedExtras];
+
+      basisPrijs  = data.basisprijs;
+      prijsPerM2  = data.prijs_per_m2;
+      totaalPrijs = subtotaal;
       backendExtras = data.extras || [];
 
       if (actieveFlow === "keuzegids") {
         inOptieFase = true;
 
         const index = afwegingNode.next.findIndex(
-          n => n.id === systeemNode.id
+          n => n.id === gekozenNode.id
         );
 
         chooseOption(index);
@@ -877,8 +884,6 @@ async function toonAfwegingMetPrijzen() {
 
 
 
-
-afwegingNodeOriginal = afwegingNode;
 
 
 // ========================
