@@ -415,7 +415,6 @@ function toonSysteemSelectie(node) {
 
 
 
-
 // ========================
 // KEUZE MAKEN (BACKEND-LEIDEND + CHOSEN_EXTRA ROUTER)
 // ========================
@@ -448,7 +447,7 @@ async function chooseOption(index) {
   }
 
   // ========================
-  // 🔑 CHOSEN_EXTRA ROUTER (ENKELVOUD, STRING)
+  // 🔑 CHOSEN_EXTRA ROUTER (STRING)
   // ========================
   if (gekozenOptie && gekozenOptie.chosen_extra) {
 
@@ -464,13 +463,14 @@ async function chooseOption(index) {
       vervolgNodeId
     );
 
-    return; // ⛔ Pauzeer normale backend-flow
+    return; // ⛔ Stop normale backend flow
   }
 
   // ========================
   // NORMALE BACKEND FLOW
   // ========================
   try {
+
     const res = await fetch(`${API_BASE}/api/next`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -505,46 +505,6 @@ async function chooseOption(index) {
     console.error("❌ Fout bij chooseOption:", err);
   }
 }
-
-
-
-
-  try {
-    const res = await fetch(`${API_BASE}/api/next`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        node_id: currentNode.id,
-        choice: index
-      })
-    });
-
-    const nextNode = await res.json();
-
-    if (nextNode.error) {
-      console.error("Backend fout:", nextNode.error);
-      return;
-    }
-
-    // ========================
-    // EINDE KEUZEBOOM
-    // ========================
-    if (!Array.isArray(nextNode.next) || nextNode.next.length === 0) {
-      console.log("🏁 Einde keuzeboom → start extra arbeid");
-      toonMeerwerkPagina();
-      return;
-    }
-
-    // ========================
-    // NORMAAL VERVOLG
-    // ========================
-    renderNode(nextNode);
-
-  } catch (err) {
-    console.error("❌ Fout bij chooseOption:", err);
-  }
-}
-
 
 
 
