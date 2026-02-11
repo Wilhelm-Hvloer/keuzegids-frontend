@@ -1333,17 +1333,11 @@ function toonVariableSurfaceInvoer(extraKey) {
   resetUI();
   optionsEl.style.display = "block";
 
-  questionEl.innerHTML = `<strong>${extraKey} toepassen</strong>`;
+  // 🔑 Nieuwe vaste titel
+  questionEl.innerHTML = "<strong>Hele oppervlakte of plaatselijk?</strong>";
 
   const container = document.createElement("div");
   container.className = "antwoord-groep";
-
-  // ========================
-  // UITLEGTEKST (BOVENAAN)
-  // ========================
-  const uitleg = document.createElement("div");
-  uitleg.style.marginBottom = "15px";
-  uitleg.innerHTML = "<strong>DuraKorrel toepassen op hele oppervlak of alleen plaatselijk?</strong>";
 
   // ========================
   // HELE OPPERVLAKTE KNOP
@@ -1354,26 +1348,19 @@ function toonVariableSurfaceInvoer(extraKey) {
   heleBtn.classList.add("systeem-knop");
 
   // ========================
-  // LABEL VOOR INPUT
-  // ========================
-  const label = document.createElement("div");
-  label.style.marginTop = "20px";
-  label.innerHTML = "<strong>Hoeveel m²?</strong>";
-
-  // ========================
-  // INPUT VELD
+  // INPUT VELD (zonder los kopje)
   // ========================
   const input = document.createElement("input");
   input.type = "number";
-  input.placeholder = "Aantal m²";
-  input.style.marginTop = "10px";
+  input.placeholder = "Aantal m² (plaatselijk)";
+  input.style.marginTop = "20px";
   input.style.width = "100%";
   input.style.padding = "10px";
   input.min = 0;
   input.max = gekozenOppervlakte || 9999;
 
   // ========================
-  // BEVESTIG KNOP (INITIEEL VERBORGEN)
+  // BEVESTIG KNOP (initieel verborgen)
   // ========================
   const bevestigBtn = document.createElement("button");
   bevestigBtn.type = "button";
@@ -1383,9 +1370,8 @@ function toonVariableSurfaceInvoer(extraKey) {
   bevestigBtn.style.display = "none";
 
   // ========================
-  // INTERACTIE LOGICA
+  // INTERACTIE
   // ========================
-
   input.addEventListener("input", () => {
     if (input.value && Number(input.value) > 0) {
       bevestigBtn.style.display = "block";
@@ -1398,7 +1384,7 @@ function toonVariableSurfaceInvoer(extraKey) {
 
   heleBtn.addEventListener("click", () => {
     if (input.value && Number(input.value) > 0) {
-      alert("Om hele oppervlakte te kiezen, verwijder ingevoerd m² uit invoerveld");
+      alert("Verwijder eerst het ingevulde aantal m² om hele oppervlakte te kiezen.");
       return;
     }
 
@@ -1411,7 +1397,7 @@ function toonVariableSurfaceInvoer(extraKey) {
     if (!m2 || m2 <= 0) return;
 
     if (gekozenOppervlakte && m2 > gekozenOppervlakte) {
-      alert("Ingevoerde m² kan niet groter zijn dan totale oppervlakte");
+      alert("Ingevoerde m² kan niet groter zijn dan totale oppervlakte.");
       return;
     }
 
@@ -1421,14 +1407,13 @@ function toonVariableSurfaceInvoer(extraKey) {
   // ========================
   // OPBOUW
   // ========================
-  container.appendChild(uitleg);
   container.appendChild(heleBtn);
-  container.appendChild(label);
   container.appendChild(input);
   container.appendChild(bevestigBtn);
 
   optionsEl.appendChild(container);
 }
+
 
 
 
@@ -1468,6 +1453,17 @@ async function registreerVariableSurfaceExtra(extraKey, m2) {
   // ========================
   // FLOW HERVATTEN
   // ========================
+
+  // 🔑 CASE 1: END → direct afronden
+  if (nextNodeId === "END") {
+
+    console.log("🏁 END bereikt na variable extra → toon samenvatting");
+
+    toonSamenvatting();
+    return;
+  }
+
+  // 🔑 CASE 2: Normale vervolgnode
   if (nextNodeId) {
 
     try {
@@ -1485,11 +1481,14 @@ async function registreerVariableSurfaceExtra(extraKey, m2) {
       console.error("❌ Fout bij vervolg ophalen:", err);
     }
 
-  } else {
-    console.warn("⚠️ Geen vervolgnode, fallback naar meerwerk");
-    toonMeerwerkPagina();
+    return;
   }
+
+  // 🔑 CASE 3: Geen vervolgnode → fallback
+  console.warn("⚠️ Geen vervolgnode gevonden → toon meerwerk");
+  toonMeerwerkPagina();
 }
+
 
 
 
