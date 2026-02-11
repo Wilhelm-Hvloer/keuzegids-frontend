@@ -29,7 +29,6 @@ function maakAntwoordGroep() {
 const API_BASE = "https://keuzegids-backend.onrender.com";
 
 
-
 // ========================
 // STATE
 // ========================
@@ -38,34 +37,34 @@ let prijsPerM2 = null;
 let currentNode = null;
 
 // 🔑 ÉÉN WAARHEID VOOR SYSTEEM
-let currentSystemNode = null;      // volledige systeemnode (single of gekozen uit afweging)
-let potentieleSystemen = [];       // tijdelijke systeemnodes bij afweging
+let currentSystemNode = null;      
+let potentieleSystemen = [];       
 
 let gekozenSysteem = null;
 let gekozenAntwoorden = [];
 
-let gekozenExtras = [];        // alle extras (keuze + forced)
+// ========================
+// EXTRAS
+// ========================
+let gekozenExtras = [];        // vaste + variable_surface extras
 let forcedExtras = [];         // verplichte extras (uit systeemnode)
+let backendExtras = [];        // berekende extras uit backend
 
+// ========================
+// PRIJS
+// ========================
 let basisPrijs = null;
 let totaalPrijs = null;
-let backendExtras = [];        // komt UIT backend (incl. forced/xtr)
 
-let inOptieFase = false;
 let gekozenOppervlakte = null;
 let gekozenRuimtes = null;
+
+// ========================
+// FLOW STATE
+// ========================
+let inOptieFase = false;
 let actieveFlow = null;
 let systeemKeuzeIndex = null;
-
-
-// ========================
-// DURAKORREL STATE
-// ========================
-
-let durakorrelActief = false;
-let durakorrelM2 = 0;
-let durakorrelPrijsPerM2 = 0;
-let durakorrelTotaal = 0;
 
 
 
@@ -1321,6 +1320,8 @@ function startChosenExtraFlow(extra, vervolgNodeId) {
 
 
 
+
+
 // ========================
 // VARIABLE SURFACE INVOER UI
 // ========================
@@ -1337,15 +1338,31 @@ function toonVariableSurfaceInvoer(extraKey) {
   const container = document.createElement("div");
   container.className = "antwoord-groep";
 
+  // ========================
+  // UITLEGTEKST (BOVENAAN)
+  // ========================
+  const uitleg = document.createElement("div");
+  uitleg.style.marginBottom = "15px";
+  uitleg.innerHTML = "<strong>DuraKorrel toepassen op hele oppervlak of alleen plaatselijk?</strong>";
+
+  // ========================
+  // HELE OPPERVLAKTE KNOP
+  // ========================
   const heleBtn = document.createElement("button");
   heleBtn.type = "button";
   heleBtn.textContent = "Hele oppervlakte";
   heleBtn.classList.add("systeem-knop");
 
+  // ========================
+  // LABEL VOOR INPUT
+  // ========================
   const label = document.createElement("div");
   label.style.marginTop = "20px";
   label.innerHTML = "<strong>Hoeveel m²?</strong>";
 
+  // ========================
+  // INPUT VELD
+  // ========================
   const input = document.createElement("input");
   input.type = "number";
   input.placeholder = "Aantal m²";
@@ -1355,13 +1372,15 @@ function toonVariableSurfaceInvoer(extraKey) {
   input.min = 0;
   input.max = gekozenOppervlakte || 9999;
 
+  // ========================
+  // BEVESTIG KNOP (INITIEEL VERBORGEN)
+  // ========================
   const bevestigBtn = document.createElement("button");
   bevestigBtn.type = "button";
   bevestigBtn.textContent = "Oppervlakte bevestigen";
   bevestigBtn.classList.add("systeem-knop");
   bevestigBtn.style.marginTop = "15px";
   bevestigBtn.style.display = "none";
-
 
   // ========================
   // INTERACTIE LOGICA
@@ -1399,6 +1418,10 @@ function toonVariableSurfaceInvoer(extraKey) {
     registreerVariableSurfaceExtra(extraKey, m2);
   });
 
+  // ========================
+  // OPBOUW
+  // ========================
+  container.appendChild(uitleg);
   container.appendChild(heleBtn);
   container.appendChild(label);
   container.appendChild(input);
@@ -1409,33 +1432,65 @@ function toonVariableSurfaceInvoer(extraKey) {
 
 
 
+
 // ========================
 // REGISTREREN VARIABLE SURFACE EXTRA
 // ========================
-function registreerVariableSurfaceExtra(extraKey, m2) {
+async function registreerVariableSurfaceExtra(extraKey, m2) {
 
-  if (!extraKey || !m2) return;
+  if (!extraKey || !m2) {
+    console.warn("⚠️ Ongeldige extra registratie");
+    return;
+  }
 
-  // Opslaan in gekozenExtras als object
+  console.log("📌 Variable surface extra geregistreerd:", extraKey, m2);
+
+  // ========================
+  // OPSLAAN
+  // ========================
   gekozenExtras.push({
     key: extraKey,
     type: "variable_surface",
     m2: m2
   });
 
-  // Na registratie → normale flow hervatten
-  if (pendingNextNodeId) {
+  const nextNodeId = pendingNextNodeId;
 
-    fetch(`${API_BASE}/api/node/${pendingNextNodeId}`)
-      .then(res => res.json())
-      .then(nextNode => {
-        renderNode(nextNode);
-      });
-  }
-
+  // Reset tijdelijke state
   pendingExtra = null;
   pendingNextNodeId = null;
+
+  // ========================
+  // PRIJS HERBEREKENEN
+  // ========================
+  await herberekenPrijs();
+
+  // ========================
+  // FLOW HERVATTEN
+  // ========================
+  if (nextNodeId) {
+
+    try {
+      const res = await fetch(`${API_BASE}/api/node/${nextNodeId}`);
+      const nextNode = await res.json();
+
+      if (!nextNode || nextNode.error) {
+        console.error("❌ Fout bij ophalen vervolgnode:", nextNode);
+        return;
+      }
+
+      renderNode(nextNode);
+
+    } catch (err) {
+      console.error("❌ Fout bij vervolg ophalen:", err);
+    }
+
+  } else {
+    console.warn("⚠️ Geen vervolgnode, fallback naar meerwerk");
+    toonMeerwerkPagina();
+  }
 }
+
 
 
 
