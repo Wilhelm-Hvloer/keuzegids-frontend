@@ -1423,74 +1423,45 @@ function toonVariableSurfaceInvoer(extraKey) {
 // ========================
 async function registreerVariableSurfaceExtra(extraKey, m2) {
 
-  console.log("=== registreerVariableSurfaceExtra START ===");
-  console.log("Ontvangen extraKey:", extraKey);
-  console.log("Ontvangen m2:", m2);
-  console.log("Huidige pendingNextNodeId:", pendingNextNodeId);
-  console.log("Huidige gekozenExtras (voor push):", gekozenExtras);
-
   if (!extraKey || !m2) {
     console.warn("⚠️ Ongeldige extra registratie");
     return;
   }
 
-  console.log("📌 Variable surface extra geregistreerd:", extraKey, m2);
-
   // ========================
-  // OPSLAAN
+  // OPSLAAN (OBJECT NAAR BACKEND)
   // ========================
   gekozenExtras.push({
     key: extraKey,
-    type: "variable_surface",
     m2: m2
   });
 
-  console.log("gekozenExtras (na push):", gekozenExtras);
-
   const nextNodeId = pendingNextNodeId;
-
-  console.log("nextNodeId gekopieerd naar lokale variabele:", nextNodeId);
 
   // Reset tijdelijke state
   pendingExtra = null;
   pendingNextNodeId = null;
 
-  console.log("pendingExtra en pendingNextNodeId gereset");
-
   // ========================
-  // PRIJS HERBEREKENEN
+  // PRIJS HERBEREKENEN (BACKEND DOET ALLES)
   // ========================
-  console.log("➡️ herberekenPrijs starten");
   await herberekenPrijs();
-  console.log("✅ herberekenPrijs afgerond");
-  console.log("Nieuwe totaalPrijs:", totaalPrijs);
 
   // ========================
   // FLOW HERVATTEN
   // ========================
 
-  console.log("Flow hervatten met nextNodeId:", nextNodeId);
-
-  // 🔑 CASE 1: END → direct afronden
+  // 🔑 CASE 1: END → direct samenvatting
   if (nextNodeId && nextNodeId.toUpperCase() === "END") {
-
-    console.log("🏁 END bereikt na variable extra → toon samenvatting");
-
     toonSamenvatting();
-    console.log("=== registreerVariableSurfaceExtra EINDE (END) ===");
     return;
   }
 
   // 🔑 CASE 2: Normale vervolgnode
   if (nextNodeId) {
-
-    console.log("➡️ Vervolgnode ophalen via API:", nextNodeId);
-
     try {
       const res = await fetch(`${API_BASE}/api/node/${nextNodeId}`);
       const nextNode = await res.json();
-
-      console.log("Ontvangen vervolgnode:", nextNode);
 
       if (!nextNode || nextNode.error) {
         console.error("❌ Fout bij ophalen vervolgnode:", nextNode);
@@ -1498,20 +1469,16 @@ async function registreerVariableSurfaceExtra(extraKey, m2) {
       }
 
       renderNode(nextNode);
-      console.log("=== registreerVariableSurfaceExtra EINDE (vervolgnode) ===");
-
     } catch (err) {
       console.error("❌ Fout bij vervolg ophalen:", err);
     }
-
     return;
   }
 
-  // 🔑 CASE 3: Geen vervolgnode → fallback
-  console.warn("⚠️ Geen vervolgnode gevonden → toon meerwerk");
+  // 🔑 CASE 3: Fallback
   toonMeerwerkPagina();
-  console.log("=== registreerVariableSurfaceExtra EINDE (fallback) ===");
 }
+
 
 
 
@@ -1711,15 +1678,16 @@ async function herberekenPrijs() {
   console.log("forcedExtras:", forcedExtras);
 
   // ========================
-  // ALLEEN VASTE EXTRAS NAAR BACKEND
+  // EXTRAS NAAR BACKEND (STRING + VARIABLE_SURFACE OBJECTEN)
   // ========================
   const extrasPayload = Array.isArray(gekozenExtras)
-    ? gekozenExtras.filter(e => typeof e === "string")
+    ? [...gekozenExtras]   // alles meesturen: strings + objecten
     : [];
 
   const forcedPayload = Array.isArray(forcedExtras)
     ? [...forcedExtras]
     : [];
+
 
   console.log("📤 Naar backend → extras:", extrasPayload);
   console.log("📤 Naar backend → forced:", forcedPayload);
@@ -1899,38 +1867,6 @@ function toonSamenvatting() {
       `;
     });
   }
-
-  // ========================
-  // VARIABLE_SURFACE EXTRA'S (FRONTEND)
-  // ========================
-  const variableExtras = Array.isArray(gekozenExtras)
-    ? gekozenExtras.filter(e => typeof e === "object" && e.type === "variable_surface")
-    : [];
-
-  if (variableExtras.length > 0) {
-
-    html += "<hr>";
-
-    variableExtras.forEach(extra => {
-
-      const prijsData = PRIJS_DATA?.extras?.[extra.key];
-
-      if (!prijsData || prijsData.type !== "per_m2") {
-        console.warn("⚠️ Geen geldige prijs gevonden voor extra:", extra.key);
-        return;
-      }
-
-      const totaalExtra = extra.m2 * prijsData.prijs;
-
-      html += `
-        <div class="extra-blok">
-          <div><strong>${prijsData.naam}</strong></div>
-          <div class="extra-bedrag">€ ${totaalExtra},-</div>
-        </div>
-      `;
-    });
-  }
-
   // ========================
   // TOTAALPRIJS
   // ========================
