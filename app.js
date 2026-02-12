@@ -1693,8 +1693,14 @@ async function herberekenPrijs() {
 
   console.log("=== herberekenPrijs START ===");
 
-  if (!gekozenSysteem) {
-    console.warn("⛔ herberekenPrijs gestopt: geen systeem gekozen");
+  // ========================
+  // BASISCONTROLE
+  // ========================
+  if (!gekozenSysteem || !gekozenOppervlakte || !gekozenRuimtes) {
+    console.warn("⛔ herberekenPrijs gestopt: ontbrekende basisdata");
+    console.log("gekozenSysteem:", gekozenSysteem);
+    console.log("gekozenOppervlakte:", gekozenOppervlakte);
+    console.log("gekozenRuimtes:", gekozenRuimtes);
     return;
   }
 
@@ -1704,12 +1710,9 @@ async function herberekenPrijs() {
   console.log("gekozenExtras:", gekozenExtras);
   console.log("forcedExtras:", forcedExtras);
 
-
-  if (!gekozenSysteem || !gekozenOppervlakte || !gekozenRuimtes) {
-    console.warn("⛔ herberekenPrijs vroegtijdig gestopt (ontbrekende basisdata)");
-    return;
-  }
-
+  // ========================
+  // ALLEEN VASTE EXTRAS NAAR BACKEND
+  // ========================
   const extrasPayload = Array.isArray(gekozenExtras)
     ? gekozenExtras.filter(e => typeof e === "string")
     : [];
@@ -1721,6 +1724,9 @@ async function herberekenPrijs() {
   console.log("📤 Naar backend → extras:", extrasPayload);
   console.log("📤 Naar backend → forced:", forcedPayload);
 
+  // ========================
+  // BACKEND CALL
+  // ========================
   try {
 
     const res = await fetch(`${API_BASE}/api/price`, {
@@ -1751,7 +1757,7 @@ async function herberekenPrijs() {
     }
 
     // ========================
-    // BACKEND RESULTAAT
+    // RESULTAAT UIT BACKEND
     // ========================
     basisPrijs    = data.basisprijs;
     prijsPerM2    = data.prijs_per_m2;
@@ -1759,47 +1765,16 @@ async function herberekenPrijs() {
     totaalPrijs   = data.totaalprijs;
 
     console.log("💰 Basisprijs:", basisPrijs);
-    console.log("💰 Prijs per m2:", prijsPerM2);
+    console.log("💰 Prijs per m²:", prijsPerM2);
     console.log("💰 Totaalprijs backend:", totaalPrijs);
 
-    // ========================
-    // VARIABLE_SURFACE EXTRAS
-    // ========================
-    const variableExtras = Array.isArray(gekozenExtras)
-      ? gekozenExtras.filter(e => typeof e === "object" && e.type === "variable_surface")
-      : [];
-
-    console.log("🔍 Variable extras gevonden:", variableExtras);
-
-    if (variableExtras.length > 0) {
-
-      variableExtras.forEach(extra => {
-
-        const prijsData = PRIJS_DATA?.extras?.[extra.key];
-
-        console.log("Prijsdata lookup voor", extra.key, ":", prijsData);
-
-        if (!prijsData || prijsData.type !== "per_m2") {
-          console.warn("⚠️ Geen geldige prijs gevonden voor extra:", extra.key);
-          return;
-        }
-
-        const prijsPerM2Extra = prijsData.prijs;
-        const totaalExtra = extra.m2 * prijsPerM2Extra;
-
-        totaalPrijs += totaalExtra;
-
-        console.log(`➕ Variable extra toegevoegd (${extra.key}):`, totaalExtra);
-      });
-    }
-
-    console.log("💰 totaalPrijs inclusief variable extras:", totaalPrijs);
     console.log("=== herberekenPrijs EINDE ===");
 
   } catch (err) {
     console.error("❌ herberekenPrijs crash:", err);
   }
 }
+
 
 
 
