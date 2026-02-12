@@ -1451,9 +1451,9 @@ async function registreerVariableSurfaceExtra(extraKey, m2) {
   // FLOW HERVATTEN
   // ========================
 
-  // 🔑 CASE 1: END → direct samenvatting
+  // 🔑 CASE 1: END → start meerwerk flow (NIET direct samenvatting)
   if (nextNodeId && nextNodeId.toUpperCase() === "END") {
-    toonSamenvatting();
+    toonMeerwerkPagina();
     return;
   }
 
@@ -1475,7 +1475,7 @@ async function registreerVariableSurfaceExtra(extraKey, m2) {
     return;
   }
 
-  // 🔑 CASE 3: Fallback
+  // 🔑 CASE 3: Fallback → ook meerwerk starten
   toonMeerwerkPagina();
 }
 
