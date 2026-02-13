@@ -630,38 +630,36 @@ function handleVraagNode(node) {
 }
 
 
-
 // ========================
-// ANTWOORD NODE (FRONTEND DOORLOOP & TRIGGERS)
+// ANTWOORD NODE AFHANDELEN – VEILIG
 // ========================
 async function handleAntwoordNode(node) {
 
   console.log("📩 Antwoord-node ontvangen:", node.id);
 
-  // ========================
-  // 🔥 CHOSEN EXTRA TRIGGER
-  // ========================
-  if (node.chosen_extra) {
-
-    console.log("🎯 Chosen extra gedetecteerd:", node.chosen_extra);
-
-    if (node.chosen_extra === "DuraKorrel") {
-      toonDuraKorrelInvoer();
-      return; // ⛔ stop hier, wacht op invoer
-    }
-  }
-
-  // ========================
-  // 🔁 NORMALE AUTO-DOORLOOP
-  // ========================
-  if (Array.isArray(node.next) && node.next.length === 1) {
-    await chooseOption(0);
+  // Geen vervolg = einde boom
+  if (!Array.isArray(node.next) || node.next.length === 0) {
+    console.log("🏁 Antwoord zonder vervolg → start meerwerk");
+    toonMeerwerkPagina();
     return;
   }
 
-  console.warn("⚠️ Antwoord-node zonder geldige vervolg:", node);
-}
+  // Normaal vervolg via backend ophalen
+  try {
+    const res = await fetch(`${API_BASE}/api/node/${node.next[0]}`);
+    const nextNode = await res.json();
 
+    if (!nextNode || nextNode.error) {
+      console.error("❌ Fout bij ophalen vervolgnode:", nextNode);
+      return;
+    }
+
+    renderNode(nextNode);
+
+  } catch (err) {
+    console.error("❌ Fout bij antwoord-vervolg:", err);
+  }
+}
 
 
 
