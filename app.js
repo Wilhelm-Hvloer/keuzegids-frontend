@@ -436,7 +436,6 @@ async function chooseOption(index) {
   console.log("➡️ keuze:", currentNode.id, "index:", index);
 
   const gekozenOptie = currentNode.next[index];
-
   console.log("gekozenOptie object:", gekozenOptie);
 
   // ========================
@@ -450,23 +449,64 @@ async function chooseOption(index) {
   }
 
   // ========================
-  // 🔑 CHOSEN_EXTRA ROUTER (STRING)
+  // 🔑 CHOSEN_EXTRA ROUTER
   // ========================
   if (gekozenOptie && gekozenOptie.chosen_extra) {
 
-    console.log("🟢 chosen_extra gedetecteerd:", gekozenOptie.chosen_extra);
-
+    const extraKey = gekozenOptie.chosen_extra;
     const vervolgNodeId = gekozenOptie.next?.[0] || null;
 
-    startChosenExtraFlow(
-      {
-        key: gekozenOptie.chosen_extra,
-        type: "variable_surface"
-      },
-      vervolgNodeId
-    );
+    console.log("🟢 chosen_extra gedetecteerd:", extraKey);
 
-    return; // ⛔ Stop normale backend flow
+    // Alleen deze extras vragen m² invoer
+    const VARIABLE_SURFACE_EXTRAS = ["Durakorrel"];
+
+    // ========================
+    // VARIABLE SURFACE EXTRA
+    // ========================
+    if (VARIABLE_SURFACE_EXTRAS.includes(extraKey)) {
+
+      startChosenExtraFlow(
+        { key: extraKey },
+        vervolgNodeId
+      );
+
+      return; // stop normale flow
+    }
+
+    // ========================
+    // VASTE EXTRA (HELE OPPERVLAKTE)
+    // ========================
+    gekozenExtras.push(extraKey);
+
+    await herberekenPrijs();
+
+    if (vervolgNodeId && vervolgNodeId.toUpperCase() === "END") {
+      toonMeerwerkPagina();
+      return;
+    }
+
+    if (vervolgNodeId) {
+      try {
+        const res = await fetch(`${API_BASE}/api/node/${vervolgNodeId}`);
+        const nextNode = await res.json();
+
+        if (!nextNode || nextNode.error) {
+          console.error("❌ Fout bij ophalen vervolgnode:", nextNode);
+          return;
+        }
+
+        renderNode(nextNode);
+
+      } catch (err) {
+        console.error("❌ Fout bij vervolg ophalen:", err);
+      }
+
+      return;
+    }
+
+    toonMeerwerkPagina();
+    return;
   }
 
   // ========================
