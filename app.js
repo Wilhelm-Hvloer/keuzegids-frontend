@@ -456,22 +456,32 @@ async function chooseOption(index) {
     const extraKey = gekozenOptie.chosen_extra;
     console.log("🟢 chosen_extra gedetecteerd:", extraKey);
 
-    // Alleen deze extras vragen m² invoer
     const VARIABLE_SURFACE_EXTRAS = ["Durakorrel"];
 
-    // Variable surface → aparte flow starten
+    // ========================
+    // VARIABLE SURFACE EXTRA
+    // ========================
     if (VARIABLE_SURFACE_EXTRAS.includes(extraKey)) {
-      startChosenExtraFlow({ key: extraKey });
-      return;
+
+      const vervolgNodeId = gekozenOptie.next?.[0] || null;
+
+      startChosenExtraFlow(
+        { key: extraKey },
+        vervolgNodeId
+      );
+
+      return; // ⛔ stop hier
     }
 
-    // Vaste extra → hele oppervlakte
+    // ========================
+    // VASTE EXTRA (HELE OPPERVLAKTE)
+    // ========================
     if (!gekozenExtras.includes(extraKey)) {
       gekozenExtras.push(extraKey);
     }
 
-    // Prijs herberekenen (backend doet echte berekening)
-    await herberekenPrijs();
+    // Geen routing hier doen.
+    // Backend bepaalt vervolg via /api/next
   }
 
   // ========================
@@ -495,17 +505,13 @@ async function chooseOption(index) {
       return;
     }
 
-    // Backend bepaalt of dit:
-    // - nieuwe vraag is
-    // - systeemnode is
-    // - meerwerkpagina moet starten
-    // - samenvatting moet tonen
     renderNode(nextNode);
 
   } catch (err) {
     console.error("❌ Fout bij chooseOption:", err);
   }
 }
+
 
 
 
