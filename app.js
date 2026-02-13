@@ -1171,7 +1171,7 @@ function toonPrijsInvoer() {
 
 
 // ========================
-// SYSTEEMPRIJS RESULTAAT (KLIKBAAR)
+// SYSTEEMPRIJS RESULTAAT (GECORRIGEERD)
 // ========================
 function toonSysteemPrijsResultaat() {
   const resultEl = document.getElementById("result-box");
@@ -1182,28 +1182,35 @@ function toonSysteemPrijsResultaat() {
   const card = document.createElement("div");
   card.className = "kaart systeem-kaart";
 
-  // forced extras uit backend
-  const forced = backendExtras.filter(e => e.forced === true);
-
-  // basisweergave (altijd)
   let html = `
     <strong>${gekozenSysteem}</strong><br>
     € ${prijsPerM2} / m²<br>
     Basisprijs: € ${basisPrijs},-<br>
   `;
 
-  // alleen uitbreiden ALS er verplichte extra’s zijn
-  if (forced.length > 0) {
-    html += `<br><strong>Verplichte extra’s:</strong><br>`;
+  // ✅ ALLE extras tonen (niet alleen forced)
+  if (backendExtras.length > 0) {
 
-    forced.forEach(extra => {
-      html += `– ${extra.naam} (+ € ${extra.totaal},-)<br>`;
+    html += `<br><strong>Extra’s:</strong><br>`;
+
+    backendExtras.forEach(extra => {
+      html += `
+        – ${extra.naam}
+        ${extra.forced ? " (verplicht)" : ""}
+        ${extra.totaal > 0 ? "(+ € " + extra.totaal + ",-)" : ""}
+        <br>
+      `;
     });
 
-    const subtotaal =
-      basisPrijs + forced.reduce((sum, e) => sum + e.totaal, 0);
-
-    html += `<br><strong>Subtotaal systeem: € ${subtotaal},-</strong><br>`;
+    html += `
+      <br>
+      <strong>Totaalprijs: € ${totaalPrijs},-</strong>
+    `;
+  } else {
+    html += `
+      <br>
+      <strong>Totaalprijs: € ${totaalPrijs},-</strong>
+    `;
   }
 
   html += `
@@ -1215,11 +1222,8 @@ function toonSysteemPrijsResultaat() {
   card.innerHTML = html;
 
   card.onclick = async () => {
-    // prijsfase afronden
     resultEl.innerHTML = "";
     resultEl.style.display = "none";
-
-    // keuzeboom vervolgen (systeem heeft altijd 1 vervolg)
     await chooseOption(0);
   };
 
