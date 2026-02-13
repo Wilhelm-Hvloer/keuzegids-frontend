@@ -637,16 +637,31 @@ async function handleAntwoordNode(node) {
 
   console.log("📩 Antwoord-node ontvangen:", node.id);
 
-  // Geen vervolg = einde boom
-  if (!Array.isArray(node.next) || node.next.length === 0) {
-    console.log("🏁 Antwoord zonder vervolg → start meerwerk");
+  // ========================
+  // GEEN GELDIG VERVOLG → EINDE
+  // ========================
+  if (
+    !Array.isArray(node.next) ||
+    node.next.length === 0 ||
+    node.next[0] === "END"
+  ) {
+    console.log("🏁 Antwoord zonder geldig vervolg → start meerwerk");
     toonMeerwerkPagina();
     return;
   }
 
-  // Normaal vervolg via backend ophalen
+  // ========================
+  // NORMAAL VERVOLG VIA BACKEND
+  // ========================
   try {
     const res = await fetch(`${API_BASE}/api/node/${node.next[0]}`);
+
+    if (!res.ok) {
+      console.warn("⚠️ Ongeldig antwoord-vervolg (geen JSON)");
+      toonMeerwerkPagina();
+      return;
+    }
+
     const nextNode = await res.json();
 
     if (!nextNode || nextNode.error) {
@@ -658,8 +673,10 @@ async function handleAntwoordNode(node) {
 
   } catch (err) {
     console.error("❌ Fout bij antwoord-vervolg:", err);
+    toonMeerwerkPagina();
   }
 }
+
 
 
 
