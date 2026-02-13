@@ -569,6 +569,19 @@ async function renderNode(node) {
   currentNode = node;
   console.log("▶ renderNode:", node.type, node);
 
+  // ========================
+  // 🔴 HARDE END AFVANGING
+  // ========================
+  if (
+    node.id === "END" ||
+    node.type === "end" ||
+    (Array.isArray(node.next) && node.next.length === 1 && node.next[0] === "END")
+  ) {
+    console.log("🏁 END gedetecteerd → meerwerk starten");
+    toonMeerwerkPagina();
+    return;
+  }
+
   switch (node.type) {
 
     case "vraag":
@@ -593,8 +606,10 @@ async function renderNode(node) {
       return;
 
     default:
+      // Geen next = einde boom
       if (!Array.isArray(node.next) || node.next.length === 0) {
-        handleEindeNode(node);
+        console.log("🏁 Geen vervolg → meerwerk starten");
+        toonMeerwerkPagina();
       } else {
         console.warn("⚠️ Onbekend node-type:", node);
       }
