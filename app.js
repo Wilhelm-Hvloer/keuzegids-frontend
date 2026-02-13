@@ -631,50 +631,59 @@ function handleVraagNode(node) {
 
 
 // ========================
-// ANTWOORD NODE AFHANDELEN – VEILIG
+// ANTWOORD NODE AFHANDELEN – VEILIG & FLEXIBEL
 // ========================
 async function handleAntwoordNode(node) {
 
   console.log("📩 Antwoord-node ontvangen:", node.id);
 
-  // ========================
-  // GEEN GELDIG VERVOLG → EINDE
-  // ========================
-  if (
-    !Array.isArray(node.next) ||
-    node.next.length === 0 ||
-    node.next[0] === "END"
-  ) {
-    console.log("🏁 Antwoord zonder geldig vervolg → start meerwerk");
+  // Geen vervolg = einde boom
+  if (!Array.isArray(node.next) || node.next.length === 0) {
+    console.log("🏁 Antwoord zonder vervolg → start meerwerk");
     toonMeerwerkPagina();
     return;
   }
 
+  const vervolg = node.next[0];
+
   // ========================
-  // NORMAAL VERVOLG VIA BACKEND
+  // CASE 1: VERVOLG IS AL OBJECT
   // ========================
-  try {
-    const res = await fetch(`${API_BASE}/api/node/${node.next[0]}`);
-
-    if (!res.ok) {
-      console.warn("⚠️ Ongeldig antwoord-vervolg (geen JSON)");
-      toonMeerwerkPagina();
-      return;
-    }
-
-    const nextNode = await res.json();
-
-    if (!nextNode || nextNode.error) {
-      console.error("❌ Fout bij ophalen vervolgnode:", nextNode);
-      return;
-    }
-
-    renderNode(nextNode);
-
-  } catch (err) {
-    console.error("❌ Fout bij antwoord-vervolg:", err);
-    toonMeerwerkPagina();
+  if (typeof vervolg === "object" && vervolg !== null) {
+    console.log("➡️ Direct renderen (object next)");
+    renderNode(vervolg);
+    return;
   }
+
+  // ========================
+  // CASE 2: VERVOLG IS STRING-ID
+  // ========================
+  if (typeof vervolg === "string") {
+    try {
+      const res = await fetch(`${API_BASE}/api/node/${vervolg}`);
+      const nextNode = await res.json();
+
+      if (!nextNode || nextNode.error) {
+        console.warn("⚠️ Ongeldig antwoord-vervolg (geen JSON)", nextNode);
+        toonMeerwerkPagina();
+        return;
+      }
+
+      renderNode(nextNode);
+
+    } catch (err) {
+      console.error("❌ Fout bij antwoord-vervolg:", err);
+      toonMeerwerkPagina();
+    }
+
+    return;
+  }
+
+  // ========================
+  // ONBEKEND TYPE
+  // ========================
+  console.warn("⚠️ Onbekend next-type:", vervolg);
+  toonMeerwerkPagina();
 }
 
 
