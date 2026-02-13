@@ -631,13 +631,12 @@ function handleVraagNode(node) {
 
 
 // ========================
-// ANTWOORD NODE AFHANDELEN – VEILIG & FLEXIBEL
+// ANTWOORD NODE AFHANDELEN – ROBUUST
 // ========================
 async function handleAntwoordNode(node) {
 
   console.log("📩 Antwoord-node ontvangen:", node.id);
 
-  // Geen vervolg = einde boom
   if (!Array.isArray(node.next) || node.next.length === 0) {
     console.log("🏁 Antwoord zonder vervolg → start meerwerk");
     toonMeerwerkPagina();
@@ -647,28 +646,34 @@ async function handleAntwoordNode(node) {
   const vervolg = node.next[0];
 
   // ========================
-  // CASE 1: VERVOLG IS AL OBJECT
+  // OBJECT → DIRECT RENDER
   // ========================
-  if (typeof vervolg === "object" && vervolg !== null) {
-    console.log("➡️ Direct renderen (object next)");
+  if (vervolg && typeof vervolg === "object") {
     renderNode(vervolg);
     return;
   }
 
   // ========================
-  // CASE 2: VERVOLG IS STRING-ID
+  // STRING-ID → BACKEND OPHALEN
   // ========================
   if (typeof vervolg === "string") {
+
+    // END expliciet afhandelen
+    if (vervolg.toUpperCase() === "END") {
+      toonMeerwerkPagina();
+      return;
+    }
+
     try {
       const res = await fetch(`${API_BASE}/api/node/${vervolg}`);
-      const nextNode = await res.json();
 
-      if (!nextNode || nextNode.error) {
-        console.warn("⚠️ Ongeldig antwoord-vervolg (geen JSON)", nextNode);
+      if (!res.ok) {
+        console.warn("⚠️ Node niet gevonden:", vervolg);
         toonMeerwerkPagina();
         return;
       }
 
+      const nextNode = await res.json();
       renderNode(nextNode);
 
     } catch (err) {
@@ -685,6 +690,7 @@ async function handleAntwoordNode(node) {
   console.warn("⚠️ Onbekend next-type:", vervolg);
   toonMeerwerkPagina();
 }
+
 
 
 
