@@ -415,7 +415,7 @@ function toonSysteemSelectie(node) {
 
 
 // ========================
-// KEUZE MAKEN (BACKEND-LEIDEND + CHOSEN_EXTRA ROUTER)
+// KEUZE MAKEN (BACKEND-LEIDEND)
 // ========================
 async function chooseOption(index) {
 
@@ -449,67 +449,33 @@ async function chooseOption(index) {
   }
 
   // ========================
-  // 🔑 CHOSEN_EXTRA ROUTER
+  // CHOSEN_EXTRA HANDLING
   // ========================
   if (gekozenOptie && gekozenOptie.chosen_extra) {
 
     const extraKey = gekozenOptie.chosen_extra;
-    const vervolgNodeId = gekozenOptie.next?.[0] || null;
-
     console.log("🟢 chosen_extra gedetecteerd:", extraKey);
 
     // Alleen deze extras vragen m² invoer
     const VARIABLE_SURFACE_EXTRAS = ["Durakorrel"];
 
-    // ========================
-    // VARIABLE SURFACE EXTRA
-    // ========================
+    // Variable surface → aparte flow starten
     if (VARIABLE_SURFACE_EXTRAS.includes(extraKey)) {
-
-      startChosenExtraFlow(
-        { key: extraKey },
-        vervolgNodeId
-      );
-
-      return; // stop normale flow
+      startChosenExtraFlow({ key: extraKey });
+      return;
     }
 
-    // ========================
-    // VASTE EXTRA (HELE OPPERVLAKTE)
-    // ========================
+    // Vaste extra → hele oppervlakte
     if (!gekozenExtras.includes(extraKey)) {
       gekozenExtras.push(extraKey);
     }
 
+    // Prijs herberekenen (backend doet echte berekening)
     await herberekenPrijs();
-
-    // END → naar meerwerk (NIET direct samenvatting)
-    if (!vervolgNodeId || vervolgNodeId.toUpperCase() === "END") {
-      toonMeerwerkPagina();
-      return;
-    }
-
-    // Normale vervolgnode
-    try {
-      const res = await fetch(`${API_BASE}/api/node/${vervolgNodeId}`);
-      const nextNode = await res.json();
-
-      if (!nextNode || nextNode.error) {
-        console.error("❌ Fout bij ophalen vervolgnode:", nextNode);
-        return;
-      }
-
-      renderNode(nextNode);
-
-    } catch (err) {
-      console.error("❌ Fout bij vervolg ophalen:", err);
-    }
-
-    return;
   }
 
   // ========================
-  // NORMALE BACKEND FLOW
+  // ALLE ROUTING VIA BACKEND
   // ========================
   try {
 
@@ -524,23 +490,16 @@ async function chooseOption(index) {
 
     const nextNode = await res.json();
 
-    if (nextNode.error) {
-      console.error("❌ Backend fout:", nextNode.error);
+    if (!nextNode || nextNode.error) {
+      console.error("❌ Backend fout:", nextNode);
       return;
     }
 
-    // ========================
-    // EINDE KEUZEBOOM
-    // ========================
-    if (!Array.isArray(nextNode.next) || nextNode.next.length === 0) {
-      console.log("🏁 Einde keuzeboom → start extra arbeid");
-      toonMeerwerkPagina();
-      return;
-    }
-
-    // ========================
-    // NORMALE VERVOLG FLOW
-    // ========================
+    // Backend bepaalt of dit:
+    // - nieuwe vraag is
+    // - systeemnode is
+    // - meerwerkpagina moet starten
+    // - samenvatting moet tonen
     renderNode(nextNode);
 
   } catch (err) {
@@ -1367,13 +1326,20 @@ function startChosenExtraFlow(extra, vervolgNodeId) {
 // ========================
 function toonVariableSurfaceInvoer(extraKey) {
 
+  // Alleen toegestane variable extras
+  const VARIABLE_SURFACE_EXTRAS = ["Durakorrel"];
+
+  if (!VARIABLE_SURFACE_EXTRAS.includes(extraKey)) {
+    console.warn("⚠️ toonVariableSurfaceInvoer aangeroepen voor vaste extra:", extraKey);
+    return;
+  }
+
   const questionEl = document.getElementById("question-text");
   const optionsEl  = document.getElementById("options-box");
 
   resetUI();
   optionsEl.style.display = "block";
 
-  // 🔑 Nieuwe vaste titel
   questionEl.innerHTML = "<strong>Hele oppervlakte of plaatselijk?</strong>";
 
   const container = document.createElement("div");
@@ -1388,7 +1354,7 @@ function toonVariableSurfaceInvoer(extraKey) {
   heleBtn.classList.add("systeem-knop");
 
   // ========================
-  // INPUT VELD (zonder los kopje)
+  // INPUT VELD
   // ========================
   const input = document.createElement("input");
   input.type = "number";
@@ -1400,7 +1366,7 @@ function toonVariableSurfaceInvoer(extraKey) {
   input.max = gekozenOppervlakte || 9999;
 
   // ========================
-  // BEVESTIG KNOP (initieel verborgen)
+  // BEVESTIG KNOP
   // ========================
   const bevestigBtn = document.createElement("button");
   bevestigBtn.type = "button";
@@ -1413,7 +1379,9 @@ function toonVariableSurfaceInvoer(extraKey) {
   // INTERACTIE
   // ========================
   input.addEventListener("input", () => {
-    if (input.value && Number(input.value) > 0) {
+    const value = Number(input.value);
+
+    if (value > 0) {
       bevestigBtn.style.display = "block";
       heleBtn.disabled = true;
     } else {
@@ -1423,11 +1391,6 @@ function toonVariableSurfaceInvoer(extraKey) {
   });
 
   heleBtn.addEventListener("click", () => {
-    if (input.value && Number(input.value) > 0) {
-      alert("Verwijder eerst het ingevulde aantal m² om hele oppervlakte te kiezen.");
-      return;
-    }
-
     registreerVariableSurfaceExtra(extraKey, gekozenOppervlakte);
   });
 
@@ -1453,6 +1416,7 @@ function toonVariableSurfaceInvoer(extraKey) {
 
   optionsEl.appendChild(container);
 }
+
 
 
 
