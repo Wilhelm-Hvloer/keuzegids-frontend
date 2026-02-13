@@ -477,35 +477,34 @@ async function chooseOption(index) {
     // ========================
     // VASTE EXTRA (HELE OPPERVLAKTE)
     // ========================
-    gekozenExtras.push(extraKey);
+    if (!gekozenExtras.includes(extraKey)) {
+      gekozenExtras.push(extraKey);
+    }
 
     await herberekenPrijs();
 
-    if (vervolgNodeId && vervolgNodeId.toUpperCase() === "END") {
+    // END → naar meerwerk (NIET direct samenvatting)
+    if (!vervolgNodeId || vervolgNodeId.toUpperCase() === "END") {
       toonMeerwerkPagina();
       return;
     }
 
-    if (vervolgNodeId) {
-      try {
-        const res = await fetch(`${API_BASE}/api/node/${vervolgNodeId}`);
-        const nextNode = await res.json();
+    // Normale vervolgnode
+    try {
+      const res = await fetch(`${API_BASE}/api/node/${vervolgNodeId}`);
+      const nextNode = await res.json();
 
-        if (!nextNode || nextNode.error) {
-          console.error("❌ Fout bij ophalen vervolgnode:", nextNode);
-          return;
-        }
-
-        renderNode(nextNode);
-
-      } catch (err) {
-        console.error("❌ Fout bij vervolg ophalen:", err);
+      if (!nextNode || nextNode.error) {
+        console.error("❌ Fout bij ophalen vervolgnode:", nextNode);
+        return;
       }
 
-      return;
+      renderNode(nextNode);
+
+    } catch (err) {
+      console.error("❌ Fout bij vervolg ophalen:", err);
     }
 
-    toonMeerwerkPagina();
     return;
   }
 
@@ -548,6 +547,7 @@ async function chooseOption(index) {
     console.error("❌ Fout bij chooseOption:", err);
   }
 }
+
 
 
 
