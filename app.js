@@ -215,7 +215,7 @@ function toonPrijslijstSysteemSelectie() {
     "Gietcoating Extreme met schraplaag",
     "Flakecoating",
     "DOS-coating Basic",
-    "DOS-coating Premium"
+    "DOS-coating Premium",
     "Boeren coating"
   ];
 
