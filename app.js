@@ -413,7 +413,6 @@ function toonSysteemSelectie(node) {
 
 
 
-
 // ========================
 // KEUZE MAKEN (BACKEND-LEIDEND)
 // ========================
@@ -461,7 +460,7 @@ async function chooseOption(index) {
     }
 
     // ========================
-    // VARIABLE SURFACE EXTRA
+    // VARIABLE SURFACE EXTRA (eigen m2 invoer)
     // ========================
     const VARIABLE_SURFACE_EXTRAS = ["DuraKorrel"];
 
@@ -481,10 +480,29 @@ async function chooseOption(index) {
     }
 
     // ========================
-    // VASTE EXTRA (HELE OPPERVLAKTE)
+    // COMPLEXE EXTRA VIA extra_systemen (hele systeem m2)
     // ========================
-    if (!gekozenExtras.includes(extraKey)) {
-      gekozenExtras.push(extraKey);
+    const FULL_SURFACE_EXTRA_SYSTEMS = ["AG lak", "extra uitvlaklaag"];
+
+    if (FULL_SURFACE_EXTRA_SYSTEMS.includes(extraKey)) {
+
+      if (!gekozenExtras.includes(extraKey)) {
+        gekozenExtras.push(extraKey);
+      }
+
+      // Geen eigen m2-flow.
+      // Backend berekent staffel op basis van systeem m2.
+    }
+
+    // ========================
+    // NORMALE PER_M2 EXTRA
+    // ========================
+    if (!VARIABLE_SURFACE_EXTRAS.includes(extraKey) &&
+        !FULL_SURFACE_EXTRA_SYSTEMS.includes(extraKey)) {
+
+      if (!gekozenExtras.includes(extraKey)) {
+        gekozenExtras.push(extraKey);
+      }
     }
 
     // Let op:
@@ -519,7 +537,6 @@ async function chooseOption(index) {
     console.error("❌ Fout bij chooseOption:", err);
   }
 }
-
 
 
 
