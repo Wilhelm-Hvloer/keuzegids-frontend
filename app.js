@@ -456,7 +456,7 @@ async function chooseOption(index) {
     const extraKey = gekozenOptie.chosen_extra;
     console.log("🟢 chosen_extra gedetecteerd:", extraKey);
 
-    const VARIABLE_SURFACE_EXTRAS = ["Durakorrel"];
+    const VARIABLE_SURFACE_EXTRAS = ["DuraKorrel"];
 
     // ========================
     // VARIABLE SURFACE EXTRA
@@ -1409,7 +1409,7 @@ function startChosenExtraFlow(extra, vervolgNodeId) {
 function toonVariableSurfaceInvoer(extraKey) {
 
   // Alleen toegestane variable extras
-  const VARIABLE_SURFACE_EXTRAS = ["Durakorrel"];
+  const VARIABLE_SURFACE_EXTRAS = ["DuraKorrel"];
 
   if (!VARIABLE_SURFACE_EXTRAS.includes(extraKey)) {
     console.warn("⚠️ toonVariableSurfaceInvoer aangeroepen voor vaste extra:", extraKey);
