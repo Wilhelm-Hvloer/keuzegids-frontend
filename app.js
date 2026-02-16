@@ -696,7 +696,7 @@ async function handleAntwoordNode(node) {
 
 
 // ========================
-// SYSTEM NODE → AFHANDELING (DEFINITIEF & VEILIG)
+// SYSTEM NODE → AFHANDELING (GEFIXT)
 // ========================
 function handleSystemNode(node) {
   console.log("💰 System-node ontvangen", node);
@@ -709,9 +709,6 @@ function handleSystemNode(node) {
     return;
   }
 
-  // ========================
-  // SYSTEEM DEFINITIEF KIEZEN
-  // ========================
   currentSystemNode = node;
 
   gekozenSysteem =
@@ -725,17 +722,35 @@ function handleSystemNode(node) {
   }
 
   // ========================
-  // FORCED EXTRAS UIT SYSTEEMNODE
+  // 🔥 BELANGRIJK: GEEN RESET VAN GEKOZEN EXTRAS
   // ========================
-  forcedExtras = [];
-  gekozenExtras = [];
+  // Alleen forced extras toevoegen — bestaande extras behouden
+
+  if (!Array.isArray(gekozenExtras)) {
+    gekozenExtras = [];
+  }
+
+  if (!Array.isArray(forcedExtras)) {
+    forcedExtras = [];
+  }
 
   if (Array.isArray(node.forced_extras)) {
-    forcedExtras = [...node.forced_extras];
-    gekozenExtras = [...node.forced_extras];
+
+    node.forced_extras.forEach(fx => {
+
+      if (!forcedExtras.includes(fx)) {
+        forcedExtras.push(fx);
+      }
+
+      if (!gekozenExtras.includes(fx)) {
+        gekozenExtras.push(fx);
+      }
+
+    });
   }
 
   console.log("⚙️ Forced extras actief:", forcedExtras);
+  console.log("📦 Gekozen extras na systeem:", gekozenExtras);
 
   // ========================
   // MOMENT VAN SYSTEEMKEUZE VASTLEGGEN
@@ -749,7 +764,6 @@ function handleSystemNode(node) {
   // ========================
   if (node.requires_price || node.ui_mode === "prijs") {
 
-    // 🔑 Als prijs al bekend is (bij afweging) → direct door naar volgende node
     if (gekozenOppervlakte && gekozenRuimtes) {
       console.log("💡 Prijs al bekend → direct vervolg ophalen");
 
@@ -773,13 +787,12 @@ function handleSystemNode(node) {
       return;
     }
 
-    // Normale prijsflow
     toonPrijsInvoer();
     return;
   }
 
   // ========================
-  // PRIJS AL BEKEND → HERBEREKENEN (fallback)
+  // PRIJS AL BEKEND → HERBEREKENEN
   // ========================
   if (gekozenOppervlakte && gekozenRuimtes) {
     herberekenPrijs().then(() => {
@@ -787,6 +800,10 @@ function handleSystemNode(node) {
     });
     return;
   }
+
+  console.warn("⚠️ System-node zonder prijsfase", node);
+}
+
 
   console.warn("⚠️ System-node zonder prijsfase", node);
 }
