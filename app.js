@@ -696,7 +696,7 @@ async function handleAntwoordNode(node) {
 
 
 // ========================
-// SYSTEM NODE → AFHANDELING (GEFIXT)
+// SYSTEM NODE → AFHANDELING (GEFIXT + CHOSEN EXTRA)
 // ========================
 function handleSystemNode(node) {
   console.log("💰 System-node ontvangen", node);
@@ -722,10 +722,8 @@ function handleSystemNode(node) {
   }
 
   // ========================
-  // 🔥 BELANGRIJK: GEEN RESET VAN GEKOZEN EXTRAS
+  // STATE INIT (geen reset!)
   // ========================
-  // Alleen forced extras toevoegen — bestaande extras behouden
-
   if (!Array.isArray(gekozenExtras)) {
     gekozenExtras = [];
   }
@@ -734,6 +732,21 @@ function handleSystemNode(node) {
     forcedExtras = [];
   }
 
+  // ========================
+  // ✅ CHOSEN EXTRA VAN SYSTEEMNODE
+  // ========================
+  if (node.chosen_extra) {
+
+    if (!gekozenExtras.includes(node.chosen_extra)) {
+      gekozenExtras.push(node.chosen_extra);
+      console.log("➕ Extra toegevoegd via systeemnode:", node.chosen_extra);
+    }
+
+  }
+
+  // ========================
+  // FORCED EXTRAS
+  // ========================
   if (Array.isArray(node.forced_extras)) {
 
     node.forced_extras.forEach(fx => {
