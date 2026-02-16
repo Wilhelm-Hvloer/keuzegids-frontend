@@ -939,7 +939,7 @@ function handleEindeNode(node) {
 
 
 // ========================
-// AFWEGING MET PRIJSVERGELIJKING (GEFIXT + END-VEILIG)
+// AFWEGING MET PRIJSVERGELIJKING (ROBUST + TOLERANT + END-VEILIG)
 // ========================
 async function toonAfwegingMetPrijzen() {
 
@@ -970,9 +970,17 @@ async function toonAfwegingMetPrijzen() {
       continue;
     }
 
-    const systeemForcedKeys = Array.isArray(systeemNode.forced_extras)
-      ? systeemNode.forced_extras
-      : [];
+    // ========================
+    // FORCED EXTRAS TOLERANT (STRING OF ARRAY)
+    // ========================
+    let systeemForcedKeys = [];
+
+    if (Array.isArray(systeemNode.forced_extras)) {
+      systeemForcedKeys = systeemNode.forced_extras;
+    } 
+    else if (typeof systeemNode.forced_extras === "string") {
+      systeemForcedKeys = [systeemNode.forced_extras];
+    }
 
     // ========================
     // PRIJS VIA BACKEND
@@ -999,6 +1007,9 @@ async function toonAfwegingMetPrijzen() {
       ? data.extras.filter(e => e.forced === true)
       : [];
 
+    // ========================
+    // KAART OPBOUWEN
+    // ========================
     let html = `
       <strong>${systeemNaam}</strong><br>
       <span style="font-size:14px;">€ ${data.prijs_per_m2} / m²</span><br>
@@ -1030,19 +1041,26 @@ async function toonAfwegingMetPrijzen() {
 
       if (!gekozenNode) return;
 
-      // 🔑 Afweging afsluiten
+      // Afweging afsluiten
       afwegingNode = null;
       potentieleSystemen = [];
 
-      // 🔑 Definitieve systeemselectie
+      // Definitieve systeemselectie
       currentSystemNode = gekozenNode;
       gekozenSysteem = systeemNaam;
 
-      forcedExtras = Array.isArray(gekozenNode.forced_extras)
-        ? [...gekozenNode.forced_extras]
-        : [];
+      // Forced extras opnieuw tolerant zetten
+      let definitieveForced = [];
 
-      gekozenExtras = [...forcedExtras];
+      if (Array.isArray(gekozenNode.forced_extras)) {
+        definitieveForced = gekozenNode.forced_extras;
+      } 
+      else if (typeof gekozenNode.forced_extras === "string") {
+        definitieveForced = [gekozenNode.forced_extras];
+      }
+
+      forcedExtras = [...definitieveForced];
+      gekozenExtras = [...definitieveForced];
 
       basisPrijs  = data.basisprijs;
       prijsPerM2  = data.prijs_per_m2;
