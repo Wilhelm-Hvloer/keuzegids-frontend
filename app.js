@@ -456,21 +456,28 @@ async function chooseOption(index) {
     const extraKey = gekozenOptie.chosen_extra;
     console.log("🟢 chosen_extra gedetecteerd:", extraKey);
 
-    const VARIABLE_SURFACE_EXTRAS = ["DuraKorrel"];
+    if (!Array.isArray(gekozenExtras)) {
+      gekozenExtras = [];
+    }
 
     // ========================
     // VARIABLE SURFACE EXTRA
     // ========================
+    const VARIABLE_SURFACE_EXTRAS = ["DuraKorrel"];
+
     if (VARIABLE_SURFACE_EXTRAS.includes(extraKey)) {
 
       const vervolgNodeId = gekozenOptie.next?.[0] || null;
 
       startChosenExtraFlow(
-        { key: extraKey },
+        {
+          key: extraKey,
+          type: "variable_surface"
+        },
         vervolgNodeId
       );
 
-      return; // ⛔ stop hier
+      return; // ⛔ stop hier – geen backend routing
     }
 
     // ========================
@@ -480,7 +487,8 @@ async function chooseOption(index) {
       gekozenExtras.push(extraKey);
     }
 
-    // Geen routing hier doen.
+    // Let op:
+    // Geen return hier.
     // Backend bepaalt vervolg via /api/next
   }
 
