@@ -939,9 +939,10 @@ function handleEindeNode(node) {
 
 
 // ========================
-// AFWEGING MET PRIJSVERGELIJKING
+// AFWEGING MET PRIJSVERGELIJKING (GEFIXT + END-VEILIG)
 // ========================
 async function toonAfwegingMetPrijzen() {
+
   const questionEl = document.getElementById("question-text");
   const optionsEl  = document.getElementById("options-box");
 
@@ -954,7 +955,6 @@ async function toonAfwegingMetPrijzen() {
   }
 
   questionEl.innerHTML = `<strong>${stripPrefix(afwegingNode.text)}</strong>`;
-  afwegingResultaten = [];
 
   const groep = document.createElement("div");
   groep.className = "antwoord-groep";
@@ -999,13 +999,6 @@ async function toonAfwegingMetPrijzen() {
       ? data.extras.filter(e => e.forced === true)
       : [];
 
-    const forcedTotaal = backendForcedExtras.reduce(
-      (sum, e) => sum + (e.totaal || 0),
-      0
-    );
-
-    const subtotaal = data.basisprijs + forcedTotaal;
-
     let html = `
       <strong>${systeemNaam}</strong><br>
       <span style="font-size:14px;">€ ${data.prijs_per_m2} / m²</span><br>
@@ -1017,10 +1010,9 @@ async function toonAfwegingMetPrijzen() {
       backendForcedExtras.forEach(extra => {
         html += `– ${extra.naam} (+ € ${extra.totaal},-)<br>`;
       });
-      html += `<br><strong>Subtotaal: € ${subtotaal},-</strong>`;
-    } else {
-      html += `<br><strong>Systeemprijs: € ${data.basisprijs},-</strong>`;
     }
+
+    html += `<br><strong>Totaalprijs: € ${data.totaalprijs},-</strong>`;
 
     const btn = document.createElement("button");
     btn.type = "button";
@@ -1030,7 +1022,7 @@ async function toonAfwegingMetPrijzen() {
     // ========================
     // KLIK → DEFINITIEVE KEUZE
     // ========================
-    btn.addEventListener("click", () => {
+    btn.addEventListener("click", async () => {
 
       const gekozenNode = potentieleSystemen.find(
         n => n.id === systeemNode.id
@@ -1038,17 +1030,14 @@ async function toonAfwegingMetPrijzen() {
 
       if (!gekozenNode) return;
 
-      // 🔑 Eerst context herstellen naar afweging-node
-      currentNode = afwegingNode;
-
-      // 🔑 Daarna afweging-state resetten
+      // 🔑 Afweging afsluiten
       afwegingNode = null;
       potentieleSystemen = [];
 
-      // 🔑 Gekozen systeem definitief opslaan
+      // 🔑 Definitieve systeemselectie
       currentSystemNode = gekozenNode;
+      gekozenSysteem = systeemNaam;
 
-      gekozenSysteem = gekozenNode.system;
       forcedExtras = Array.isArray(gekozenNode.forced_extras)
         ? [...gekozenNode.forced_extras]
         : [];
@@ -1057,19 +1046,42 @@ async function toonAfwegingMetPrijzen() {
 
       basisPrijs  = data.basisprijs;
       prijsPerM2  = data.prijs_per_m2;
-      totaalPrijs = subtotaal;
+      totaalPrijs = data.totaalprijs;
       backendExtras = data.extras || [];
 
-      // 🔑 Nu normale flow vervolgen
-      const index = currentNode.next.findIndex(
-        n => n.id === gekozenNode.id
-      );
-
-      if (index >= 0) {
-        chooseOption(index);
-      } else {
-        console.warn("⚠️ Geen geldige index gevonden");
+      // ========================
+      // END-AFHANDELING
+      // ========================
+      if (
+        !Array.isArray(gekozenNode.next) ||
+        gekozenNode.next.length === 0 ||
+        gekozenNode.next[0] === "END"
+      ) {
+        console.log("🏁 Afweging → systeem → END → meerwerk starten");
+        toonMeerwerkPagina();
+        return;
       }
+
+      // ========================
+      // NORMAAL VERVOLG
+      // ========================
+      const resNext = await fetch(`${API_BASE}/api/next`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          node_id: gekozenNode.id,
+          choice: 0
+        })
+      });
+
+      const nextNode = await resNext.json();
+
+      if (!nextNode || nextNode.error) {
+        console.error("❌ Fout bij automatisch vervolg:", nextNode);
+        return;
+      }
+
+      renderNode(nextNode);
     });
 
     groep.appendChild(btn);
@@ -1077,6 +1089,7 @@ async function toonAfwegingMetPrijzen() {
 
   optionsEl.appendChild(groep);
 }
+
 
 
 
