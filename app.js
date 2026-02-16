@@ -1223,7 +1223,7 @@ function toonPrijsInvoer() {
 
 
 // ========================
-// SYSTEEMPRIJS RESULTAAT (EINDNODE-PROOF)
+// SYSTEEMPRIJS RESULTAAT (MEERWERK-PROOF)
 // ========================
 function toonSysteemPrijsResultaat() {
 
@@ -1241,9 +1241,6 @@ function toonSysteemPrijsResultaat() {
     Basisprijs: € ${basisPrijs},-<br>
   `;
 
-  // ========================
-  // EXTRAS TONEN
-  // ========================
   if (backendExtras.length > 0) {
 
     html += `<br><strong>Extra’s:</strong><br>`;
@@ -1271,26 +1268,23 @@ function toonSysteemPrijsResultaat() {
 
   card.innerHTML = html;
 
-  // ========================
-  // VERDER-LOGICA (SLIM)
-  // ========================
   card.onclick = async () => {
 
     resultEl.innerHTML = "";
     resultEl.style.display = "none";
 
-    // 🔑 1️⃣ Geen next → samenvatting
+    // 🔑 1️⃣ Geen next → meerwerk starten
     if (!Array.isArray(currentNode?.next) || currentNode.next.length === 0) {
-      toonSamenvatting();
+      toonMeerwerkPagina();
       return;
     }
 
-    // 🔑 2️⃣ Alleen END → samenvatting
+    // 🔑 2️⃣ Alleen END → meerwerk starten
     if (
       currentNode.next.length === 1 &&
       currentNode.next[0] === "END"
     ) {
-      toonSamenvatting();
+      toonMeerwerkPagina();
       return;
     }
 
