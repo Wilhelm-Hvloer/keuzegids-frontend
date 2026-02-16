@@ -805,9 +805,6 @@ function handleSystemNode(node) {
 }
 
 
-  console.warn("⚠️ System-node zonder prijsfase", node);
-}
-
 
 
 
