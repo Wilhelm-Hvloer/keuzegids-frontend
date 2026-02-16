@@ -720,8 +720,9 @@ async function handleAntwoordNode(node) {
 
 
 
+
 // ========================
-// SYSTEM NODE → AFHANDELING (GEFIXT + CHOSEN EXTRA)
+// SYSTEM NODE → AFHANDELING (ROBUST & TOLERANT)
 // ========================
 function handleSystemNode(node) {
   console.log("💰 System-node ontvangen", node);
@@ -747,7 +748,7 @@ function handleSystemNode(node) {
   }
 
   // ========================
-  // STATE INIT (geen reset!)
+  // STATE INIT (GEEN RESET!)
   // ========================
   if (!Array.isArray(gekozenExtras)) {
     gekozenExtras = [];
@@ -758,7 +759,7 @@ function handleSystemNode(node) {
   }
 
   // ========================
-  // ✅ CHOSEN EXTRA VAN SYSTEEMNODE
+  // ✅ CHOSEN EXTRA (optioneel)
   // ========================
   if (node.chosen_extra) {
 
@@ -766,26 +767,31 @@ function handleSystemNode(node) {
       gekozenExtras.push(node.chosen_extra);
       console.log("➕ Extra toegevoegd via systeemnode:", node.chosen_extra);
     }
-
   }
 
   // ========================
-  // FORCED EXTRAS
+  // ✅ FORCED EXTRAS (ARRAY OF STRING TOLERANT)
   // ========================
+  let forcedFromNode = [];
+
   if (Array.isArray(node.forced_extras)) {
-
-    node.forced_extras.forEach(fx => {
-
-      if (!forcedExtras.includes(fx)) {
-        forcedExtras.push(fx);
-      }
-
-      if (!gekozenExtras.includes(fx)) {
-        gekozenExtras.push(fx);
-      }
-
-    });
+    forcedFromNode = node.forced_extras;
+  } 
+  else if (typeof node.forced_extras === "string") {
+    forcedFromNode = [node.forced_extras];
   }
+
+  forcedFromNode.forEach(fx => {
+
+    if (!forcedExtras.includes(fx)) {
+      forcedExtras.push(fx);
+    }
+
+    if (!gekozenExtras.includes(fx)) {
+      gekozenExtras.push(fx);
+    }
+
+  });
 
   console.log("⚙️ Forced extras actief:", forcedExtras);
   console.log("📦 Gekozen extras na systeem:", gekozenExtras);
@@ -841,7 +847,6 @@ function handleSystemNode(node) {
 
   console.warn("⚠️ System-node zonder prijsfase", node);
 }
-
 
 
 
