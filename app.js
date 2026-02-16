@@ -216,6 +216,7 @@ function toonPrijslijstSysteemSelectie() {
     "Flakecoating",
     "DOS-coating Basic",
     "DOS-coating Premium"
+    "Boeren coating"
   ];
 
   // 🔑 ALLE SYSTEEMKNOPPEN IN ÉÉN ANTWOORD-GROEP
@@ -292,12 +293,20 @@ function verwijderGeefPrijsKnop() {
 
 
 // ========================
-// PRIJSLIJST – VERGELIJKING START (GEUNIFICEERD)
+// PRIJSLIJST – VERGELIJKING START (CORRECT & STATE-VEILIG)
 // ========================
 function startVergelijking() {
   console.log("🔀 Prijslijst vergelijking gestart");
 
-  // 🔑 Afweging-node opbouwen
+  if (!Array.isArray(geselecteerdePrijslijstSystemen) ||
+      geselecteerdePrijslijstSystemen.length === 0) {
+    console.warn("⚠️ Geen systemen geselecteerd voor vergelijking");
+    return;
+  }
+
+  // ========================
+  // AFWEGING NODE OPBOUWEN
+  // ========================
   afwegingNode = {
     id: "PRIJSLIJST_AFWEGING",
     type: "afw",
@@ -308,11 +317,23 @@ function startVergelijking() {
       system: s,
       text: `Sys: ${s}`,
       requires_price: true,
-      forced_extras: [] // expliciet, voorkomt undefined
+      forced_extras: []
     }))
   };
 
-  // 🔑 ÉÉN invoerroute voor alles (single & afweging)
+  // 🔑 Dit is essentieel:
+  // potentieleSystemen moet gevuld zijn
+  potentieleSystemen = [...afwegingNode.next];
+
+  // 🔑 currentNode instellen zodat render-flow klopt
+  currentNode = afwegingNode;
+
+  // 🔑 Afweging-state activeren
+  afwegingResultaten = [];
+
+  // ========================
+  // PRIJSINVOER STARTEN
+  // ========================
   toonPrijsInvoer();
 }
 
