@@ -1223,9 +1223,10 @@ function toonPrijsInvoer() {
 
 
 // ========================
-// SYSTEEMPRIJS RESULTAAT (GECORRIGEERD)
+// SYSTEEMPRIJS RESULTAAT (EINDNODE-PROOF)
 // ========================
 function toonSysteemPrijsResultaat() {
+
   const resultEl = document.getElementById("result-box");
 
   resultEl.style.display = "block";
@@ -1240,7 +1241,9 @@ function toonSysteemPrijsResultaat() {
     Basisprijs: € ${basisPrijs},-<br>
   `;
 
-  // ✅ ALLE extras tonen (niet alleen forced)
+  // ========================
+  // EXTRAS TONEN
+  // ========================
   if (backendExtras.length > 0) {
 
     html += `<br><strong>Extra’s:</strong><br>`;
@@ -1253,17 +1256,12 @@ function toonSysteemPrijsResultaat() {
         <br>
       `;
     });
-
-    html += `
-      <br>
-      <strong>Totaalprijs: € ${totaalPrijs},-</strong>
-    `;
-  } else {
-    html += `
-      <br>
-      <strong>Totaalprijs: € ${totaalPrijs},-</strong>
-    `;
   }
+
+  html += `
+    <br>
+    <strong>Totaalprijs: € ${totaalPrijs},-</strong>
+  `;
 
   html += `
     <div style="margin-top:10px; font-size:13px; opacity:0.8;">
@@ -1273,14 +1271,36 @@ function toonSysteemPrijsResultaat() {
 
   card.innerHTML = html;
 
+  // ========================
+  // VERDER-LOGICA (SLIM)
+  // ========================
   card.onclick = async () => {
+
     resultEl.innerHTML = "";
     resultEl.style.display = "none";
+
+    // 🔑 1️⃣ Geen next → samenvatting
+    if (!Array.isArray(currentNode?.next) || currentNode.next.length === 0) {
+      toonSamenvatting();
+      return;
+    }
+
+    // 🔑 2️⃣ Alleen END → samenvatting
+    if (
+      currentNode.next.length === 1 &&
+      currentNode.next[0] === "END"
+    ) {
+      toonSamenvatting();
+      return;
+    }
+
+    // 🔑 3️⃣ Normaal vervolg → backend routing
     await chooseOption(0);
   };
 
   resultEl.appendChild(card);
 }
+
 
 
 
