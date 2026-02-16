@@ -2011,12 +2011,12 @@ function stripPrefix(text = "") {
 }
 
 // ========================
-// HOMESCREEN ACTIES (DEFINITIEF & GECORRIGEERD)
+// HOMESCREEN ACTIES (DEFINITIEF & VOLLEDIG GERESET)
 // ========================
 function gaNaarHome() {
 
-  const homeEl   = document.getElementById("home-screen");
-  const flowEl   = document.getElementById("flow-screen");
+  const homeEl    = document.getElementById("home-screen");
+  const flowEl    = document.getElementById("flow-screen");
   const optionsEl = document.getElementById("options-box");
   const resultEl  = document.getElementById("result-box");
 
@@ -2075,8 +2075,15 @@ function gaNaarHome() {
   // ========================
   xtrCoatingVerwijderenUren = 0;
 
-  extraMeerwerk.uren = null;
-  extraMeerwerk.toelichting = "";
+  if (extraMeerwerk) {
+    extraMeerwerk.uren = null;
+    extraMeerwerk.toelichting = "";
+  }
+
+  if (extraMateriaal) {
+    extraMateriaal.bedrag = null;
+    extraMateriaal.toelichting = "";
+  }
 
   lastVraagTekst = null;
 
@@ -2095,10 +2102,9 @@ function gaNaarHome() {
 
   const btnPrijslijst = document.createElement("button");
   btnPrijslijst.type = "button";
-  btnPrijslijst.textContent = "Start prijslijst";
   btnPrijslijst.onclick = startPrijslijst;
+  btnPrijslijst.textContent = "Start prijslijst";
 
   groep.append(btnKeuzegids, btnPrijslijst);
   homeEl.appendChild(groep);
 }
-
