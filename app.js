@@ -1285,7 +1285,9 @@ function toonPrijsInvoer() {
 // ========================
 function toonSysteemPrijsResultaat() {
 
-  const resultEl = document.getElementById("result-box");
+  const questionEl = document.getElementById("question-text");
+  const optionsEl  = document.getElementById("options-box");
+  const resultEl   = document.getElementById("result-box");
 
   resultEl.style.display = "block";
   resultEl.innerHTML = "";
@@ -1328,16 +1330,20 @@ function toonSysteemPrijsResultaat() {
 
   card.onclick = async () => {
 
+    // 🔑 VOLLEDIGE UI RESET
     resultEl.innerHTML = "";
     resultEl.style.display = "none";
+    optionsEl.innerHTML = "";
+    optionsEl.style.display = "block";
+    questionEl.innerHTML = "";
 
-    // 🔑 1️⃣ Geen next → meerwerk starten
+    // 🔑 Geen next → meerwerk
     if (!Array.isArray(currentNode?.next) || currentNode.next.length === 0) {
       toonMeerwerkPagina();
       return;
     }
 
-    // 🔑 2️⃣ Alleen END → meerwerk starten
+    // 🔑 Alleen END → meerwerk
     if (
       currentNode.next.length === 1 &&
       currentNode.next[0] === "END"
@@ -1346,7 +1352,7 @@ function toonSysteemPrijsResultaat() {
       return;
     }
 
-    // 🔑 3️⃣ Normaal vervolg → backend routing
+    // 🔑 Normaal vervolg
     await chooseOption(0);
   };
 
