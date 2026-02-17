@@ -1962,7 +1962,7 @@ async function berekenBasisPrijsVoorSysteem(systeemNaam, m2, ruimtes) {
 
 
 // ========================
-// SAMENVATTING TONEN (DEFINITIEF)
+// SAMENVATTING TONEN (ROBUST & JUISTE VOLGORDE)
 // ========================
 function toonSamenvatting() {
 
@@ -1970,7 +1970,6 @@ function toonSamenvatting() {
   const optionsEl  = document.getElementById("options-box");
   const resultEl   = document.getElementById("result-box");
 
-  // UI opschonen
   questionEl.innerHTML = "<strong>Samenvatting</strong>";
   optionsEl.innerHTML = "";
   optionsEl.style.display = "none";
@@ -1980,21 +1979,30 @@ function toonSamenvatting() {
   let html = "";
 
   // ========================
-  // BASISVRAGEN (vóór systeemkeuze)
+  // VEILIGE INDEX BEPALEN
   // ========================
-  gekozenAntwoorden
-    .slice(0, systeemKeuzeIndex)
-    .forEach(item => {
-      html += `
-        <div class="qa-regel">
-          <span class="vraag"><em>${item.vraag}</em></span><br>
-          <span class="antwoord"><strong>${item.antwoord}</strong></span>
-        </div>
-      `;
-    });
+  const veiligeIndex =
+    typeof systeemKeuzeIndex === "number"
+      ? systeemKeuzeIndex
+      : gekozenAntwoorden.length;
+
+  const basisVragen  = gekozenAntwoorden.slice(0, veiligeIndex);
+  const optieVragen  = gekozenAntwoorden.slice(veiligeIndex);
 
   // ========================
-  // m² & RUIMTES
+  // 1️⃣ BASISVRAGEN
+  // ========================
+  basisVragen.forEach(item => {
+    html += `
+      <div class="qa-regel">
+        <span class="vraag"><em>${item.vraag}</em></span><br>
+        <span class="antwoord"><strong>${item.antwoord}</strong></span>
+      </div>
+    `;
+  });
+
+  // ========================
+  // 2️⃣ m² & RUIMTES
   // ========================
   html += `
     <hr>
@@ -2003,7 +2011,7 @@ function toonSamenvatting() {
   `;
 
   // ========================
-  // GEKOZEN SYSTEEM + BASISPRIJS
+  // 3️⃣ GEKOZEN SYSTEEM
   // ========================
   html += `
     <hr>
@@ -2013,10 +2021,8 @@ function toonSamenvatting() {
   `;
 
   // ========================
-  // OPTIEVRAGEN (ná systeemkeuze)
+  // 4️⃣ OPTIEVRAGEN (NA SYSTEEM)
   // ========================
-  const optieVragen = gekozenAntwoorden.slice(systeemKeuzeIndex);
-
   if (optieVragen.length > 0) {
     html += "<hr>";
     optieVragen.forEach(item => {
@@ -2030,9 +2036,9 @@ function toonSamenvatting() {
   }
 
   // ========================
-  // EXTRA'S (UIT BACKEND)
+  // 5️⃣ EXTRA'S
   // ========================
-  if (backendExtras.length > 0) {
+  if (backendExtras && backendExtras.length > 0) {
 
     html += "<hr><div><strong>Extra’s</strong></div>";
 
@@ -2050,8 +2056,9 @@ function toonSamenvatting() {
       `;
     });
   }
+
   // ========================
-  // TOTAALPRIJS
+  // 6️⃣ TOTAAL
   // ========================
   html += `
     <hr>
@@ -2061,7 +2068,6 @@ function toonSamenvatting() {
 
   resultEl.innerHTML = html;
 }
-
 
 
 
