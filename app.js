@@ -619,12 +619,9 @@ async function renderNode(node) {
   // ========================
   // 🔴 HARDE END AFVANGING
   // ========================
-  if (
-    node.id === "END" ||
-    node.type === "end" ||
-    (Array.isArray(node.next) && node.next.length === 1 && node.next[0] === "END")
-  ) {
-    console.log("🏁 END gedetecteerd → meerwerk starten");
+  // Alleen echte END-nodes hier afvangen
+  if (node.id === "END" || node.type === "end") {
+    console.log("🏁 END-node bereikt → meerwerk starten");
     toonMeerwerkPagina();
     return;
   }
