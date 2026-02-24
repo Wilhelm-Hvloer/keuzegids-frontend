@@ -68,6 +68,8 @@ let systeemKeuzeIndex = null;
 let currentSystemOmschrijving = [];
 
 
+let lastVraagTekst = null;
+
 
 // ========================
 // XTR – MEERWERK COATING VERWIJDEREN
@@ -954,7 +956,6 @@ function handleEindeNode(node) {
 }
 
 
-
 // ========================
 // AFWEGING MET PRIJSVERGELIJKING (ROBUST + TOLERANT + END-VEILIG)
 // ========================
@@ -988,14 +989,13 @@ async function toonAfwegingMetPrijzen() {
     }
 
     // ========================
-    // FORCED EXTRAS TOLERANT (STRING OF ARRAY)
+    // FORCED EXTRAS TOLERANT
     // ========================
     let systeemForcedKeys = [];
 
     if (Array.isArray(systeemNode.forced_extras)) {
       systeemForcedKeys = systeemNode.forced_extras;
-    } 
-    else if (typeof systeemNode.forced_extras === "string") {
+    } else if (typeof systeemNode.forced_extras === "string") {
       systeemForcedKeys = [systeemNode.forced_extras];
     }
 
@@ -1015,6 +1015,7 @@ async function toonAfwegingMetPrijzen() {
     });
 
     const data = await res.json();
+
     if (data.error) {
       console.error("❌ prijsfout:", data.error);
       continue;
@@ -1047,84 +1048,87 @@ async function toonAfwegingMetPrijzen() {
     btn.classList.add("systeem-knop");
     btn.innerHTML = html;
 
-// ========================
-// KLIK → DEFINITIEVE KEUZE
-// ========================
-btn.addEventListener("click", async () => {
+    // ========================
+    // KLIK → DEFINITIEVE KEUZE
+    // ========================
+    btn.addEventListener("click", async () => {
 
-  const gekozenNode = potentieleSystemen.find(
-    n => n.id === systeemNode.id
-  );
+      const gekozenNode = potentieleSystemen.find(
+        n => n.id === systeemNode.id
+      );
 
-  if (!gekozenNode) return;
+      if (!gekozenNode) return;
 
-  // Afweging afsluiten
-  afwegingNode = null;
-  potentieleSystemen = [];
+      // Afweging afsluiten
+      afwegingNode = null;
+      potentieleSystemen = [];
 
-  // Definitieve systeemselectie
-  currentSystemNode = gekozenNode;
-  gekozenSysteem = systeemNaam;
+      // Definitieve systeemselectie
+      currentSystemNode = gekozenNode;
+      gekozenSysteem = systeemNaam;
 
-  // Forced extras opnieuw tolerant zetten
-  let definitieveForced = [];
+      // Forced extras opnieuw tolerant zetten
+      let definitieveForced = [];
 
-  if (Array.isArray(gekozenNode.forced_extras)) {
-    definitieveForced = gekozenNode.forced_extras;
-  } 
-  else if (typeof gekozenNode.forced_extras === "string") {
-    definitieveForced = [gekozenNode.forced_extras];
+      if (Array.isArray(gekozenNode.forced_extras)) {
+        definitieveForced = gekozenNode.forced_extras;
+      } else if (typeof gekozenNode.forced_extras === "string") {
+        definitieveForced = [gekozenNode.forced_extras];
+      }
+
+      forcedExtras = [...definitieveForced];
+      gekozenExtras = [...definitieveForced];
+
+      // Backend data definitief zetten
+      basisPrijs  = data.basisprijs;
+      prijsPerM2  = data.prijs_per_m2;
+      totaalPrijs = data.totaalprijs;
+      backendExtras = Array.isArray(data.extras) ? data.extras : [];
+
+      currentSystemOmschrijving = Array.isArray(data.omschrijving)
+        ? data.omschrijving
+        : [];
+
+      // ========================
+      // END-AFHANDELING
+      // ========================
+      if (
+        !Array.isArray(gekozenNode.next) ||
+        gekozenNode.next.length === 0 ||
+        gekozenNode.next[0] === "END"
+      ) {
+        console.log("🏁 Afweging → systeem → END → meerwerk starten");
+        toonMeerwerkPagina();
+        return;
+      }
+
+      // ========================
+      // NORMAAL VERVOLG
+      // ========================
+      const resNext = await fetch(`${API_BASE}/api/next`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          node_id: gekozenNode.id,
+          choice: 0
+        })
+      });
+
+      const nextNode = await resNext.json();
+
+      if (!nextNode || nextNode.error) {
+        console.error("❌ Fout bij automatisch vervolg:", nextNode);
+        return;
+      }
+
+      renderNode(nextNode);
+    });
+
+    groep.appendChild(btn);
   }
 
-  forcedExtras = [...definitieveForced];
-  gekozenExtras = [...definitieveForced];
-
-  // 🔑 BACKEND DATA DEFINITIEF ZETTEN
-  basisPrijs  = data.basisprijs;
-  prijsPerM2  = data.prijs_per_m2;
-  totaalPrijs = data.totaalprijs;
-  backendExtras = Array.isArray(data.extras) ? data.extras : [];
-
-  // 🔑 HIER TOEVOEGEN (BELANGRIJK)
-  currentSystemOmschrijving = Array.isArray(data.omschrijving)
-    ? data.omschrijving
-    : [];
-
-  // ========================
-  // END-AFHANDELING
-  // ========================
-  if (
-    !Array.isArray(gekozenNode.next) ||
-    gekozenNode.next.length === 0 ||
-    gekozenNode.next[0] === "END"
-  ) {
-    console.log("🏁 Afweging → systeem → END → meerwerk starten");
-    toonMeerwerkPagina();
-    return;
-  }
-
-  // ========================
-  // NORMAAL VERVOLG
-  // ========================
-  const resNext = await fetch(`${API_BASE}/api/next`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({
-      node_id: gekozenNode.id,
-      choice: 0
-    })
-  });
-
-  const nextNode = await resNext.json();
-
-  if (!nextNode || nextNode.error) {
-    console.error("❌ Fout bij automatisch vervolg:", nextNode);
-    return;
-  }
-
-  renderNode(nextNode);
-});
-
+  optionsEl.appendChild(groep);
+}
 
 
 
