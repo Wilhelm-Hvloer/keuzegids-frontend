@@ -65,7 +65,7 @@ let gekozenRuimtes = null;
 let inOptieFase = false;
 let actieveFlow = null;
 let systeemKeuzeIndex = null;
-
+let currentSystemOmschrijving = [];
 
 
 
@@ -209,10 +209,8 @@ function toonPrijslijstSysteemSelectie() {
     "Rolcoating Premium",
     "Gietcoating Basic",
     "Gietcoating Premium",
-    "Gietcoating Optimum",
-    "Gietcoating Optimum met schraplaag",
-    "Gietcoating Extreme",
-    "Gietcoating Extreme met schraplaag",
+    "Rolcoating Optimum",
+    "Rolcoating Extreme",
     "Flakecoating",
     "Mortelcoating",
     "DOS-coating Basic",
@@ -1049,84 +1047,83 @@ async function toonAfwegingMetPrijzen() {
     btn.classList.add("systeem-knop");
     btn.innerHTML = html;
 
-    // ========================
-    // KLIK → DEFINITIEVE KEUZE
-    // ========================
-    btn.addEventListener("click", async () => {
+// ========================
+// KLIK → DEFINITIEVE KEUZE
+// ========================
+btn.addEventListener("click", async () => {
 
-      const gekozenNode = potentieleSystemen.find(
-        n => n.id === systeemNode.id
-      );
+  const gekozenNode = potentieleSystemen.find(
+    n => n.id === systeemNode.id
+  );
 
-      if (!gekozenNode) return;
+  if (!gekozenNode) return;
 
-      // Afweging afsluiten
-      afwegingNode = null;
-      potentieleSystemen = [];
+  // Afweging afsluiten
+  afwegingNode = null;
+  potentieleSystemen = [];
 
-      // Definitieve systeemselectie
-      currentSystemNode = gekozenNode;
-      gekozenSysteem = systeemNaam;
+  // Definitieve systeemselectie
+  currentSystemNode = gekozenNode;
+  gekozenSysteem = systeemNaam;
 
-      // Forced extras opnieuw tolerant zetten
-      let definitieveForced = [];
+  // Forced extras opnieuw tolerant zetten
+  let definitieveForced = [];
 
-      if (Array.isArray(gekozenNode.forced_extras)) {
-        definitieveForced = gekozenNode.forced_extras;
-      } 
-      else if (typeof gekozenNode.forced_extras === "string") {
-        definitieveForced = [gekozenNode.forced_extras];
-      }
-
-      forcedExtras = [...definitieveForced];
-      gekozenExtras = [...definitieveForced];
-
-      basisPrijs  = data.basisprijs;
-      prijsPerM2  = data.prijs_per_m2;
-      totaalPrijs = data.totaalprijs;
-      backendExtras = data.extras || [];
-
-      // ========================
-      // END-AFHANDELING
-      // ========================
-      if (
-        !Array.isArray(gekozenNode.next) ||
-        gekozenNode.next.length === 0 ||
-        gekozenNode.next[0] === "END"
-      ) {
-        console.log("🏁 Afweging → systeem → END → meerwerk starten");
-        toonMeerwerkPagina();
-        return;
-      }
-
-      // ========================
-      // NORMAAL VERVOLG
-      // ========================
-      const resNext = await fetch(`${API_BASE}/api/next`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          node_id: gekozenNode.id,
-          choice: 0
-        })
-      });
-
-      const nextNode = await resNext.json();
-
-      if (!nextNode || nextNode.error) {
-        console.error("❌ Fout bij automatisch vervolg:", nextNode);
-        return;
-      }
-
-      renderNode(nextNode);
-    });
-
-    groep.appendChild(btn);
+  if (Array.isArray(gekozenNode.forced_extras)) {
+    definitieveForced = gekozenNode.forced_extras;
+  } 
+  else if (typeof gekozenNode.forced_extras === "string") {
+    definitieveForced = [gekozenNode.forced_extras];
   }
 
-  optionsEl.appendChild(groep);
-}
+  forcedExtras = [...definitieveForced];
+  gekozenExtras = [...definitieveForced];
 
+  // 🔑 BACKEND DATA DEFINITIEF ZETTEN
+  basisPrijs  = data.basisprijs;
+  prijsPerM2  = data.prijs_per_m2;
+  totaalPrijs = data.totaalprijs;
+  backendExtras = Array.isArray(data.extras) ? data.extras : [];
+
+  // 🔑 HIER TOEVOEGEN (BELANGRIJK)
+  currentSystemOmschrijving = Array.isArray(data.omschrijving)
+    ? data.omschrijving
+    : [];
+
+  // ========================
+  // END-AFHANDELING
+  // ========================
+  if (
+    !Array.isArray(gekozenNode.next) ||
+    gekozenNode.next.length === 0 ||
+    gekozenNode.next[0] === "END"
+  ) {
+    console.log("🏁 Afweging → systeem → END → meerwerk starten");
+    toonMeerwerkPagina();
+    return;
+  }
+
+  // ========================
+  // NORMAAL VERVOLG
+  // ========================
+  const resNext = await fetch(`${API_BASE}/api/next`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      node_id: gekozenNode.id,
+      choice: 0
+    })
+  });
+
+  const nextNode = await resNext.json();
+
+  if (!nextNode || nextNode.error) {
+    console.error("❌ Fout bij automatisch vervolg:", nextNode);
+    return;
+  }
+
+  renderNode(nextNode);
+});
 
 
 
@@ -1864,16 +1861,15 @@ async function herberekenPrijs() {
   console.log("forcedExtras:", forcedExtras);
 
   // ========================
-  // EXTRAS NAAR BACKEND (STRING + VARIABLE_SURFACE OBJECTEN)
+  // EXTRAS NAAR BACKEND
   // ========================
   const extrasPayload = Array.isArray(gekozenExtras)
-    ? [...gekozenExtras]   // alles meesturen: strings + objecten
+    ? [...gekozenExtras]
     : [];
 
   const forcedPayload = Array.isArray(forcedExtras)
     ? [...forcedExtras]
     : [];
-
 
   console.log("📤 Naar backend → extras:", extrasPayload);
   console.log("📤 Naar backend → forced:", forcedPayload);
@@ -1918,9 +1914,15 @@ async function herberekenPrijs() {
     backendExtras = Array.isArray(data.extras) ? data.extras : [];
     totaalPrijs   = data.totaalprijs;
 
+    // 🔑 SYSTEEM OMSCHRIJVING VOOR INFO-POPUP
+    currentSystemOmschrijving = Array.isArray(data.omschrijving)
+      ? data.omschrijving
+      : [];
+
     console.log("💰 Basisprijs:", basisPrijs);
     console.log("💰 Prijs per m²:", prijsPerM2);
     console.log("💰 Totaalprijs backend:", totaalPrijs);
+    console.log("📘 Omschrijving:", currentSystemOmschrijving);
 
     console.log("=== herberekenPrijs EINDE ===");
 
@@ -1928,7 +1930,6 @@ async function herberekenPrijs() {
     console.error("❌ herberekenPrijs crash:", err);
   }
 }
-
 
 
 
@@ -1981,9 +1982,6 @@ function toonSamenvatting() {
 
   let html = "";
 
-  // ========================
-  // VEILIGE INDEX BEPALEN
-  // ========================
   const veiligeIndex =
     typeof systeemKeuzeIndex === "number"
       ? systeemKeuzeIndex
@@ -2014,17 +2012,24 @@ function toonSamenvatting() {
   `;
 
   // ========================
-  // 3️⃣ GEKOZEN SYSTEEM
+  // 3️⃣ GEKOZEN SYSTEEM + INFO-ICOON
   // ========================
   html += `
     <hr>
-    <div class="gekozen-systeem">${gekozenSysteem}</div>
+    <div class="gekozen-systeem">
+      ${gekozenSysteem}
+      ${
+        currentSystemOmschrijving && currentSystemOmschrijving.length
+          ? `<span class="info-icon" onclick="openInfoModal()">ⓘ</span>`
+          : ""
+      }
+    </div>
     <div>Prijs per m²: <strong>€ ${prijsPerM2},-</strong></div>
     <div>Basisprijs: <strong>€ ${basisPrijs},-</strong></div>
   `;
 
   // ========================
-  // 4️⃣ OPTIEVRAGEN (NA SYSTEEM)
+  // 4️⃣ OPTIEVRAGEN
   // ========================
   if (optieVragen.length > 0) {
     html += "<hr>";
@@ -2072,6 +2077,53 @@ function toonSamenvatting() {
   resultEl.innerHTML = html;
 }
 
+
+
+// ========================
+// SYSTEEMOPBOUW POP-UP (PRO VERSIE)
+// ========================
+function openInfoModal() {
+  if (!currentSystemOmschrijving || !currentSystemOmschrijving.length) return;
+
+  const modal = document.getElementById("infoModal");
+  const content = document.getElementById("infoContent");
+
+  if (!modal || !content) return;
+
+  content.innerHTML = "";
+
+  currentSystemOmschrijving.forEach(regel => {
+    const p = document.createElement("p");
+    p.textContent = regel;
+    content.appendChild(p);
+  });
+
+  modal.classList.add("show");
+  modal.setAttribute("aria-hidden", "false");
+
+  // 🔒 Scroll lock
+  document.body.style.overflow = "hidden";
+}
+
+function closeInfoModal() {
+  const modal = document.getElementById("infoModal");
+  if (!modal) return;
+
+  modal.classList.remove("show");
+  modal.setAttribute("aria-hidden", "true");
+
+  // 🔓 Scroll unlock
+  document.body.style.overflow = "";
+}
+
+// ========================
+// ESCAPE KEY SLUIT MODAL
+// ========================
+document.addEventListener("keydown", function (e) {
+  if (e.key === "Escape") {
+    closeInfoModal();
+  }
+});
 
 
 
@@ -2131,6 +2183,9 @@ function gaNaarHome() {
   gekozenExtras = [];
   forcedExtras = [];
   backendExtras = [];
+
+  // 🔑 BELANGRIJK: info-popup data resetten
+  currentSystemOmschrijving = [];
 
   basisPrijs = null;
   totaalPrijs = null;

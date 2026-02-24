@@ -321,3 +321,101 @@ hr {
   flex-direction: column;
   gap: 14px;
 }
+
+/* subtitel die meeloopt in gap-structuur */
+.subtitel {
+  font-weight: 700;
+  margin: 0;
+}
+
+
+
+
+/* =========================
+   INFO-ICOON
+   ========================= */
+
+.info-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  margin-left: 8px;
+  width: 18px;
+  height: 18px;
+  font-size: 12px;
+  font-weight: 700;
+  border-radius: 50%;
+  border: 1px solid var(--accent);
+  color: var(--accent);
+  cursor: pointer;
+  transition: background 0.2s ease, color 0.2s ease;
+}
+
+.info-icon:hover {
+  background: var(--accent);
+  color: #fff;
+}
+
+/* =========================
+   MODAL OVERLAY
+   ========================= */
+
+.modal {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.7);
+  display: none;
+  align-items: center;
+  justify-content: center;
+  z-index: 9999;
+}
+
+.modal.show {
+  display: flex;
+}
+
+/* =========================
+   MODAL BOX
+   ========================= */
+
+.modal-box {
+  background: #2b2b2b;
+  padding: 28px;
+  border-radius: 14px;
+  width: 420px;
+  max-width: 92%;
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.5);
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+/* titel */
+.modal-box h3 {
+  margin: 0 0 10px 0;
+  font-size: 18px;
+  color: var(--accent);
+}
+
+/* tekstregels */
+#infoContent p {
+  margin: 0;
+  line-height: 1.5;
+  color: var(--text-main);
+}
+
+/* sluitknop */
+.close-btn {
+  align-self: flex-end;
+  font-size: 22px;
+  cursor: pointer;
+  opacity: 0.7;
+  transition: opacity 0.2s ease;
+}
+
+.close-btn:hover {
+  opacity: 1;
+}
+
+
+
