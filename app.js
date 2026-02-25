@@ -1039,7 +1039,7 @@ async function toonAfwegingMetPrijzen() {
 
     // Titelregel
     const titel = document.createElement("div");
-    titel.innerHTML = `<strong>${systeemNaam}</strong>`;
+    titel.innerHTML = `<strong class="systeem-titel">${systeemNaam}</strong>`;
 
     // Info-icoon (veilig)
     if (Array.isArray(data.omschrijving) && data.omschrijving.length) {
@@ -1316,6 +1316,7 @@ function toonSysteemPrijsResultaat() {
   // ========================
   const titelHtml = `
     <strong>
+      <strong class="systeem-titel">
       ${gekozenSysteem}
       ${
         currentSystemOmschrijving && currentSystemOmschrijving.length

@@ -224,6 +224,12 @@ hr {
   color: var(--accent);
 }
 
+/* systeemtitel in kaarten (prijslijst / vergelijking) */
+.systeem-titel {
+  color: var(--accent);
+  font-weight: 700;
+}
+
 /* totaalprijs */
 #result-box .totaalprijs {
   font-size: 26px;
