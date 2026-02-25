@@ -216,7 +216,7 @@ function toonPrijslijstSysteemSelectie() {
   btnBereken.type = "button";
   btnBereken.id = "btn-geef-prijs";
   btnBereken.classList.add("actie-knop", "disabled-knop");
-  btnBereken.textContent = "Bereken prijs";
+  btnBereken.textContent = "Bereken prijs (1 systeem)";
   btnBereken.disabled = true;
 
   btnBereken.onclick = () => {
