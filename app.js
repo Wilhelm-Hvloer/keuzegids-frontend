@@ -1295,6 +1295,7 @@ function toonPrijsInvoer() {
 
   hoofdGroep.appendChild(ruimteTitel);
 
+
   // ========================
   // RUIMTE KNOPPEN
   // ========================
@@ -1327,17 +1328,17 @@ function toonPrijsInvoer() {
         return;
       }
 
-      // herbereken prijs (backend validatie)
-      await herberekenPrijs();
-
-      // als backend prijs heeft gezet → doorgaan
-      if (basisPrijs === null) return;
-
+      // 🔥 VERGELIJKING → GEEN herberekenPrijs
       if (afwegingNode) {
         toonAfwegingMetPrijzen();
-      } else {
-        toonSysteemPrijsResultaat();
+        return;
       }
+
+      // 🔵 ENKEL SYSTEEM
+      const prijsOk = await herberekenPrijs();
+      if (!prijsOk) return;
+
+      toonSysteemPrijsResultaat();
     });
 
     ruimteGroep.appendChild(btn);
@@ -1346,8 +1347,6 @@ function toonPrijsInvoer() {
   hoofdGroep.appendChild(ruimteGroep);
   optionsEl.appendChild(hoofdGroep);
 }
-
-
 
 
 
@@ -1874,18 +1873,31 @@ async function herberekenPrijs() {
     // ========================
     if (data.error === "m2_te_klein") {
 
+      let errorEl = document.getElementById("m2-error");
+
+      // Als errorDiv niet bestaat → onder input aanmaken
+      if (!errorEl) {
+        const input = document.getElementById("input-m2");
+
+        if (input && input.parentNode) {
+          errorEl = document.createElement("div");
+          errorEl.id = "m2-error";
+          errorEl.className = "m2-error";
+          input.parentNode.insertBefore(errorEl, input.nextSibling);
+        }
+      }
+
       if (errorEl) {
         errorEl.innerHTML =
           data.message || "Minimale oppervlakte is 30 m²";
       }
 
-      basisPrijs = null;
-      prijsPerM2 = null;
+      basisPrijs  = null;
+      prijsPerM2  = null;
       totaalPrijs = null;
 
       return false;   // ⛔ FLOW STOPPEN
     }
-
     // ========================
     // STAFFEL OUT-OF-RANGE
     // ========================
