@@ -297,34 +297,55 @@ function toonPrijslijstSysteemSelectie() {
 // PRIJSLIJST – GEEF PRIJS KNOP (DEFINITIEF)
 // ========================
 function toonGeefPrijsKnop() {
+
   const optionsEl = document.getElementById("options-box");
 
-  // voorkom dubbele knop
-  if (document.getElementById("btn-geef-prijs")) return;
+  let btn = document.getElementById("btn-geef-prijs");
 
-  // 🔑 vaste container voor knoppen
-  const groep = document.createElement("div");
-  groep.className = "antwoord-groep";
+  // bestaat nog niet → aanmaken
+  if (!btn) {
+    btn = document.createElement("button");
+    btn.type = "button";
+    btn.id = "btn-geef-prijs";
+    btn.textContent = "Bereken prijs (1 systeem)";
+    btn.classList.add("disabled-knop");
+    btn.disabled = true;
 
-  const btn = document.createElement("button");
-  btn.type = "button";
-  btn.id = "btn-geef-prijs";
-  btn.classList.add("actie-knop");
-  btn.textContent = "Bereken prijs";
+    // 🔑 altijd BOVEN de systeemknoppen plaatsen
+    optionsEl.prepend(btn);
 
-  btn.addEventListener("click", () => {
-    gekozenSysteem = geselecteerdePrijslijstSystemen[0];
-    toonPrijsInvoer();
-  });
+    btn.addEventListener("click", () => {
+      if (btn.disabled) return;
 
-  groep.appendChild(btn);
-  optionsEl.appendChild(groep);
+      gekozenSysteem = geselecteerdePrijslijstSystemen[0];
+      toonPrijsInvoer();
+    });
+  }
+
+  // ========================
+  // STATE BEPALEN
+  // ========================
+
+  if (geselecteerdePrijslijstSystemen.length === 1) {
+    btn.disabled = false;
+    btn.classList.remove("disabled-knop");
+    btn.classList.add("actie-knop");
+  } else {
+    btn.disabled = true;
+    btn.classList.add("disabled-knop");
+    btn.classList.remove("actie-knop");
+  }
 }
 
 function verwijderGeefPrijsKnop() {
-  document.getElementById("btn-geef-prijs")?.closest(".antwoord-groep")?.remove();
-}
+  // niet meer verwijderen — alleen resetten
+  const btn = document.getElementById("btn-geef-prijs");
+  if (!btn) return;
 
+  btn.disabled = true;
+  btn.classList.add("disabled-knop");
+  btn.classList.remove("actie-knop");
+}
 
 // ========================
 // PRIJSLIJST – VERGELIJKING START (CORRECT & STATE-VEILIG)
