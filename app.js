@@ -1028,6 +1028,18 @@ async function toonAfwegingMetPrijzen() {
 
   questionEl.innerHTML = `<strong>${stripPrefix(afwegingNode.text)}</strong>`;
 
+  // ========================
+  // FOUTMELDING CONTAINER (VOOR m2 VALIDATIE)
+  // ========================
+  let errorEl = document.getElementById("m2-error");
+
+  if (!errorEl) {
+    errorEl = document.createElement("div");
+    errorEl.id = "m2-error";
+    errorEl.className = "m2-error";
+    optionsEl.appendChild(errorEl);
+  }
+
   const groep = document.createElement("div");
   groep.className = "antwoord-groep";
 
@@ -1288,6 +1300,7 @@ function toonPrijsInvoer() {
   const errorDiv = document.createElement("div");
   errorDiv.id = "m2-error";
   errorDiv.className = "m2-error";
+  errorDiv.innerHTML = "";
   hoofdGroep.appendChild(errorDiv);
 
   // ========================
@@ -2161,6 +2174,9 @@ function gaNaarHome() {
 
   resultEl.innerHTML = "";
   resultEl.style.display = "none";
+
+  const errorEl = document.getElementById("m2-error");
+  if (errorEl) errorEl.innerHTML = "";
 
   document.getElementById("question-text").innerHTML = "";
 

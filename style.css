@@ -458,11 +458,11 @@ hr {
    ========================= */
 
 .m2-error {
-  margin-top: 6px;
+  margin-top: 8px;
   font-size: 14px;
   color: var(--accent);
   font-weight: 600;
+  padding: 6px 0;
 }
-
 
 
