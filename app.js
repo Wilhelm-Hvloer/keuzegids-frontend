@@ -1284,6 +1284,12 @@ function toonPrijsInvoer() {
 
   hoofdGroep.appendChild(m2Input);
 
+  // 👇 HIER TOEVOEGEN
+  const errorDiv = document.createElement("div");
+  errorDiv.id = "m2-error";
+  errorDiv.className = "m2-error";
+  hoofdGroep.appendChild(errorDiv);
+
   // ========================
   // AANTAL RUIMTES – TITEL
   // ========================
@@ -1320,7 +1326,8 @@ function toonPrijsInvoer() {
         return;
       }
 
-      await herberekenPrijs();
+      const prijsOk = await herberekenPrijs();
+      if (!prijsOk) return;
 
       // 🔑 CRUCIALE SPLITSING
       if (afwegingNode) {
@@ -1599,7 +1606,8 @@ async function registreerVariableSurfaceExtra(extraKey, m2) {
   // ========================
   // PRIJS HERBEREKENEN (BACKEND DOET ALLES)
   // ========================
-  await herberekenPrijs();
+  const prijsOk = await herberekenPrijs();
+    if (!prijsOk) return;
 
   // ========================
   // FLOW HERVATTEN
@@ -1815,13 +1823,16 @@ async function herberekenPrijs() {
   console.log("=== herberekenPrijs START ===");
 
   const resultEl = document.getElementById("result-box");
+  const errorEl  = document.getElementById("m2-error");
+
+  if (errorEl) errorEl.innerHTML = "";
 
   // ========================
   // BASISCONTROLE
   // ========================
   if (!gekozenSysteem || !gekozenOppervlakte || !gekozenRuimtes) {
     console.warn("⛔ herberekenPrijs gestopt: ontbrekende basisdata");
-    return;
+    return false;
   }
 
   // ========================
@@ -1858,34 +1869,41 @@ async function herberekenPrijs() {
     console.log("📥 Backend data ontvangen:", data);
 
     // ========================
-    // STAFFEL OUT-OF-RANGE AFVANGEN
+    // 🔴 M2 TE KLEIN
     // ========================
-    if (data.error === "m2_out_of_range") {
+    if (data.error === "m2_te_klein") {
 
-      resultEl.style.display = "block";
-      resultEl.innerHTML = `
-        <div style="color: var(--accent); font-weight: 600;">
-          Ongeldige oppervlakte.
-        </div>
-        <div style="margin-top:8px;">
-          Dit systeem is beschikbaar van 
-          <strong>${data.min_m2} m²</strong> 
-          tot 
-          <strong>${data.max_m2} m²</strong>.
-        </div>
-      `;
+      if (errorEl) {
+        errorEl.innerHTML =
+          data.message || "Minimale oppervlakte is 30 m²";
+      }
 
-      // prijs resetten zodat geen oude waarden blijven staan
       basisPrijs = null;
       prijsPerM2 = null;
       totaalPrijs = null;
 
-      return;
+      return false;   // ⛔ FLOW STOPPEN
+    }
+
+    // ========================
+    // STAFFEL OUT-OF-RANGE
+    // ========================
+    if (data.error === "m2_out_of_range") {
+
+      if (errorEl) {
+        errorEl.innerHTML = "Ongeldige oppervlakte voor dit systeem.";
+      }
+
+      basisPrijs = null;
+      prijsPerM2 = null;
+      totaalPrijs = null;
+
+      return false;
     }
 
     if (data.error) {
       console.error("❌ prijsfout backend:", data.error);
-      return;
+      return false;
     }
 
     // ========================
@@ -1902,8 +1920,11 @@ async function herberekenPrijs() {
 
     console.log("=== herberekenPrijs EINDE ===");
 
+    return true;   // ✅ alles ok
+
   } catch (err) {
     console.error("❌ herberekenPrijs crash:", err);
+    return false;
   }
 }
 
