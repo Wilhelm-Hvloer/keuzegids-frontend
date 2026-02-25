@@ -1101,9 +1101,7 @@ async function toonAfwegingMetPrijzen() {
     strong.className = "systeem-titel";
     strong.textContent = systeemNaam;
 
-    titel.appendChild(strong);
-
-    // Info-icoon
+    // Info-icoon binnen strong plaatsen
     if (Array.isArray(data.omschrijving) && data.omschrijving.length) {
       const info = document.createElement("span");
       info.className = "info-icon";
@@ -1115,9 +1113,10 @@ async function toonAfwegingMetPrijzen() {
         openInfoModal();
       };
 
-      titel.appendChild(info);
+      strong.appendChild(info);
     }
 
+    titel.appendChild(strong);
     btn.appendChild(titel);
 
     // ========================
