@@ -363,29 +363,38 @@ hr {
 
 
 /* =========================
-   INFO-ICOON
+   INFO-ICOON (UNIFORM WIT)
    ========================= */
 
 .info-icon {
   display: inline-flex;
   align-items: center;
   justify-content: center;
+
   margin-left: 8px;
+
   width: 18px;
   height: 18px;
+
   font-size: 12px;
   font-weight: 700;
+
   border-radius: 50%;
-  border: 1px solid var(--accent);
-  color: var(--accent);
+  background: #ffffff;        /* witte cirkel */
+  color: var(--accent);       /* oranje i */
+
+  border: none;               /* geen rand */
   cursor: pointer;
-  transition: background 0.2s ease, color 0.2s ease;
+
+  line-height: 1;
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
 }
 
 .info-icon:hover {
-  background: var(--accent);
-  color: #fff;
+  transform: scale(1.08);
+  box-shadow: 0 0 0 2px rgba(188, 76, 31, 0.3);
 }
+
 
 /* =========================
    MODAL OVERLAY
