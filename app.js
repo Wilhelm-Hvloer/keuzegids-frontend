@@ -1076,6 +1076,21 @@ async function toonAfwegingMetPrijzen() {
     const data = await res.json();
 
     if (data.error) {
+
+      if (data.error === "m2_te_klein") {
+
+        const resultEl = document.getElementById("result-box");
+
+        resultEl.style.display = "block";
+        resultEl.innerHTML = `
+          <div style="color: var(--accent); font-weight: 600;">
+            ${data.message || "Minimale oppervlakte is 30 m²"}
+          </div>
+        `;
+
+        continue;
+      }
+
       console.error("❌ prijsfout:", data.error);
       continue;
     }
