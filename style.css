@@ -299,6 +299,27 @@ hr {
   margin-top: 16px;
 }
 
+
+/* =========================
+   DISABLED PRIJSKNOP
+   ========================= */
+
+.disabled-knop {
+  background: #3a3a3a;
+  color: #aaa;
+  cursor: not-allowed;
+  opacity: 0.6;
+}
+
+/* =========================
+   GESELECTEERDE SYSTEEMKNOP
+   ========================= */
+
+.antwoord-groep button.actief {
+  border: 2px solid var(--accent);
+}
+
+
 /* =========================
    MOBIEL
    ========================= */

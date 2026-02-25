@@ -185,12 +185,13 @@ function startPrijslijst() {
 
 
 // ========================
-// PRIJSLIJST – SYSTEEMSELECTIE (DEFINITIEF & CONSISTENT)
+// PRIJSLIJST – SYSTEEMSELECTIE (NIEUWE UX)
 // ========================
 function toonPrijslijstSysteemSelectie() {
+
   const questionEl = document.getElementById("question-text");
-  const optionsEl = document.getElementById("options-box");
-  const resultEl = document.getElementById("result-box");
+  const optionsEl  = document.getElementById("options-box");
+  const resultEl   = document.getElementById("result-box");
 
   resetUI();
   optionsEl.style.display = "block";
@@ -198,14 +199,38 @@ function toonPrijslijstSysteemSelectie() {
   resultEl.style.display = "none";
   resultEl.innerHTML = "";
 
-  // state reset
   geselecteerdePrijslijstSystemen = [];
   actieveFlow = "prijslijst";
 
   questionEl.innerHTML = `
-    <strong>Kies één of twee coatingsystemen</strong><br>
+    <strong>Kies één of twee coatingsystemen</strong>
   `;
 
+  // ========================
+  // 🔼 BEREKEN PRIJS KNOP (ALTIJD BOVEN)
+  // ========================
+  const actieGroep = document.createElement("div");
+  actieGroep.className = "antwoord-groep";
+
+  const btnBereken = document.createElement("button");
+  btnBereken.type = "button";
+  btnBereken.id = "btn-geef-prijs";
+  btnBereken.classList.add("actie-knop", "disabled-knop");
+  btnBereken.textContent = "Bereken prijs";
+  btnBereken.disabled = true;
+
+  btnBereken.onclick = () => {
+    if (geselecteerdePrijslijstSystemen.length !== 1) return;
+    gekozenSysteem = geselecteerdePrijslijstSystemen[0];
+    toonPrijsInvoer();
+  };
+
+  actieGroep.appendChild(btnBereken);
+  optionsEl.appendChild(actieGroep);
+
+  // ========================
+  // SYSTEEMKNOPPEN
+  // ========================
   const systemen = [
     "Rolcoating Basic",
     "Rolcoating Premium",
@@ -220,33 +245,42 @@ function toonPrijslijstSysteemSelectie() {
     "Boeren coating"
   ];
 
-  // 🔑 ALLE SYSTEEMKNOPPEN IN ÉÉN ANTWOORD-GROEP
   const groep = document.createElement("div");
   groep.className = "antwoord-groep";
 
   systemen.forEach(systeem => {
+
     const btn = document.createElement("button");
     btn.type = "button";
     btn.textContent = systeem;
 
     btn.onclick = () => {
+
       if (geselecteerdePrijslijstSystemen.includes(systeem)) {
+
         geselecteerdePrijslijstSystemen =
           geselecteerdePrijslijstSystemen.filter(s => s !== systeem);
+
         btn.classList.remove("actief");
+
       } else {
+
         if (geselecteerdePrijslijstSystemen.length >= 2) return;
+
         geselecteerdePrijslijstSystemen.push(systeem);
         btn.classList.add("actief");
       }
 
-      // acties bepalen
+      // 🔥 Knopstatus bepalen
       if (geselecteerdePrijslijstSystemen.length === 1) {
-        toonGeefPrijsKnop();
+        btnBereken.disabled = false;
+        btnBereken.classList.remove("disabled-knop");
       } else {
-        verwijderGeefPrijsKnop();
+        btnBereken.disabled = true;
+        btnBereken.classList.add("disabled-knop");
       }
 
+      // 🔀 Bij 2 systemen → vergelijking
       if (geselecteerdePrijslijstSystemen.length === 2) {
         startVergelijking();
       }
@@ -257,7 +291,6 @@ function toonPrijslijstSysteemSelectie() {
 
   optionsEl.appendChild(groep);
 }
-
 
 
 // ========================
@@ -980,8 +1013,8 @@ async function toonAfwegingMetPrijzen() {
   for (const systeemNode of potentieleSystemen) {
 
     const systeemNaam =
-      systeemNode.system ||
-      stripPrefix(systeemNode.text);
+      (systeemNode.system || stripPrefix(systeemNode.text))
+        .replace(/^Sys:\s*/, "");
 
     if (!systeemNaam) {
       console.error("❌ Geen systeemnaam uit node", systeemNode);
@@ -1037,18 +1070,26 @@ async function toonAfwegingMetPrijzen() {
     btn.type = "button";
     btn.classList.add("systeem-knop");
 
-    // Titelregel
+    // Titelregel (flex zodat icoon naast titel blijft)
     const titel = document.createElement("div");
-    titel.innerHTML = `<strong class="systeem-titel">${systeemNaam}</strong>`;
+    titel.style.display = "flex";
+    titel.style.alignItems = "center";
+    titel.style.gap = "8px";
 
-    // Info-icoon (veilig)
+    const strong = document.createElement("strong");
+    strong.className = "systeem-titel";
+    strong.textContent = systeemNaam;
+
+    titel.appendChild(strong);
+
+    // Info-icoon
     if (Array.isArray(data.omschrijving) && data.omschrijving.length) {
       const info = document.createElement("span");
       info.className = "info-icon";
       info.textContent = "ⓘ";
 
       info.onclick = (e) => {
-        e.stopPropagation(); // voorkomt systeemselectie
+        e.stopPropagation();
         currentSystemOmschrijving = data.omschrijving;
         openInfoModal();
       };
@@ -1058,7 +1099,9 @@ async function toonAfwegingMetPrijzen() {
 
     btn.appendChild(titel);
 
-    // Prijsregels
+    // ========================
+    // PRIJSREGELS
+    // ========================
     const prijsBlok = document.createElement("div");
     prijsBlok.innerHTML = `
       <span style="font-size:14px;">€ ${data.prijs_per_m2} / m²</span><br>
@@ -1076,7 +1119,13 @@ async function toonAfwegingMetPrijzen() {
     }
 
     const totaalBlok = document.createElement("div");
-    totaalBlok.innerHTML = `<br><strong>Totaalprijs: € ${data.totaalprijs},-</strong>`;
+    totaalBlok.innerHTML = `
+      <br>
+      <strong>Totaalprijs: € ${data.totaalprijs},-</strong>
+      <div style="margin-top:10px; font-size:13px; opacity:0.7;">
+        Klik om verder te gaan
+      </div>
+    `;
     btn.appendChild(totaalBlok);
 
     // ========================
@@ -1151,44 +1200,6 @@ async function toonAfwegingMetPrijzen() {
 }
 
 
-
-
-// ========================
-// PRIJS CONTEXT (GEDEACTIVEERD – LEGACY)
-// ========================
-// ⚠️ Deze functie wordt niet meer gebruikt in de huidige flow.
-// ⚠️ Prijsweergave loopt nu via:
-//    - toonSysteemPrijsResultaat()
-//    - toonSamenvatting()
-// ⚠️ Deze code is bewust uitgeschakeld om dubbele of verwarrende UI te voorkomen.
-
-/*
-function toonPrijsContext() {
-  return ""; // bewust leeg – functie gedeactiveerd
-
-  // --- oude implementatie (bewust uitgeschakeld) ---
-  if (!basisPrijs) return "";
-
-  const prijsM2Tekst =
-    prijsPerM2 !== null && prijsPerM2 !== undefined
-      ? `€ ${prijsPerM2},-`
-      : "—";
-
-  let html = `
-    <div style="margin-bottom:10px;">
-      <strong>${gekozenSysteem}</strong><br>
-      Prijs per m²: ${prijsM2Tekst}<br>
-      Basisprijs: € ${basisPrijs},-<br>
-  `;
-
-  backendExtras.forEach(extra => {
-    html += `${extra.naam}: € ${extra.totaal},-<br>`;
-  });
-
-  html += `<strong>Totaalprijs: € ${totaalPrijs},-</strong><hr></div>`;
-  return html;
-}
-*/
 
 
 
@@ -1392,122 +1403,6 @@ function toonSysteemPrijsResultaat() {
   resultEl.appendChild(card);
 }
 
-
-
-
-// ========================
-// ⚠️ LEGACY – NIET MEER GEBRUIKEN
-// Oude prijsflow. Vervangen door:
-// toonPrijsInvoer → herberekenPrijs → toonSysteemPrijsResultaat
-// ========================
-
-/*
-async function berekenPrijs(ruimtes) {
-  const m2Input = document.getElementById("input-m2");
-  const resultEl = document.getElementById("result-box");
-
-  gekozenOppervlakte = parseFloat(m2Input.value);
-  gekozenRuimtes = ruimtes;
-
-  if (!gekozenOppervlakte || gekozenOppervlakte <= 0) {
-    resultEl.style.display = "block";
-    resultEl.innerHTML = "Vul een geldige oppervlakte in.";
-    return;
-  }
-
-  await herberekenPrijs();
-
-  resultEl.style.display = "block";
-  resultEl.innerHTML = `
-    <div class="card">
-      <strong>${gekozenSysteem}</strong><br>
-      Prijs per m²: € ${prijsPerM2 ?? "—"},-<br>
-      Basisprijs: € ${basisPrijs},-<br>
-      <strong>Totaalprijs: € ${totaalPrijs},-</strong>
-    </div>
-  `;
-
-  const bevestigBtn = document.createElement("button");
-  bevestigBtn.textContent = "Kies dit systeem en ga verder";
-
-  bevestigBtn.onclick = async () => {
-    resultEl.innerHTML = "";
-    resultEl.style.display = "none";
-    await chooseOption(0);
-  };
-
-  resultEl.appendChild(bevestigBtn);
-}
-*/
-
-
-
-
-// ========================
-// ⚠️ LEGACY – AFWEGING RESULTATEN (NIET MEER GEBRUIKEN)
-// Vervangen door: toonAfwegingMetPrijzen()
-// ========================
-
-/*
-function toonAfwegingResultaten() {
-  const resultEl = document.getElementById("afweging-resultaat");
-  if (!resultEl) return;
-
-  let html = "<strong>Kies een systeem:</strong><br>";
-
-  afwegingResultaten.forEach((res, index) => {
-    html += `
-      <div style="margin-top:12px;">
-        <button onclick="kiesAfgewogenSysteem(${index})">
-          <strong>${res.systeem}</strong><br>
-          <span style="font-size:14px;">
-            € ${res.prijsPerM2} / m²
-          </span><br>
-          <strong>€ ${res.prijs},-</strong>
-        </button>
-      </div>
-    `;
-  });
-
-  resultEl.innerHTML = html;
-}
-*/
-
-
-// ========================
-// ⚠️ LEGACY – AFWEGING KEUZE (NIET MEER GEBRUIKEN)
-// Vervangen door: chooseOption(index) vanuit toonAfwegingMetPrijzen()
-// ========================
-
-/*
-async function kiesAfgewogenSysteem(index) {
-  afwegingAfgerond = true;
-  inAfwegingPrijs = false;
-
-  const gekozen = afwegingResultaten[index];
-  gekozenSysteem = gekozen.systeem;
-  basisPrijs = gekozen.prijs;
-  prijsPerM2 = gekozen.prijsPerM2;
-  totaalPrijs = basisPrijs;
-
-  gekozenExtras = [];
-  backendExtras = [];
-  inOptieFase = true;
-  inAfweging = false;
-
-  const res = await fetch(`${API_BASE}/api/next`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({
-      node_id: afwegingNode.id,
-      choice: index
-    })
-  });
-
-  const node = await res.json();
-  renderNode(node);
-}
-*/
 
 
 
