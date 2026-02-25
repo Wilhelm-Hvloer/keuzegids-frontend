@@ -957,7 +957,7 @@ function handleEindeNode(node) {
 
 
 // ========================
-// AFWEGING MET PRIJSVERGELIJKING (ROBUST + TOLERANT + END-VEILIG)
+// AFWEGING MET PRIJSVERGELIJKING (MET INFO-ICOON)
 // ========================
 async function toonAfwegingMetPrijzen() {
 
@@ -1014,6 +1014,11 @@ async function toonAfwegingMetPrijzen() {
       })
     });
 
+    if (!res.ok) {
+      console.error("❌ Backend response error:", res.status);
+      continue;
+    }
+
     const data = await res.json();
 
     if (data.error) {
@@ -1028,25 +1033,51 @@ async function toonAfwegingMetPrijzen() {
     // ========================
     // KAART OPBOUWEN
     // ========================
-    let html = `
-      <strong>${systeemNaam}</strong><br>
-      <span style="font-size:14px;">€ ${data.prijs_per_m2} / m²</span><br>
-      Basisprijs: € ${data.basisprijs},-<br>
-    `;
-
-    if (backendForcedExtras.length > 0) {
-      html += `<br><strong>Verplichte extra’s:</strong><br>`;
-      backendForcedExtras.forEach(extra => {
-        html += `– ${extra.naam} (+ € ${extra.totaal},-)<br>`;
-      });
-    }
-
-    html += `<br><strong>Totaalprijs: € ${data.totaalprijs},-</strong>`;
-
     const btn = document.createElement("button");
     btn.type = "button";
     btn.classList.add("systeem-knop");
-    btn.innerHTML = html;
+
+    // Titelregel
+    const titel = document.createElement("div");
+    titel.innerHTML = `<strong>${systeemNaam}</strong>`;
+
+    // Info-icoon (veilig)
+    if (Array.isArray(data.omschrijving) && data.omschrijving.length) {
+      const info = document.createElement("span");
+      info.className = "info-icon";
+      info.textContent = "ⓘ";
+
+      info.onclick = (e) => {
+        e.stopPropagation(); // voorkomt systeemselectie
+        currentSystemOmschrijving = data.omschrijving;
+        openInfoModal();
+      };
+
+      titel.appendChild(info);
+    }
+
+    btn.appendChild(titel);
+
+    // Prijsregels
+    const prijsBlok = document.createElement("div");
+    prijsBlok.innerHTML = `
+      <span style="font-size:14px;">€ ${data.prijs_per_m2} / m²</span><br>
+      Basisprijs: € ${data.basisprijs},-<br>
+    `;
+    btn.appendChild(prijsBlok);
+
+    if (backendForcedExtras.length > 0) {
+      const forcedBlok = document.createElement("div");
+      forcedBlok.innerHTML = `<br><strong>Verplichte extra’s:</strong><br>`;
+      backendForcedExtras.forEach(extra => {
+        forcedBlok.innerHTML += `– ${extra.naam} (+ € ${extra.totaal},-)<br>`;
+      });
+      btn.appendChild(forcedBlok);
+    }
+
+    const totaalBlok = document.createElement("div");
+    totaalBlok.innerHTML = `<br><strong>Totaalprijs: € ${data.totaalprijs},-</strong>`;
+    btn.appendChild(totaalBlok);
 
     // ========================
     // KLIK → DEFINITIEVE KEUZE
@@ -1059,15 +1090,12 @@ async function toonAfwegingMetPrijzen() {
 
       if (!gekozenNode) return;
 
-      // Afweging afsluiten
       afwegingNode = null;
       potentieleSystemen = [];
 
-      // Definitieve systeemselectie
       currentSystemNode = gekozenNode;
       gekozenSysteem = systeemNaam;
 
-      // Forced extras opnieuw tolerant zetten
       let definitieveForced = [];
 
       if (Array.isArray(gekozenNode.forced_extras)) {
@@ -1079,7 +1107,6 @@ async function toonAfwegingMetPrijzen() {
       forcedExtras = [...definitieveForced];
       gekozenExtras = [...definitieveForced];
 
-      // Backend data definitief zetten
       basisPrijs  = data.basisprijs;
       prijsPerM2  = data.prijs_per_m2;
       totaalPrijs = data.totaalprijs;
@@ -1089,22 +1116,15 @@ async function toonAfwegingMetPrijzen() {
         ? data.omschrijving
         : [];
 
-      // ========================
-      // END-AFHANDELING
-      // ========================
       if (
         !Array.isArray(gekozenNode.next) ||
         gekozenNode.next.length === 0 ||
         gekozenNode.next[0] === "END"
       ) {
-        console.log("🏁 Afweging → systeem → END → meerwerk starten");
         toonMeerwerkPagina();
         return;
       }
 
-      // ========================
-      // NORMAAL VERVOLG
-      // ========================
       const resNext = await fetch(`${API_BASE}/api/next`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -1129,8 +1149,6 @@ async function toonAfwegingMetPrijzen() {
 
   optionsEl.appendChild(groep);
 }
-
-
 
 
 
@@ -1279,7 +1297,7 @@ function toonPrijsInvoer() {
 
 
 // ========================
-// SYSTEEMPRIJS RESULTAAT (MEERWERK-PROOF)
+// SYSTEEMPRIJS RESULTAAT (MET INFO-ICOON)
 // ========================
 function toonSysteemPrijsResultaat() {
 
@@ -1293,13 +1311,30 @@ function toonSysteemPrijsResultaat() {
   const card = document.createElement("div");
   card.className = "kaart systeem-kaart";
 
+  // ========================
+  // TITEL MET INFO-ICOON
+  // ========================
+  const titelHtml = `
+    <strong>
+      ${gekozenSysteem}
+      ${
+        currentSystemOmschrijving && currentSystemOmschrijving.length
+          ? `<span class="info-icon" onclick="event.stopPropagation(); openInfoModal();">ⓘ</span>`
+          : ""
+      }
+    </strong><br>
+  `;
+
   let html = `
-    <strong>${gekozenSysteem}</strong><br>
+    ${titelHtml}
     € ${prijsPerM2} / m²<br>
     Basisprijs: € ${basisPrijs},-<br>
   `;
 
-  if (backendExtras.length > 0) {
+  // ========================
+  // EXTRA'S
+  // ========================
+  if (backendExtras && backendExtras.length > 0) {
 
     html += `<br><strong>Extra’s:</strong><br>`;
 
@@ -1326,22 +1361,22 @@ function toonSysteemPrijsResultaat() {
 
   card.innerHTML = html;
 
+  // ========================
+  // KAART KLIK → VERDER
+  // ========================
   card.onclick = async () => {
 
-    // 🔑 VOLLEDIGE UI RESET
     resultEl.innerHTML = "";
     resultEl.style.display = "none";
     optionsEl.innerHTML = "";
     optionsEl.style.display = "block";
     questionEl.innerHTML = "";
 
-    // 🔑 Geen next → meerwerk
     if (!Array.isArray(currentNode?.next) || currentNode.next.length === 0) {
       toonMeerwerkPagina();
       return;
     }
 
-    // 🔑 Alleen END → meerwerk
     if (
       currentNode.next.length === 1 &&
       currentNode.next[0] === "END"
@@ -1350,7 +1385,6 @@ function toonSysteemPrijsResultaat() {
       return;
     }
 
-    // 🔑 Normaal vervolg
     await chooseOption(0);
   };
 
