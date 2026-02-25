@@ -1085,14 +1085,17 @@ async function toonAfwegingMetPrijzen() {
     // ========================
     if (data.error === "m2_te_klein") {
 
-      errorEl.innerHTML = data.message || "Minimale oppervlakte is 30 m²";
+      if (errorEl) {
+        errorEl.innerHTML =
+          data.message || "Minimale oppervlakte is 30 m²";
+      }
 
-      // reset prijzen
-      basisPrijs = null;
-      prijsPerM2 = null;
+      // reset prijzen alleen voor zekerheid
+      basisPrijs  = null;
+      prijsPerM2  = null;
       totaalPrijs = null;
 
-      return; // stop volledig, geen kaarten tonen
+      continue; // alleen dit systeem overslaan, niet hele flow stoppen
     }
 
     if (data.error) {
@@ -1231,8 +1234,6 @@ async function toonAfwegingMetPrijzen() {
 
 
 
-
-
 // ========================
 // PRIJSINVOER – ENKEL SYSTEEM / AFWEGING (DEFINITIEF)
 // ========================
@@ -1266,7 +1267,7 @@ function toonPrijsInvoer() {
   hoofdGroep.className = "antwoord-groep";
 
   // ========================
-  // OPPERVLAKTE
+  // OPPERVLAKTE INPUT
   // ========================
   const m2Input = document.createElement("input");
   m2Input.type = "number";
@@ -1278,23 +1279,26 @@ function toonPrijsInvoer() {
   hoofdGroep.appendChild(m2Input);
 
   // ========================
-  // FOUTMELDING ONDER INPUT
+  // FOUTMELDING (DIRECT ONDER INPUT)
   // ========================
   const errorDiv = document.createElement("div");
   errorDiv.id = "m2-error";
   errorDiv.className = "m2-error";
   errorDiv.innerHTML = "";
+
   hoofdGroep.appendChild(errorDiv);
+
+  // 🔥 Realtime fout wissen bij typen
+  m2Input.addEventListener("input", () => {
+    errorDiv.innerHTML = "";
+  });
 
   // ========================
   // AANTAL RUIMTES – TITEL
   // ========================
   const ruimteTitel = document.createElement("div");
-  ruimteTitel.className = "antwoord-titel";
   ruimteTitel.innerHTML = "<strong>Aantal ruimtes:</strong>";
-
   hoofdGroep.appendChild(ruimteTitel);
-
 
   // ========================
   // RUIMTE KNOPPEN
@@ -1311,30 +1315,41 @@ function toonPrijsInvoer() {
 
     btn.addEventListener("click", async () => {
 
-      // reset visueel
       ruimteGroep
         .querySelectorAll(".ruimte-knop")
         .forEach(b => b.classList.remove("actief"));
+
       btn.classList.add("actief");
 
       gekozenRuimtes = aantal;
       gekozenOppervlakte = parseFloat(m2Input.value);
 
-      // reset foutmelding
       errorDiv.innerHTML = "";
 
-      if (!gekozenOppervlakte || gekozenOppervlakte <= 0) {
+      // ========================
+      // VALIDATIE
+      // ========================
+      if (isNaN(gekozenOppervlakte) || gekozenOppervlakte <= 0) {
         errorDiv.innerHTML = "Vul eerst een geldige oppervlakte in.";
         return;
       }
 
-      // 🔥 VERGELIJKING → GEEN herberekenPrijs
+      if (gekozenOppervlakte < 30) {
+        errorDiv.innerHTML = "Minimale oppervlakte is 30 m²";
+        return;
+      }
+
+      // ========================
+      // VERGELIJKING (AFWEGING)
+      // ========================
       if (afwegingNode) {
         toonAfwegingMetPrijzen();
         return;
       }
 
-      // 🔵 ENKEL SYSTEEM
+      // ========================
+      // ENKEL SYSTEEM
+      // ========================
       const prijsOk = await herberekenPrijs();
       if (!prijsOk) return;
 
@@ -1347,7 +1362,6 @@ function toonPrijsInvoer() {
   hoofdGroep.appendChild(ruimteGroep);
   optionsEl.appendChild(hoofdGroep);
 }
-
 
 
 
@@ -1873,19 +1887,7 @@ async function herberekenPrijs() {
     // ========================
     if (data.error === "m2_te_klein") {
 
-      let errorEl = document.getElementById("m2-error");
-
-      // Als errorDiv niet bestaat → onder input aanmaken
-      if (!errorEl) {
-        const input = document.getElementById("input-m2");
-
-        if (input && input.parentNode) {
-          errorEl = document.createElement("div");
-          errorEl.id = "m2-error";
-          errorEl.className = "m2-error";
-          input.parentNode.insertBefore(errorEl, input.nextSibling);
-        }
-      }
+      const errorEl = document.getElementById("m2-error");
 
       if (errorEl) {
         errorEl.innerHTML =
@@ -1896,19 +1898,24 @@ async function herberekenPrijs() {
       prijsPerM2  = null;
       totaalPrijs = null;
 
-      return false;   // ⛔ FLOW STOPPEN
+      return false;
     }
+
+
     // ========================
     // STAFFEL OUT-OF-RANGE
     // ========================
     if (data.error === "m2_out_of_range") {
 
+      const errorEl = document.getElementById("m2-error");
+
       if (errorEl) {
-        errorEl.innerHTML = "Ongeldige oppervlakte voor dit systeem.";
+        errorEl.innerHTML =
+          "Ongeldige oppervlakte voor dit systeem.";
       }
 
-      basisPrijs = null;
-      prijsPerM2 = null;
+      basisPrijs  = null;
+      prijsPerM2  = null;
       totaalPrijs = null;
 
       return false;
