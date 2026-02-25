@@ -363,7 +363,7 @@ hr {
 
 
 /* =========================
-   INFO-ICOON (STRak & ENKEL)
+   INFO-ICOON (ERFT KLEUR)
    ========================= */
 
 .info-icon {
@@ -373,13 +373,13 @@ hr {
 
   margin-left: 8px;
 
-  font-size: 18px;        /* groter icoon */
+  font-size: 18px;
   font-weight: 600;
 
-  color: var(--accent);   /* oranje */
+  color: currentColor;   /* 🔑 neemt kleur van parent over */
 
-  background: none;       /* geen witte cirkel */
-  border: none;           /* geen rand */
+  background: none;
+  border: none;
   cursor: pointer;
 
   line-height: 1;
