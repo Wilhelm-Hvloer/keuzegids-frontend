@@ -363,7 +363,7 @@ hr {
 
 
 /* =========================
-   INFO-ICOON (UNIFORM WIT)
+   INFO-ICOON (STRak & ENKEL)
    ========================= */
 
 .info-icon {
@@ -373,26 +373,22 @@ hr {
 
   margin-left: 8px;
 
-  width: 18px;
-  height: 18px;
+  font-size: 18px;        /* groter icoon */
+  font-weight: 600;
 
-  font-size: 12px;
-  font-weight: 700;
+  color: var(--accent);   /* oranje */
 
-  border-radius: 50%;
-  background: #ffffff;        /* witte cirkel */
-  color: var(--accent);       /* oranje i */
-
-  border: none;               /* geen rand */
+  background: none;       /* geen witte cirkel */
+  border: none;           /* geen rand */
   cursor: pointer;
 
   line-height: 1;
-  transition: transform 0.15s ease, box-shadow 0.15s ease;
+  transition: transform 0.15s ease, opacity 0.15s ease;
 }
 
 .info-icon:hover {
-  transform: scale(1.08);
-  box-shadow: 0 0 0 2px rgba(188, 76, 31, 0.3);
+  transform: scale(1.1);
+  opacity: 0.8;
 }
 
 
