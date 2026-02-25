@@ -1079,20 +1079,22 @@ async function toonAfwegingMetPrijzen() {
 
       if (data.error === "m2_te_klein") {
 
-        const resultEl = document.getElementById("result-box");
+        const errorEl = document.getElementById("m2-error");
 
-        resultEl.style.display = "block";
-        resultEl.innerHTML = `
-          <div style="color: var(--accent); font-weight: 600;">
-            ${data.message || "Minimale oppervlakte is 30 m²"}
-          </div>
-        `;
+        if (errorEl) {
+          errorEl.innerHTML = data.message || "Minimale oppervlakte is 30 m²";
+        }
 
-        continue;
+        // voorkom dat oude prijzen blijven staan
+        basisPrijs = null;
+        prijsPerM2 = null;
+        totaalPrijs = null;
+
+        return;   // ⬅️ stoppen, geen kaart renderen
       }
 
       console.error("❌ prijsfout:", data.error);
-      continue;
+      return;     // ⬅️ ook hier stoppen
     }
 
     const backendForcedExtras = Array.isArray(data.extras)
