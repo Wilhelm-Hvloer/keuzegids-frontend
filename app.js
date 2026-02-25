@@ -1797,22 +1797,15 @@ async function herberekenPrijs() {
 
   console.log("=== herberekenPrijs START ===");
 
+  const resultEl = document.getElementById("result-box");
+
   // ========================
   // BASISCONTROLE
   // ========================
   if (!gekozenSysteem || !gekozenOppervlakte || !gekozenRuimtes) {
     console.warn("⛔ herberekenPrijs gestopt: ontbrekende basisdata");
-    console.log("gekozenSysteem:", gekozenSysteem);
-    console.log("gekozenOppervlakte:", gekozenOppervlakte);
-    console.log("gekozenRuimtes:", gekozenRuimtes);
     return;
   }
-
-  console.log("gekozenSysteem:", gekozenSysteem);
-  console.log("gekozenOppervlakte:", gekozenOppervlakte);
-  console.log("gekozenRuimtes:", gekozenRuimtes);
-  console.log("gekozenExtras:", gekozenExtras);
-  console.log("forcedExtras:", forcedExtras);
 
   // ========================
   // EXTRAS NAAR BACKEND
@@ -1825,12 +1818,6 @@ async function herberekenPrijs() {
     ? [...forcedExtras]
     : [];
 
-  console.log("📤 Naar backend → extras:", extrasPayload);
-  console.log("📤 Naar backend → forced:", forcedPayload);
-
-  // ========================
-  // BACKEND CALL
-  // ========================
   try {
 
     const res = await fetch(`${API_BASE}/api/price`, {
@@ -1850,10 +1837,34 @@ async function herberekenPrijs() {
       })
     });
 
-    console.log("🌐 Backend response status:", res.status);
-
     const data = await res.json();
     console.log("📥 Backend data ontvangen:", data);
+
+    // ========================
+    // STAFFEL OUT-OF-RANGE AFVANGEN
+    // ========================
+    if (data.error === "m2_out_of_range") {
+
+      resultEl.style.display = "block";
+      resultEl.innerHTML = `
+        <div style="color: var(--accent); font-weight: 600;">
+          Ongeldige oppervlakte.
+        </div>
+        <div style="margin-top:8px;">
+          Dit systeem is beschikbaar van 
+          <strong>${data.min_m2} m²</strong> 
+          tot 
+          <strong>${data.max_m2} m²</strong>.
+        </div>
+      `;
+
+      // prijs resetten zodat geen oude waarden blijven staan
+      basisPrijs = null;
+      prijsPerM2 = null;
+      totaalPrijs = null;
+
+      return;
+    }
 
     if (data.error) {
       console.error("❌ prijsfout backend:", data.error);
@@ -1868,15 +1879,9 @@ async function herberekenPrijs() {
     backendExtras = Array.isArray(data.extras) ? data.extras : [];
     totaalPrijs   = data.totaalprijs;
 
-    // 🔑 SYSTEEM OMSCHRIJVING VOOR INFO-POPUP
     currentSystemOmschrijving = Array.isArray(data.omschrijving)
       ? data.omschrijving
       : [];
-
-    console.log("💰 Basisprijs:", basisPrijs);
-    console.log("💰 Prijs per m²:", prijsPerM2);
-    console.log("💰 Totaalprijs backend:", totaalPrijs);
-    console.log("📘 Omschrijving:", currentSystemOmschrijving);
 
     console.log("=== herberekenPrijs EINDE ===");
 
