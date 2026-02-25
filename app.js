@@ -1018,6 +1018,7 @@ async function toonAfwegingMetPrijzen() {
   const questionEl = document.getElementById("question-text");
   const optionsEl  = document.getElementById("options-box");
 
+  // reset scherm
   optionsEl.innerHTML = "";
   optionsEl.style.display = "block";
 
@@ -1029,16 +1030,13 @@ async function toonAfwegingMetPrijzen() {
   questionEl.innerHTML = `<strong>${stripPrefix(afwegingNode.text)}</strong>`;
 
   // ========================
-  // FOUTMELDING CONTAINER (VOOR m2 VALIDATIE)
+  // FOUTMELDING CONTAINER (ALTIJD OPNIEUW AANMAKEN)
   // ========================
-  let errorEl = document.getElementById("m2-error");
-
-  if (!errorEl) {
-    errorEl = document.createElement("div");
-    errorEl.id = "m2-error";
-    errorEl.className = "m2-error";
-    optionsEl.appendChild(errorEl);
-  }
+  const errorEl = document.createElement("div");
+  errorEl.id = "m2-error";
+  errorEl.className = "m2-error";
+  errorEl.innerHTML = "";
+  optionsEl.appendChild(errorEl);
 
   const groep = document.createElement("div");
   groep.className = "antwoord-groep";
@@ -1080,33 +1078,26 @@ async function toonAfwegingMetPrijzen() {
       })
     });
 
-    if (!res.ok) {
-      console.error("❌ Backend response error:", res.status);
-      continue;
-    }
-
     const data = await res.json();
 
+    // ========================
+    // M2 VALIDATIE
+    // ========================
+    if (data.error === "m2_te_klein") {
+
+      errorEl.innerHTML = data.message || "Minimale oppervlakte is 30 m²";
+
+      // reset prijzen
+      basisPrijs = null;
+      prijsPerM2 = null;
+      totaalPrijs = null;
+
+      return; // stop volledig, geen kaarten tonen
+    }
+
     if (data.error) {
-
-      if (data.error === "m2_te_klein") {
-
-        const errorEl = document.getElementById("m2-error");
-
-        if (errorEl) {
-          errorEl.innerHTML = data.message || "Minimale oppervlakte is 30 m²";
-        }
-
-        // voorkom dat oude prijzen blijven staan
-        basisPrijs = null;
-        prijsPerM2 = null;
-        totaalPrijs = null;
-
-        return;   // ⬅️ stoppen, geen kaart renderen
-      }
-
       console.error("❌ prijsfout:", data.error);
-      return;     // ⬅️ ook hier stoppen
+      return;
     }
 
     const backendForcedExtras = Array.isArray(data.extras)
@@ -1120,7 +1111,6 @@ async function toonAfwegingMetPrijzen() {
     btn.type = "button";
     btn.classList.add("systeem-knop");
 
-    // Titelregel (flex zodat icoon naast titel blijft)
     const titel = document.createElement("div");
     titel.style.display = "flex";
     titel.style.alignItems = "center";
@@ -1130,7 +1120,6 @@ async function toonAfwegingMetPrijzen() {
     strong.className = "systeem-titel";
     strong.textContent = systeemNaam;
 
-    // Info-icoon binnen strong plaatsen
     if (Array.isArray(data.omschrijving) && data.omschrijving.length) {
       const info = document.createElement("span");
       info.className = "info-icon";
@@ -1148,9 +1137,6 @@ async function toonAfwegingMetPrijzen() {
     titel.appendChild(strong);
     btn.appendChild(titel);
 
-    // ========================
-    // PRIJSREGELS
-    // ========================
     const prijsBlok = document.createElement("div");
     prijsBlok.innerHTML = `
       <span style="font-size:14px;">€ ${data.prijs_per_m2} / m²</span><br>
@@ -1177,9 +1163,6 @@ async function toonAfwegingMetPrijzen() {
     `;
     btn.appendChild(totaalBlok);
 
-    // ========================
-    // KLIK → DEFINITIEVE KEUZE
-    // ========================
     btn.addEventListener("click", async () => {
 
       const gekozenNode = potentieleSystemen.find(
@@ -1194,16 +1177,13 @@ async function toonAfwegingMetPrijzen() {
       currentSystemNode = gekozenNode;
       gekozenSysteem = systeemNaam;
 
-      let definitieveForced = [];
+      forcedExtras = Array.isArray(gekozenNode.forced_extras)
+        ? [...gekozenNode.forced_extras]
+        : gekozenNode.forced_extras
+          ? [gekozenNode.forced_extras]
+          : [];
 
-      if (Array.isArray(gekozenNode.forced_extras)) {
-        definitieveForced = gekozenNode.forced_extras;
-      } else if (typeof gekozenNode.forced_extras === "string") {
-        definitieveForced = [gekozenNode.forced_extras];
-      }
-
-      forcedExtras = [...definitieveForced];
-      gekozenExtras = [...definitieveForced];
+      gekozenExtras = [...forcedExtras];
 
       basisPrijs  = data.basisprijs;
       prijsPerM2  = data.prijs_per_m2;
@@ -1257,6 +1237,7 @@ async function toonAfwegingMetPrijzen() {
 // PRIJSINVOER – ENKEL SYSTEEM / AFWEGING (DEFINITIEF)
 // ========================
 function toonPrijsInvoer() {
+
   const questionEl = document.getElementById("question-text");
   const optionsEl  = document.getElementById("options-box");
   const resultEl   = document.getElementById("result-box");
@@ -1296,7 +1277,9 @@ function toonPrijsInvoer() {
 
   hoofdGroep.appendChild(m2Input);
 
-  // 👇 HIER TOEVOEGEN
+  // ========================
+  // FOUTMELDING ONDER INPUT
+  // ========================
   const errorDiv = document.createElement("div");
   errorDiv.id = "m2-error";
   errorDiv.className = "m2-error";
@@ -1319,12 +1302,15 @@ function toonPrijsInvoer() {
   ruimteGroep.className = "antwoord-groep";
 
   [1, 2, 3].forEach(aantal => {
+
     const btn = document.createElement("button");
     btn.type = "button";
     btn.textContent = `${aantal} ruimte${aantal > 1 ? "s" : ""}`;
     btn.classList.add("ruimte-knop");
 
     btn.addEventListener("click", async () => {
+
+      // reset visueel
       ruimteGroep
         .querySelectorAll(".ruimte-knop")
         .forEach(b => b.classList.remove("actief"));
@@ -1333,21 +1319,23 @@ function toonPrijsInvoer() {
       gekozenRuimtes = aantal;
       gekozenOppervlakte = parseFloat(m2Input.value);
 
+      // reset foutmelding
+      errorDiv.innerHTML = "";
+
       if (!gekozenOppervlakte || gekozenOppervlakte <= 0) {
-        resultEl.style.display = "block";
-        resultEl.innerHTML = "Vul eerst een geldige oppervlakte in.";
+        errorDiv.innerHTML = "Vul eerst een geldige oppervlakte in.";
         return;
       }
 
-      const prijsOk = await herberekenPrijs();
-      if (!prijsOk) return;
+      // herbereken prijs (backend validatie)
+      await herberekenPrijs();
 
-      // 🔑 CRUCIALE SPLITSING
+      // als backend prijs heeft gezet → doorgaan
+      if (basisPrijs === null) return;
+
       if (afwegingNode) {
-        console.log("⚖️ Afweging actief → toon vergelijking");
         toonAfwegingMetPrijzen();
       } else {
-        console.log("💰 Enkel systeem → toon resultaat");
         toonSysteemPrijsResultaat();
       }
     });
