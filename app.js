@@ -1154,24 +1154,29 @@ async function toonAfwegingMetPrijzen() {
 
     const prijsBlok = document.createElement("div");
     prijsBlok.innerHTML = `
-      <span style="font-size:14px;">€ ${data.prijs_per_m2} / m²</span><br>
-      Basisprijs: € ${data.basisprijs},-<br>
+      <span style="font-size:14px;">
+        € ${formatPrijs(data.prijs_per_m2)} / m²
+      </span><br>
+      Basisprijs: € ${formatPrijs(data.basisprijs)},-<br>
     `;
     btn.appendChild(prijsBlok);
 
     if (backendForcedExtras.length > 0) {
       const forcedBlok = document.createElement("div");
       forcedBlok.innerHTML = `<br><strong>Verplichte extra’s:</strong><br>`;
+
       backendForcedExtras.forEach(extra => {
-        forcedBlok.innerHTML += `– ${extra.naam} (+ € ${extra.totaal},-)<br>`;
+        forcedBlok.innerHTML +=
+          `– ${extra.naam} (+ € ${formatPrijs(extra.totaal)},-)<br>`;
       });
+
       btn.appendChild(forcedBlok);
     }
 
     const totaalBlok = document.createElement("div");
     totaalBlok.innerHTML = `
       <br>
-      <strong>Totaalprijs: € ${data.totaalprijs},-</strong>
+      <strong>Totaalprijs: € ${formatPrijs(data.totaalprijs)},-</strong>
       <div style="margin-top:10px; font-size:13px; opacity:0.7;">
         Klik om verder te gaan
       </div>
@@ -1242,7 +1247,6 @@ async function toonAfwegingMetPrijzen() {
 
   optionsEl.appendChild(groep);
 }
-
 
 
 
@@ -1396,8 +1400,7 @@ function toonSysteemPrijsResultaat() {
   // TITEL MET INFO-ICOON
   // ========================
   const titelHtml = `
-    <strong>
-      <strong class="systeem-titel">
+    <strong class="systeem-titel">
       ${gekozenSysteem}
       ${
         currentSystemOmschrijving && currentSystemOmschrijving.length
@@ -1409,8 +1412,8 @@ function toonSysteemPrijsResultaat() {
 
   let html = `
     ${titelHtml}
-    € ${prijsPerM2} / m²<br>
-    Basisprijs: € ${basisPrijs},-<br>
+    € ${formatPrijs(prijsPerM2)} / m²<br>
+    Basisprijs: € ${formatPrijs(basisPrijs)},-<br>
   `;
 
   // ========================
@@ -1424,7 +1427,7 @@ function toonSysteemPrijsResultaat() {
       html += `
         – ${extra.naam}
         ${extra.forced ? " (verplicht)" : ""}
-        ${extra.totaal > 0 ? "(+ € " + extra.totaal + ",-)" : ""}
+        ${extra.totaal > 0 ? "(+ € " + formatPrijs(extra.totaal) + ",-)" : ""}
         <br>
       `;
     });
@@ -1432,7 +1435,7 @@ function toonSysteemPrijsResultaat() {
 
   html += `
     <br>
-    <strong>Totaalprijs: € ${totaalPrijs},-</strong>
+    <strong>Totaalprijs: € ${formatPrijs(totaalPrijs)},-</strong>
   `;
 
   html += `
@@ -1472,7 +1475,6 @@ function toonSysteemPrijsResultaat() {
 
   resultEl.appendChild(card);
 }
-
 
 
 
@@ -2016,8 +2018,8 @@ function toonSamenvatting() {
       ? systeemKeuzeIndex
       : gekozenAntwoorden.length;
 
-  const basisVragen  = gekozenAntwoorden.slice(0, veiligeIndex);
-  const optieVragen  = gekozenAntwoorden.slice(veiligeIndex);
+  const basisVragen = gekozenAntwoorden.slice(0, veiligeIndex);
+  const optieVragen = gekozenAntwoorden.slice(veiligeIndex);
 
   // ========================
   // 1️⃣ BASISVRAGEN
@@ -2041,7 +2043,7 @@ function toonSamenvatting() {
   `;
 
   // ========================
-  // 3️⃣ GEKOZEN SYSTEEM + INFO-ICOON
+  // 3️⃣ GEKOZEN SYSTEEM
   // ========================
   html += `
     <hr>
@@ -2053,8 +2055,8 @@ function toonSamenvatting() {
           : ""
       }
     </div>
-    <div>Prijs per m²: <strong>€ ${prijsPerM2},-</strong></div>
-    <div>Basisprijs: <strong>€ ${basisPrijs},-</strong></div>
+    <div>Prijs per m²: <strong>€ ${formatPrijs(prijsPerM2)},-</strong></div>
+    <div>Basisprijs: <strong>€ ${formatPrijs(basisPrijs)},-</strong></div>
   `;
 
   // ========================
@@ -2088,7 +2090,7 @@ function toonSamenvatting() {
             </strong>
           </div>
           ${extra.toelichting ? `<div class="extra-toelichting">${extra.toelichting}</div>` : ""}
-          <div class="extra-bedrag">€ ${extra.totaal},-</div>
+          <div class="extra-bedrag">€ ${formatPrijs(extra.totaal)},-</div>
         </div>
       `;
     });
@@ -2100,7 +2102,7 @@ function toonSamenvatting() {
   html += `
     <hr>
     <div>Totaalprijs:</div>
-    <div class="totaalprijs">€ ${totaalPrijs},-</div>
+    <div class="totaalprijs">€ ${formatPrijs(totaalPrijs)},-</div>
   `;
 
   resultEl.innerHTML = html;
@@ -2294,9 +2296,9 @@ function toonPolijstResultaat(data) {
   resultEl.innerHTML = `
     <div class="gekozen-systeem">${data.systeem}</div>
     <div>${data.omschrijving}</div>
-    ${data.prijs_per_m2 ? `<div>€ ${data.prijs_per_m2} / m²</div>` : ""}
+    ${data.prijs_per_m2 ? `<div>€ ${formatPrijs(data.prijs_per_m2)} / m²</div>` : ""}
     <hr>
-    <div class="totaalprijs">€ ${data.totaalprijs},-</div>
+    <div class="totaalprijs">€ ${formatPrijs(data.totaalprijs)},-</div>
   `;
 }
 
@@ -2313,6 +2315,20 @@ function stripPrefix(text = "") {
     .replace(/^Xtr:\s*/i, "")
     .replace(/^Afw:\s*/i, "")
     .trim();
+}
+
+// ========================
+// FORMAT PRIJS (NL NOTATIE)
+// ========================
+function formatPrijs(bedrag) {
+
+  if (bedrag === null || bedrag === undefined) return "";
+
+  return Number(bedrag)
+    .toLocaleString("nl-NL", {
+      minimumFractionDigits: 0,
+      maximumFractionDigits: 0
+    });
 }
 
 // ========================
