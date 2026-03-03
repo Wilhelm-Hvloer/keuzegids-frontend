@@ -183,6 +183,18 @@ function startPrijslijst() {
   toonPrijslijstSysteemSelectie();
 }
 
+// ========================
+// START POLIJST PRIJSLIJST
+// ========================
+function startPolijstPrijslijst() {
+
+  toonFlow();
+  resetUI();
+
+  actieveFlow = "polijsten";
+
+  toonPolijstSelectie();
+}
 
 // ========================
 // PRIJSLIJST – SYSTEEMSELECTIE (NIEUWE UX)
@@ -2143,7 +2155,150 @@ document.addEventListener("keydown", function (e) {
 });
 
 
+// ========================
+// POLIJST – SYSTEEMSELECTIE
+// ========================
+function toonPolijstSelectie() {
 
+  const questionEl = document.getElementById("question-text");
+  const optionsEl  = document.getElementById("options-box");
+
+  resetUI();
+  optionsEl.style.display = "block";
+
+  questionEl.innerHTML = "<strong>Kies polijstbehandeling</strong>";
+
+  const groep = document.createElement("div");
+  groep.className = "antwoord-groep";
+
+  ["Basic polijsten","Premium polijsten","Excellent polijsten"]
+    .forEach(sys => {
+
+      const btn = document.createElement("button");
+      btn.type = "button";
+      btn.textContent = sys;
+
+      btn.onclick = () => toonPolijstKlanttype(sys);
+
+      groep.appendChild(btn);
+    });
+
+  optionsEl.appendChild(groep);
+}
+
+
+// ========================
+// POLIJST – KLANTTYPE
+// ========================
+function toonPolijstKlanttype(systeem) {
+
+  const questionEl = document.getElementById("question-text");
+  const optionsEl  = document.getElementById("options-box");
+
+  resetUI();
+  optionsEl.style.display = "block";
+
+  questionEl.innerHTML = `<strong>${systeem}</strong><br>Klanttype`;
+
+  const groep = document.createElement("div");
+  groep.className = "antwoord-groep";
+
+  ["Particulieren","Aannemer","Vloerenlegger"]
+    .forEach(type => {
+
+      const btn = document.createElement("button");
+      btn.type = "button";
+      btn.textContent = type;
+
+      btn.onclick = () => toonPolijstInvoer(systeem, type);
+
+      groep.appendChild(btn);
+    });
+
+  optionsEl.appendChild(groep);
+}
+
+
+// ========================
+// POLIJST – PRIJSINVOER
+// ========================
+function toonPolijstInvoer(systeem, klanttype) {
+
+  const questionEl = document.getElementById("question-text");
+  const optionsEl  = document.getElementById("options-box");
+  const resultEl   = document.getElementById("result-box");
+
+  resetUI();
+  optionsEl.style.display = "block";
+
+  questionEl.innerHTML = `
+    <strong>${systeem}</strong><br>
+    ${klanttype}
+  `;
+
+  const groep = document.createElement("div");
+  groep.className = "antwoord-groep";
+
+  const input = document.createElement("input");
+  input.type = "number";
+  input.placeholder = "Oppervlakte in m²";
+  input.classList.add("input-vol");
+
+  const btn = document.createElement("button");
+  btn.type = "button";
+  btn.textContent = "Bereken prijs";
+  btn.classList.add("actie-knop");
+
+  btn.onclick = async () => {
+
+    const m2 = parseFloat(input.value);
+    if (!m2 || m2 <= 0) return;
+
+    const res = await fetch(`${API_BASE}/api/polijst-price`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        systeem,
+        klanttype,
+        oppervlakte: m2
+      })
+    });
+
+    const data = await res.json();
+
+    if (data.error) {
+      alert(data.error);
+      return;
+    }
+
+    toonPolijstResultaat(data);
+  };
+
+  groep.appendChild(input);
+  groep.appendChild(btn);
+
+  optionsEl.appendChild(groep);
+}
+
+
+// ========================
+// POLIJST – RESULTAAT
+// ========================
+function toonPolijstResultaat(data) {
+
+  const resultEl = document.getElementById("result-box");
+
+  resultEl.style.display = "block";
+  resultEl.innerHTML = "";
+
+  resultEl.innerHTML = `
+    <div class="gekozen-systeem">${data.systeem}</div>
+    <div>${data.omschrijving}</div>
+    ${data.prijs_per_m2 ? `<div>€ ${data.prijs_per_m2} / m²</div>` : ""}
+    <hr>
+    <div class="totaalprijs">€ ${data.totaalprijs},-</div>
+  `;
+}
 
 
 // ========================
@@ -2253,14 +2408,19 @@ function gaNaarHome() {
 
   const btnKeuzegids = document.createElement("button");
   btnKeuzegids.type = "button";
-  btnKeuzegids.textContent = "Start keuzegids";
+  btnKeuzegids.textContent = "Keuzegids coatings";
   btnKeuzegids.onclick = startKeuzegids;
 
   const btnPrijslijst = document.createElement("button");
   btnPrijslijst.type = "button";
+  btnPrijslijst.textContent = "Prijslijst coatings";
   btnPrijslijst.onclick = startPrijslijst;
-  btnPrijslijst.textContent = "Start prijslijst";
 
-  groep.append(btnKeuzegids, btnPrijslijst);
+  const btnPolijsten = document.createElement("button");
+  btnPolijsten.type = "button";
+  btnPolijsten.textContent = "Prijslijst polijsten";
+  btnPolijsten.onclick = startPolijstPrijslijst;
+
+  groep.append(btnKeuzegids, btnPrijslijst, btnPolijsten);
   homeEl.appendChild(groep);
 }
