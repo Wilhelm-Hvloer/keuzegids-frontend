@@ -33,6 +33,7 @@ const API_BASE = "https://keuzegids-backend-dev.onrender.com";
 // STATE
 // ========================
 
+let actieveFaseType = "coating"; // standaard
 let prijsPerM2 = null;
 let currentNode = null;
 
@@ -42,6 +43,7 @@ let potentieleSystemen = [];
 
 let gekozenSysteem = null;
 let gekozenAntwoorden = [];
+
 
 // ========================
 // FASES (NIEUW)
@@ -2005,39 +2007,42 @@ async function berekenBasisPrijsVoorSysteem(systeemNaam, m2, ruimtes) {
 // ========================
 function slaHuidigeFaseOp() {
 
-  if (!gekozenSysteem || !totaalPrijs) return;
+  if (!totaalPrijs) return;
 
   const faseData = {
-    gekozenAntwoorden: JSON.parse(JSON.stringify(gekozenAntwoorden)),
+    type: actieveFaseType,   // 🔑 NIEUW
+
+    // Coating data (kan leeg zijn bij polijsten)
+    gekozenAntwoorden: JSON.parse(JSON.stringify(gekozenAntwoorden || [])),
     gekozenSysteem,
     gekozenOppervlakte,
     gekozenRuimtes,
     prijsPerM2,
     basisPrijs,
+
+    // Gemeenschappelijk
     totaalPrijs,
-    backendExtras: JSON.parse(JSON.stringify(backendExtras)),
-    currentSystemOmschrijving: JSON.parse(JSON.stringify(currentSystemOmschrijving)),
-    systeemKeuzeIndex: systeemKeuzeIndex   // 👈 TOEGEVOEGD
+
+    backendExtras: JSON.parse(JSON.stringify(backendExtras || [])),
+    currentSystemOmschrijving: JSON.parse(JSON.stringify(currentSystemOmschrijving || [])),
+
+    systeemKeuzeIndex
   };
 
   // Nieuwe fase toevoegen als deze index nog niet bestaat
   if (!fases[actieveFaseIndex]) {
     fases.push(faseData);
   } else {
-    // Bestaande fase overschrijven
     fases[actieveFaseIndex] = faseData;
   }
 }
 
 
 // ========================
-// SAMENVATTING TONEN (MULTI-FASE READY)
+// SAMENVATTING TONEN (MULTI-FASE MET COATING + POLIJSTEN)
 // ========================
 function toonSamenvatting() {
 
-  // ========================
-  // HUIDIGE FASE OPSLAAN
-  // ========================
   slaHuidigeFaseOp();
 
   const questionEl = document.getElementById("question-text");
@@ -2046,9 +2051,12 @@ function toonSamenvatting() {
 
   questionEl.innerHTML = `
     <strong>Samenvatting</strong>
-    <div style="margin-top:15px;">
+    <div style="margin-top:15px; display:flex; flex-direction:column; gap:10px;">
       <button onclick="startNieuweFase()" class="fase-knop">
-        + Extra fase toevoegen
+        + Extra fase coating toevoegen
+      </button>
+      <button onclick="startNieuwePolijstFase()" class="fase-knop">
+        + Extra fase polijsten toevoegen
       </button>
     </div>
   `;
@@ -2063,58 +2071,27 @@ function toonSamenvatting() {
 
   fases.forEach((fase, index) => {
 
-    totaalProject += fase.totaalPrijs;
+    totaalProject += fase.totaalPrijs || 0;
 
-    // 🔑 PER FASE EIGEN INDEX GEBRUIKEN
-    const veiligeIndex =
-      typeof fase.systeemKeuzeIndex === "number"
-        ? fase.systeemKeuzeIndex
-        : fase.gekozenAntwoorden.length;
-
-    const basisVragen = fase.gekozenAntwoorden.slice(0, veiligeIndex);
-    const optieVragen = fase.gekozenAntwoorden.slice(veiligeIndex);
-
-    html += `<hr><h3>Fase ${index + 1}</h3>`;
+    html += `<div class="fase-blok">`;
 
     // ========================
-    // BASISVRAGEN
+    // COATING FASE
     // ========================
-    basisVragen.forEach(item => {
-      html += `
-        <div class="qa-regel">
-          <span class="vraag"><em>${item.vraag}</em></span><br>
-          <span class="antwoord"><strong>${item.antwoord}</strong></span>
-        </div>
-      `;
-    });
+    if (fase.type === "coating") {
 
-    // ========================
-    // m² & RUIMTES
-    // ========================
-    html += `
-      <hr>
-      <div>Aantal m²: <strong>${fase.gekozenOppervlakte} m²</strong></div>
-      <div>Aantal ruimtes: <strong>${fase.gekozenRuimtes} ruimte${fase.gekozenRuimtes > 1 ? "s" : ""}</strong></div>
-    `;
+      html += `<h3>Fase ${index + 1} – Coating</h3>`;
 
-    // ========================
-    // GEKOZEN SYSTEEM
-    // ========================
-    html += `
-      <hr>
-      <div class="gekozen-systeem">
-        ${fase.gekozenSysteem}
-      </div>
-      <div>Prijs per m²: <strong>€ ${formatPrijs(fase.prijsPerM2)},-</strong></div>
-      <div>Basisprijs: <strong>€ ${formatPrijs(fase.basisPrijs)},-</strong></div>
-    `;
+      const veiligeIndex =
+        typeof fase.systeemKeuzeIndex === "number"
+          ? fase.systeemKeuzeIndex
+          : (fase.gekozenAntwoorden || []).length;
 
-    // ========================
-    // OPTIEVRAGEN
-    // ========================
-    if (optieVragen.length > 0) {
-      html += "<hr>";
-      optieVragen.forEach(item => {
+      const basisVragen = (fase.gekozenAntwoorden || []).slice(0, veiligeIndex);
+      const optieVragen = (fase.gekozenAntwoorden || []).slice(veiligeIndex);
+
+      // BASISVRAGEN
+      basisVragen.forEach(item => {
         html += `
           <div class="qa-regel">
             <span class="vraag"><em>${item.vraag}</em></span><br>
@@ -2122,28 +2099,86 @@ function toonSamenvatting() {
           </div>
         `;
       });
-    }
 
-    // ========================
-    // EXTRA'S
-    // ========================
-    if (fase.backendExtras && fase.backendExtras.length > 0) {
+      // m² & RUIMTES
+      html += `
+        <hr>
+        <div>Aantal m²: <strong>${fase.gekozenOppervlakte} m²</strong></div>
+        <div>Aantal ruimtes: <strong>${fase.gekozenRuimtes} ruimte${fase.gekozenRuimtes > 1 ? "s" : ""}</strong></div>
+      `;
 
-      html += "<hr><div><strong>Extra’s</strong></div>";
+      // SYSTEEM
+      html += `
+        <hr>
+        <div class="gekozen-systeem">
+          ${fase.gekozenSysteem}
+        </div>
+        <div>Prijs per m²: <strong>€ ${formatPrijs(fase.prijsPerM2)},-</strong></div>
+        <div>Basisprijs: <strong>€ ${formatPrijs(fase.basisPrijs)},-</strong></div>
+      `;
 
-      fase.backendExtras.forEach(extra => {
-        html += `
-          <div class="extra-blok">
-            <div>
-              <strong>
-                ${extra.naam}${extra.forced ? " (verplicht)" : ""}
-              </strong>
+      // OPTIES
+      if (optieVragen.length > 0) {
+        html += "<hr>";
+        optieVragen.forEach(item => {
+          html += `
+            <div class="qa-regel">
+              <span class="vraag"><em>${item.vraag}</em></span><br>
+              <span class="antwoord"><strong>${item.antwoord}</strong></span>
             </div>
-            <div class="extra-bedrag">€ ${formatPrijs(extra.totaal)},-</div>
-          </div>
-        `;
-      });
+          `;
+        });
+      }
+
+      // EXTRA'S
+      if (fase.backendExtras && fase.backendExtras.length > 0) {
+        html += "<hr><div><strong>Extra’s</strong></div>";
+        fase.backendExtras.forEach(extra => {
+          html += `
+            <div class="extra-blok">
+              <div>
+                <strong>
+                  ${extra.naam}${extra.forced ? " (verplicht)" : ""}
+                </strong>
+              </div>
+              <div class="extra-bedrag">€ ${formatPrijs(extra.totaal)},-</div>
+            </div>
+          `;
+        });
+      }
     }
+
+    // ========================
+    // POLIJST FASE
+    // ========================
+    if (fase.type === "polijsten") {
+
+      html += `<h3>Fase ${index + 1} – Polijsten</h3>`;
+
+      html += `
+        <div class="gekozen-systeem">
+          ${fase.gekozenSysteem}
+        </div>
+        <div>Prijs per m²: <strong>€ ${formatPrijs(fase.prijsPerM2)},-</strong></div>
+        <div class="totaalprijs">€ ${formatPrijs(fase.totaalPrijs)},-</div>
+      `;
+    }
+
+    // ========================
+    // VERWIJDERKNOP
+    // ========================
+    if (fases.length > 1) {
+      html += `
+        <div class="fase-verwijder-wrapper">
+          <button onclick="verwijderFase(${index})" class="fase-verwijder-knop">
+            Fase ${index + 1} verwijderen
+          </button>
+        </div>
+      `;
+    }
+
+    html += `<div class="fase-scheiding"></div>`;
+    html += `</div>`;
   });
 
   // ========================
@@ -2244,7 +2279,30 @@ function startNieuweFase() {
 }
 
 
+startNieuweFase(
 
+
+// ========================
+// FASE VERWIJDEREN
+// ========================
+function verwijderFase(index) {
+
+  if (fases.length <= 1) {
+    alert("Er moet minimaal 1 fase blijven bestaan.");
+    return;
+  }
+
+  // Fase verwijderen
+  fases.splice(index, 1);
+
+  // Actieve index corrigeren
+  if (actieveFaseIndex >= fases.length) {
+    actieveFaseIndex = fases.length - 1;
+  }
+
+  // Samenvatting opnieuw renderen
+  toonSamenvatting();
+}
 
 
 

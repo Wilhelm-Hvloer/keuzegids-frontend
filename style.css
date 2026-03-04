@@ -261,6 +261,20 @@ hr {
   color: var(--text-main);
 }
 
+
+
+/* =========================
+   FASE SCHEIDING
+   ========================= */
+
+.fase-scheiding {
+  height: 2px;
+  background-color: var(--accent);
+  margin: 28px 0;
+  border-radius: 2px;
+}
+
+
 /* =========================
    FLOW – DEFINITIEVE SPACING
    ========================= */
