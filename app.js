@@ -2251,10 +2251,46 @@ document.addEventListener("keydown", function (e) {
 });
 
 
+// ========================
+// NIEUWE POLIJST FASE STARTEN
+// ========================
+function startNieuwePolijstFase() {
 
+  if (fases.length >= 5) {
+    alert("Maximaal 5 fases toegestaan.");
+    return;
+  }
+
+  // 🔑 Type instellen
+  actieveFaseType = "polijsten";
+
+  // Nieuwe fase index
+  actieveFaseIndex = fases.length;
+
+  // Tijdelijke state resetten
+  gekozenAntwoorden = [];
+  gekozenSysteem = null;
+  gekozenOppervlakte = null;
+  gekozenRuimtes = null;
+  prijsPerM2 = null;
+  basisPrijs = null;
+  totaalPrijs = null;
+  backendExtras = [];
+  currentSystemOmschrijving = [];
+
+  gekozenExtras = [];
+  forcedExtras = [];
+
+  systeemKeuzeIndex = null;
+  currentNode = null;
+  currentSystemNode = null;
+
+  // 🔥 EXACT DEZELFDE FUNCTIE ALS HOMESCREEN
+  startPolijstPrijslijst();
+}
 
 // ========================
-// NIEUWE FASE STARTEN
+// NIEUWE COATING FASE STARTEN
 // ========================
 function startNieuweFase() {
 
@@ -2263,10 +2299,13 @@ function startNieuweFase() {
     return;
   }
 
+  // 🔑 Type expliciet instellen
+  actieveFaseType = "coating";
+
   // Nieuwe actieve fase instellen
   actieveFaseIndex = fases.length;
 
-  // Flow volledig resetten (maar fases bewaren!)
+  // Flow resetten (fases blijven bewaard)
   gekozenAntwoorden = [];
   gekozenSysteem = null;
   gekozenOppervlakte = null;
@@ -2287,7 +2326,6 @@ function startNieuweFase() {
   // Keuzegids opnieuw starten
   startKeuzegids();
 }
-
 
 
 // ========================
