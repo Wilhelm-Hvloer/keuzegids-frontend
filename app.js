@@ -2279,8 +2279,6 @@ function startNieuweFase() {
 }
 
 
-startNieuweFase(
-
 
 // ========================
 // FASE VERWIJDEREN
