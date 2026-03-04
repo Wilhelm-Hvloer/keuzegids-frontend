@@ -2157,22 +2157,33 @@ function toonSamenvatting() {
     // ========================
     // POLIJST FASE
     // ========================
-    if (fase.type === "polijsten") {
+if (fase.type === "polijsten") {
 
-      html += `<h3>Fase ${index + 1} – Polijsten</h3>`;
+  html += `<h3>Fase ${index + 1} – Polijsten</h3>`;
 
-      html += `
-        <div class="gekozen-systeem">
-          ${fase.gekozenSysteem || "-"}
-        </div>
-        <div>Prijs per m²: <strong>€ ${formatPrijs(fase.prijsPerM2)},-</strong></div>
-        <div style="margin-top:10px;">
-          <strong>Totaal fase ${index + 1}: 
-            € ${formatPrijs(faseTotaal)},-
-          </strong>
-        </div>
-      `;
-    }
+  html += `
+    <div class="gekozen-systeem">
+      ${fase.gekozenSysteem || "-"}
+    </div>
+
+    <div>
+      Aantal m²: 
+      <strong>${fase.gekozenOppervlakte || "-"} m²</strong>
+    </div>
+
+    <div>
+      Prijs per m²: 
+      <strong>€ ${formatPrijs(fase.prijsPerM2 || 0)},-</strong>
+    </div>
+
+    <div style="margin-top:12px;">
+      <strong>
+        Totaal fase ${index + 1}: 
+        € ${formatPrijs(fase.totaalPrijs || 0)},-
+      </strong>
+    </div>
+  `;
+}
 
     // ========================
     // VERWIJDERKNOP
@@ -2256,25 +2267,28 @@ document.addEventListener("keydown", function (e) {
 // ========================
 function startNieuwePolijstFase() {
 
+  // Eerst huidige fase opslaan
+  slaHuidigeFaseOp();
+
   if (fases.length >= 5) {
     alert("Maximaal 5 fases toegestaan.");
     return;
   }
 
-  // 🔑 Type instellen
+  // Nieuwe actieve fase bepalen
+  actieveFaseIndex = fases.length;
   actieveFaseType = "polijsten";
 
-  // Nieuwe fase index
-  actieveFaseIndex = fases.length;
-
-  // Tijdelijke state resetten
+  // State resetten (alleen huidige flow)
   gekozenAntwoorden = [];
   gekozenSysteem = null;
   gekozenOppervlakte = null;
   gekozenRuimtes = null;
+
   prijsPerM2 = null;
   basisPrijs = null;
   totaalPrijs = null;
+
   backendExtras = [];
   currentSystemOmschrijving = [];
 
@@ -2285,7 +2299,7 @@ function startNieuwePolijstFase() {
   currentNode = null;
   currentSystemNode = null;
 
-  // 🔥 EXACT DEZELFDE FUNCTIE ALS HOMESCREEN
+  // Polijst prijslijst starten
   startPolijstPrijslijst();
 }
 
