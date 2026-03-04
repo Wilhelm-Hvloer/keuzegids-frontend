@@ -2053,10 +2053,10 @@ function toonSamenvatting() {
     <strong>Samenvatting</strong>
     <div style="margin-top:15px; display:flex; flex-direction:column; gap:10px;">
       <button onclick="startNieuweFase()" class="fase-knop">
-        + Extra fase coating toevoegen
+        + fase coating
       </button>
       <button onclick="startNieuwePolijstFase()" class="fase-knop">
-        + Extra fase polijsten toevoegen
+        + fase polijsten
       </button>
     </div>
   `;
@@ -2071,7 +2071,8 @@ function toonSamenvatting() {
 
   fases.forEach((fase, index) => {
 
-    totaalProject += fase.totaalPrijs || 0;
+    const faseTotaal = fase.totaalPrijs || 0;
+    totaalProject += faseTotaal;
 
     html += `<div class="fase-blok">`;
 
@@ -2103,18 +2104,23 @@ function toonSamenvatting() {
       // m² & RUIMTES
       html += `
         <hr>
-        <div>Aantal m²: <strong>${fase.gekozenOppervlakte} m²</strong></div>
-        <div>Aantal ruimtes: <strong>${fase.gekozenRuimtes} ruimte${fase.gekozenRuimtes > 1 ? "s" : ""}</strong></div>
+        <div>Aantal m²: <strong>${fase.gekozenOppervlakte || "-"} m²</strong></div>
+        <div>Aantal ruimtes: <strong>${fase.gekozenRuimtes || "-"} ruimte${fase.gekozenRuimtes > 1 ? "s" : ""}</strong></div>
       `;
 
       // SYSTEEM
       html += `
         <hr>
         <div class="gekozen-systeem">
-          ${fase.gekozenSysteem}
+          ${fase.gekozenSysteem || "-"}
         </div>
         <div>Prijs per m²: <strong>€ ${formatPrijs(fase.prijsPerM2)},-</strong></div>
         <div>Basisprijs: <strong>€ ${formatPrijs(fase.basisPrijs)},-</strong></div>
+        <div style="margin-top:10px;">
+          <strong>Totaal fase ${index + 1}: 
+            € ${formatPrijs(faseTotaal)},-
+          </strong>
+        </div>
       `;
 
       // OPTIES
@@ -2157,10 +2163,14 @@ function toonSamenvatting() {
 
       html += `
         <div class="gekozen-systeem">
-          ${fase.gekozenSysteem}
+          ${fase.gekozenSysteem || "-"}
         </div>
         <div>Prijs per m²: <strong>€ ${formatPrijs(fase.prijsPerM2)},-</strong></div>
-        <div class="totaalprijs">€ ${formatPrijs(fase.totaalPrijs)},-</div>
+        <div style="margin-top:10px;">
+          <strong>Totaal fase ${index + 1}: 
+            € ${formatPrijs(faseTotaal)},-
+          </strong>
+        </div>
       `;
     }
 
