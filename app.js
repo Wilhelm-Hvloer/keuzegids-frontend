@@ -44,6 +44,14 @@ let gekozenSysteem = null;
 let gekozenAntwoorden = [];
 
 // ========================
+// FASES (NIEUW)
+// ========================
+let fases = [];               // opgeslagen fases (max 5)
+let actieveFaseIndex = null;  // index van fase die nu wordt opgebouwd
+
+
+
+// ========================
 // EXTRAS
 // ========================
 let gekozenExtras = [];        // vaste + variable_surface extras
@@ -1993,13 +2001,46 @@ async function berekenBasisPrijsVoorSysteem(systeemNaam, m2, ruimtes) {
 
 
 
+// ========================
+// FASE SNAPSHOT OPSLAAN
+// ========================
+function slaHuidigeFaseOp() {
 
+  if (!gekozenSysteem || !totaalPrijs) return;
+
+  const faseData = {
+    gekozenAntwoorden: JSON.parse(JSON.stringify(gekozenAntwoorden)),
+    gekozenSysteem,
+    gekozenOppervlakte,
+    gekozenRuimtes,
+    prijsPerM2,
+    basisPrijs,
+    totaalPrijs,
+    backendExtras: JSON.parse(JSON.stringify(backendExtras)),
+    currentSystemOmschrijving: JSON.parse(JSON.stringify(currentSystemOmschrijving))
+  };
+
+  // Eerste fase ooit
+  if (actieveFaseIndex === null) {
+    fases.push(faseData);
+    actieveFaseIndex = fases.length - 1;
+    return;
+  }
+
+  // Bestaande fase overschrijven
+  fases[actieveFaseIndex] = faseData;
+}
 
 
 // ========================
 // SAMENVATTING TONEN (ROBUST & JUISTE VOLGORDE)
 // ========================
 function toonSamenvatting() {
+
+  // ========================
+  // HUIDIGE FASE OPSLAAN
+  // ========================
+  slaHuidigeFaseOp();
 
   const questionEl = document.getElementById("question-text");
   const optionsEl  = document.getElementById("options-box");
