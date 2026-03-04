@@ -2483,18 +2483,21 @@ function toonPolijstInvoer(systeem, klanttype) {
 // ========================
 function toonPolijstResultaat(data) {
 
-  const resultEl = document.getElementById("result-box");
+  // 🔑 Vul state zodat fase kan worden opgeslagen
+  gekozenSysteem = data.systeem;
+  prijsPerM2 = data.prijs_per_m2 || null;
+  basisPrijs = null;
+  totaalPrijs = data.totaalprijs;
+  backendExtras = [];
 
-  resultEl.style.display = "block";
-  resultEl.innerHTML = "";
+  // 🔑 Type moet polijsten zijn
+  actieveFaseType = "polijsten";
 
-  resultEl.innerHTML = `
-    <div class="gekozen-systeem">${data.systeem}</div>
-    <div>${data.omschrijving}</div>
-    ${data.prijs_per_m2 ? `<div>€ ${formatPrijs(data.prijs_per_m2)} / m²</div>` : ""}
-    <hr>
-    <div class="totaalprijs">€ ${formatPrijs(data.totaalprijs)},-</div>
-  `;
+  // 🔥 Fase opslaan
+  slaHuidigeFaseOp();
+
+  // 🔥 Direct terug naar projectsamenvatting
+  toonSamenvatting();
 }
 
 
