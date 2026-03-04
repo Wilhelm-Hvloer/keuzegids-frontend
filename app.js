@@ -46,9 +46,8 @@ let gekozenAntwoorden = [];
 // ========================
 // FASES (NIEUW)
 // ========================
-let fases = [];               // opgeslagen fases (max 5)
-let actieveFaseIndex = null;  // index van fase die nu wordt opgebouwd
-
+let fases = [];              // opgeslagen fases (max 5)
+let actieveFaseIndex = 0;    // fase die nu wordt opgebouwd
 
 
 // ========================
@@ -2017,18 +2016,17 @@ function slaHuidigeFaseOp() {
     basisPrijs,
     totaalPrijs,
     backendExtras: JSON.parse(JSON.stringify(backendExtras)),
-    currentSystemOmschrijving: JSON.parse(JSON.stringify(currentSystemOmschrijving))
+    currentSystemOmschrijving: JSON.parse(JSON.stringify(currentSystemOmschrijving)),
+    systeemKeuzeIndex: systeemKeuzeIndex   // 👈 TOEGEVOEGD
   };
 
-  // Eerste fase ooit
-  if (actieveFaseIndex === null) {
+  // Nieuwe fase toevoegen als deze index nog niet bestaat
+  if (!fases[actieveFaseIndex]) {
     fases.push(faseData);
-    actieveFaseIndex = fases.length - 1;
-    return;
+  } else {
+    // Bestaande fase overschrijven
+    fases[actieveFaseIndex] = faseData;
   }
-
-  // Bestaande fase overschrijven
-  fases[actieveFaseIndex] = faseData;
 }
 
 
@@ -2046,7 +2044,15 @@ function toonSamenvatting() {
   const optionsEl  = document.getElementById("options-box");
   const resultEl   = document.getElementById("result-box");
 
-  questionEl.innerHTML = "<strong>Samenvatting</strong>";
+  questionEl.innerHTML = `
+    <strong>Samenvatting</strong>
+    <div style="margin-top:15px;">
+      <button onclick="startNieuweFase()" class="fase-knop">
+        + Extra fase toevoegen
+      </button>
+    </div>
+  `;
+
   optionsEl.innerHTML = "";
   optionsEl.style.display = "none";
   resultEl.style.display = "block";
@@ -2059,9 +2065,10 @@ function toonSamenvatting() {
 
     totaalProject += fase.totaalPrijs;
 
+    // 🔑 PER FASE EIGEN INDEX GEBRUIKEN
     const veiligeIndex =
-      typeof systeemKeuzeIndex === "number"
-        ? systeemKeuzeIndex
+      typeof fase.systeemKeuzeIndex === "number"
+        ? fase.systeemKeuzeIndex
         : fase.gekozenAntwoorden.length;
 
     const basisVragen = fase.gekozenAntwoorden.slice(0, veiligeIndex);
@@ -2197,6 +2204,48 @@ document.addEventListener("keydown", function (e) {
     closeInfoModal();
   }
 });
+
+
+
+
+// ========================
+// NIEUWE FASE STARTEN
+// ========================
+function startNieuweFase() {
+
+  if (fases.length >= 5) {
+    alert("Maximaal 5 fases toegestaan.");
+    return;
+  }
+
+  // Nieuwe actieve fase instellen
+  actieveFaseIndex = fases.length;
+
+  // Flow volledig resetten (maar fases bewaren!)
+  gekozenAntwoorden = [];
+  gekozenSysteem = null;
+  gekozenOppervlakte = null;
+  gekozenRuimtes = null;
+  prijsPerM2 = null;
+  basisPrijs = null;
+  totaalPrijs = null;
+  backendExtras = [];
+  currentSystemOmschrijving = [];
+
+  gekozenExtras = [];
+  forcedExtras = [];
+
+  systeemKeuzeIndex = null;
+  currentNode = null;
+  currentSystemNode = null;
+
+  // Keuzegids opnieuw starten
+  startKeuzegids();
+}
+
+
+
+
 
 
 // ========================
