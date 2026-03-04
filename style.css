@@ -274,6 +274,13 @@ hr {
   border-radius: 2px;
 }
 
+.fase-verwijder-wrapper {
+  margin-top: 28px;   /* ruimte boven knop */
+}
+
+.fase-verwijder-knop {
+  width: 100%;
+}
 
 /* =========================
    FLOW – DEFINITIEVE SPACING
