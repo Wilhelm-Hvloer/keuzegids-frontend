@@ -2033,7 +2033,7 @@ function slaHuidigeFaseOp() {
 
 
 // ========================
-// SAMENVATTING TONEN (ROBUST & JUISTE VOLGORDE)
+// SAMENVATTING TONEN (MULTI-FASE READY)
 // ========================
 function toonSamenvatting() {
 
@@ -2053,59 +2053,26 @@ function toonSamenvatting() {
   resultEl.innerHTML = "";
 
   let html = "";
+  let totaalProject = 0;
 
-  const veiligeIndex =
-    typeof systeemKeuzeIndex === "number"
-      ? systeemKeuzeIndex
-      : gekozenAntwoorden.length;
+  fases.forEach((fase, index) => {
 
-  const basisVragen = gekozenAntwoorden.slice(0, veiligeIndex);
-  const optieVragen = gekozenAntwoorden.slice(veiligeIndex);
+    totaalProject += fase.totaalPrijs;
 
-  // ========================
-  // 1️⃣ BASISVRAGEN
-  // ========================
-  basisVragen.forEach(item => {
-    html += `
-      <div class="qa-regel">
-        <span class="vraag"><em>${item.vraag}</em></span><br>
-        <span class="antwoord"><strong>${item.antwoord}</strong></span>
-      </div>
-    `;
-  });
+    const veiligeIndex =
+      typeof systeemKeuzeIndex === "number"
+        ? systeemKeuzeIndex
+        : fase.gekozenAntwoorden.length;
 
-  // ========================
-  // 2️⃣ m² & RUIMTES
-  // ========================
-  html += `
-    <hr>
-    <div>Aantal m²: <strong>${gekozenOppervlakte} m²</strong></div>
-    <div>Aantal ruimtes: <strong>${gekozenRuimtes} ruimte${gekozenRuimtes > 1 ? "s" : ""}</strong></div>
-  `;
+    const basisVragen = fase.gekozenAntwoorden.slice(0, veiligeIndex);
+    const optieVragen = fase.gekozenAntwoorden.slice(veiligeIndex);
 
-  // ========================
-  // 3️⃣ GEKOZEN SYSTEEM
-  // ========================
-  html += `
-    <hr>
-    <div class="gekozen-systeem">
-      ${gekozenSysteem}
-      ${
-        currentSystemOmschrijving && currentSystemOmschrijving.length
-          ? `<span class="info-icon" onclick="openInfoModal()">ⓘ</span>`
-          : ""
-      }
-    </div>
-    <div>Prijs per m²: <strong>€ ${formatPrijs(prijsPerM2)},-</strong></div>
-    <div>Basisprijs: <strong>€ ${formatPrijs(basisPrijs)},-</strong></div>
-  `;
+    html += `<hr><h3>Fase ${index + 1}</h3>`;
 
-  // ========================
-  // 4️⃣ OPTIEVRAGEN
-  // ========================
-  if (optieVragen.length > 0) {
-    html += "<hr>";
-    optieVragen.forEach(item => {
+    // ========================
+    // BASISVRAGEN
+    // ========================
+    basisVragen.forEach(item => {
       html += `
         <div class="qa-regel">
           <span class="vraag"><em>${item.vraag}</em></span><br>
@@ -2113,42 +2080,76 @@ function toonSamenvatting() {
         </div>
       `;
     });
-  }
 
-  // ========================
-  // 5️⃣ EXTRA'S
-  // ========================
-  if (backendExtras && backendExtras.length > 0) {
+    // ========================
+    // m² & RUIMTES
+    // ========================
+    html += `
+      <hr>
+      <div>Aantal m²: <strong>${fase.gekozenOppervlakte} m²</strong></div>
+      <div>Aantal ruimtes: <strong>${fase.gekozenRuimtes} ruimte${fase.gekozenRuimtes > 1 ? "s" : ""}</strong></div>
+    `;
 
-    html += "<hr><div><strong>Extra’s</strong></div>";
+    // ========================
+    // GEKOZEN SYSTEEM
+    // ========================
+    html += `
+      <hr>
+      <div class="gekozen-systeem">
+        ${fase.gekozenSysteem}
+      </div>
+      <div>Prijs per m²: <strong>€ ${formatPrijs(fase.prijsPerM2)},-</strong></div>
+      <div>Basisprijs: <strong>€ ${formatPrijs(fase.basisPrijs)},-</strong></div>
+    `;
 
-    backendExtras.forEach(extra => {
-      html += `
-        <div class="extra-blok">
-          <div>
-            <strong>
-              ${extra.naam}${extra.forced ? " <span style='opacity:0.7'>(verplicht)</span>" : ""}
-            </strong>
+    // ========================
+    // OPTIEVRAGEN
+    // ========================
+    if (optieVragen.length > 0) {
+      html += "<hr>";
+      optieVragen.forEach(item => {
+        html += `
+          <div class="qa-regel">
+            <span class="vraag"><em>${item.vraag}</em></span><br>
+            <span class="antwoord"><strong>${item.antwoord}</strong></span>
           </div>
-          ${extra.toelichting ? `<div class="extra-toelichting">${extra.toelichting}</div>` : ""}
-          <div class="extra-bedrag">€ ${formatPrijs(extra.totaal)},-</div>
-        </div>
-      `;
-    });
-  }
+        `;
+      });
+    }
+
+    // ========================
+    // EXTRA'S
+    // ========================
+    if (fase.backendExtras && fase.backendExtras.length > 0) {
+
+      html += "<hr><div><strong>Extra’s</strong></div>";
+
+      fase.backendExtras.forEach(extra => {
+        html += `
+          <div class="extra-blok">
+            <div>
+              <strong>
+                ${extra.naam}${extra.forced ? " (verplicht)" : ""}
+              </strong>
+            </div>
+            <div class="extra-bedrag">€ ${formatPrijs(extra.totaal)},-</div>
+          </div>
+        `;
+      });
+    }
+  });
 
   // ========================
-  // 6️⃣ TOTAAL
+  // PROJECT TOTAAL
   // ========================
   html += `
     <hr>
-    <div>Totaalprijs:</div>
-    <div class="totaalprijs">€ ${formatPrijs(totaalPrijs)},-</div>
+    <div><strong>Totaal project:</strong></div>
+    <div class="totaalprijs">€ ${formatPrijs(totaalProject)},-</div>
   `;
 
   resultEl.innerHTML = html;
 }
-
 
 
 // ========================
