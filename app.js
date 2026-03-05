@@ -2037,6 +2037,95 @@ function slaHuidigeFaseOp() {
   }
 }
 
+```javascript
+// ========================
+// BESTELLIJST GENEREREN
+// ========================
+function genereerBestellijst() {
+
+  if (!Array.isArray(fases) || fases.length === 0) {
+    return "<div>Geen materialen berekend.</div>";
+  }
+
+  let materialen = {};
+
+  fases.forEach(fase => {
+
+    if (!fase.gekozenSysteem) return;
+
+    const systeem = prijstabellen?.systemen?.[fase.gekozenSysteem];
+    if (!systeem || !Array.isArray(systeem.materialen)) return;
+
+    systeem.materialen.forEach(mat => {
+
+      const kg = (mat.kg_m2 || 0) * (fase.gekozenOppervlakte || 0);
+
+      if (!materialen[mat.product]) {
+        materialen[mat.product] = {
+          kg: 0,
+          verpakking: mat.verpakking || [25,10]
+        };
+      }
+
+      materialen[mat.product].kg += kg;
+    });
+
+  });
+
+  let html = "";
+
+  Object.entries(materialen).forEach(([product, data]) => {
+
+    let kg = data.kg;
+    const verpakkingen = [...data.verpakking].sort((a,b)=>b-a);
+
+    let resterend = kg;
+    let resultaat = [];
+
+    // grote blikken eerst
+    verpakkingen.forEach(size => {
+
+      if (size === 10) return; // 10kg later behandelen
+
+      let aantal = Math.floor(resterend / size);
+
+      if (aantal > 0) {
+        resultaat.push({size, aantal});
+        resterend -= size * aantal;
+      }
+
+    });
+
+    // maximaal 1 x 10kg gebruiken
+    if (resterend > 0 && verpakkingen.includes(10)) {
+      resultaat.push({size:10, aantal:1});
+      resterend -= 10;
+    }
+
+    // als er nog rest is → extra groot blik
+    if (resterend > 0) {
+      const grootste = verpakkingen[0];
+      resultaat.push({size:grootste, aantal:1});
+    }
+
+    const verpakkingTekst = resultaat
+      .map(v => `${v.aantal} x ${v.size}kg`)
+      .join(" + ");
+
+    html += `
+      <div class="bestelregel">
+        <div>${product}</div>
+        <div>${verpakkingTekst}</div>
+      </div>
+    `;
+
+  });
+
+  return html || "<div>Geen materialen.</div>";
+}
+```
+
+
 // ========================
 // SAMENVATTING TONEN (MULTI-FASE MET COATING + POLIJSTEN)
 // ========================
@@ -2198,6 +2287,26 @@ function toonSamenvatting() {
     <div><strong>Totaal project:</strong></div>
     <div class="totaalprijs">€ ${formatPrijs(totaalProject)},-</div>
   `;
+
+  // ========================
+  // PROJECT INFO KAART
+  // ========================
+  html += `
+    <div class="kaart project-info-kaart">
+
+      <h3>Project info</h3>
+
+      <div class="project-info-blok">
+        <strong>Bestellijst</strong>
+        ${genereerBestellijst()}
+      </div>
+
+      <div class="project-info-blok">
+        <strong>Planning</strong>
+        <div style="opacity:0.6;">(komt later)</div>
+      </div>
+  </div>
+`;
 
   resultEl.innerHTML = html;
 }

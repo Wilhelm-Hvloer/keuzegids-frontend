@@ -261,7 +261,23 @@ hr {
   color: var(--text-main);
 }
 
+/* =========================
+   Projectinfo – kaart
+   ========================= */
 
+.project-info-kaart{
+  margin-top:25px;
+}
+
+.project-info-blok{
+  margin-top:15px;
+}
+
+.bestelregel{
+  display:flex;
+  justify-content:space-between;
+  padding:4px 0;
+}
 
 /* =========================
    FASE SCHEIDING
