@@ -2465,6 +2465,10 @@ function toonPolijstInvoer(systeem, klanttype) {
     const m2 = parseFloat(input.value);
     if (!m2 || m2 <= 0) return;
 
+    // 🔧 FIX: m² opslaan voor samenvatting
+    gekozenOppervlakte = m2;
+    gekozenRuimtes = 1; // polijsten gebruikt geen ruimtes maar voorkomt null
+
     const res = await fetch(`${API_BASE}/api/polijst-price`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -2569,6 +2573,12 @@ function gaNaarHome() {
   if (errorEl) errorEl.innerHTML = "";
 
   document.getElementById("question-text").innerHTML = "";
+
+  // ========================
+  // 🔧 FASES RESET (BELANGRIJK)
+  // ========================
+  fases = [];
+  actieveFaseIndex = 0;
 
   // ========================
   // FRONTEND STATE RESET
