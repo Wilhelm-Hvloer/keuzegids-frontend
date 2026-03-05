@@ -2271,15 +2271,15 @@ function openFaseMenu() {
   optionsEl.innerHTML = `
     <div class="antwoord-groep">
 
-      <button onclick="startNieuweFase()" class="actie-knop">
+      <button onclick="startNieuweFase()" class="secundaire-knop">
         Coating (keuzegids)
       </button>
 
-      <button onclick="startPrijslijstCoatingFase()" class="actie-knop">
+      <button onclick="startPrijslijstCoatingFase()" class="secundaire-knop">
         Coating (prijslijst)
       </button>
 
-      <button onclick="startNieuwePolijstFase()" class="actie-knop">
+      <button onclick="startNieuwePolijstFase()" class="secundaire-knop">
         Polijsten
       </button>
 
