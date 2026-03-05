@@ -28,6 +28,22 @@ function maakAntwoordGroep() {
 
 const API_BASE = "https://keuzegids-backend-dev.onrender.com";
 
+// ========================
+// PRIJSTABELLEN JSON
+// ========================
+
+let prijstabellen = null;
+
+fetch("Prijstabellen coatingsystemen.json")
+  .then(res => res.json())
+  .then(data => {
+    prijstabellen = data;
+    console.log("Prijstabellen geladen:", prijstabellen);
+  })
+  .catch(err => {
+    console.error("Fout bij laden prijstabellen:", err);
+  });
+
 
 // ========================
 // STATE
@@ -2041,8 +2057,10 @@ function slaHuidigeFaseOp() {
 // ========================
 // BESTELLIJST GENEREREN
 // ========================
-function genereerBestellijst() {
-
+ function genereerBestellijst() {
+  if (!prijstabellen || !prijstabellen.systemen) {
+    return "<div>Prijstabellen laden...</div>";
+  }
   if (!Array.isArray(fases) || fases.length === 0) {
     return "<div>Geen materialen berekend.</div>";
   }
