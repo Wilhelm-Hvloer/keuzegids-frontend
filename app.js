@@ -2037,7 +2037,7 @@ function slaHuidigeFaseOp() {
   }
 }
 
-```javascript
+
 // ========================
 // BESTELLIJST GENEREREN
 // ========================
@@ -2123,7 +2123,7 @@ function genereerBestellijst() {
 
   return html || "<div>Geen materialen.</div>";
 }
-```
+
 
 
 // ========================
