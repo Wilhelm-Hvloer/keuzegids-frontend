@@ -2210,34 +2210,6 @@ function toonSamenvatting() {
 
   resultEl.innerHTML = html;
 }
-    // ========================
-    // VERWIJDERKNOP
-    // ========================
-    if (fases.length > 1) {
-      html += `
-        <div class="fase-verwijder-wrapper">
-          <button onclick="verwijderFase(${index})" class="fase-verwijder-knop">
-            Fase ${index + 1} verwijderen
-          </button>
-        </div>
-      `;
-    }
-
-    html += `<div class="fase-scheiding"></div>`;
-    html += `</div>`;
-  });
-
-  // ========================
-  // PROJECT TOTAAL
-  // ========================
-  html += `
-    <hr>
-    <div><strong>Totaal project:</strong></div>
-    <div class="totaalprijs">€ ${formatPrijs(totaalProject)},-</div>
-  `;
-
-  resultEl.innerHTML = html;
-}
 
 
 // ========================
