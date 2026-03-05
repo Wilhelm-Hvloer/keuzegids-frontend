@@ -2055,18 +2055,9 @@ function toonSamenvatting() {
     <strong>Samenvatting</strong>
     <div style="margin-top:15px; display:flex; flex-direction:column; gap:10px;">
 
-      <button onclick="startNieuweFase()" class="fase-knop">
-        + fase coating (gids)
+      <button onclick="openFaseMenu()" class="fase-knop">
+        + fase toevoegen
       </button>
-
-      <button onclick="startPrijslijstCoatingFase()" class="fase-knop">
-        + fase coating (lijst)
-      </button>
-
-      <button onclick="startNieuwePolijstFase()" class="fase-knop">
-        + fase polijsten
-      </button>
-
     </div>
   `;
 
@@ -2257,6 +2248,48 @@ document.addEventListener("keydown", function (e) {
     closeInfoModal();
   }
 });
+
+
+// ========================
+// FASE MENU
+// ========================
+function openFaseMenu() {
+
+  resetUI(); // 🔧 belangrijk
+
+  const questionEl = document.getElementById("question-text");
+  const optionsEl  = document.getElementById("options-box");
+  const resultEl   = document.getElementById("result-box");
+
+  questionEl.innerHTML = `
+    <strong>Fase toevoegen</strong>
+  `;
+
+  resultEl.style.display = "none";
+  optionsEl.style.display = "block";
+
+  optionsEl.innerHTML = `
+    <div class="antwoord-groep">
+
+      <button onclick="startNieuweFase()" class="actie-knop">
+        Coating (keuzegids)
+      </button>
+
+      <button onclick="startPrijslijstCoatingFase()" class="actie-knop">
+        Coating (prijslijst)
+      </button>
+
+      <button onclick="startNieuwePolijstFase()" class="actie-knop">
+        Polijsten
+      </button>
+
+      <button onclick="toonSamenvatting()" class="secundaire-knop">
+        ← terug naar samenvatting
+      </button>
+
+    </div>
+  `;
+}
 
 
 // ========================
