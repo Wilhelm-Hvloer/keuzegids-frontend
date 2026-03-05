@@ -2037,6 +2037,7 @@ function slaHuidigeFaseOp() {
   }
 }
 
+```javascript
 // ========================
 // SAMENVATTING TONEN (MULTI-FASE MET COATING + POLIJSTEN)
 // ========================
@@ -2101,7 +2102,6 @@ function toonSamenvatting() {
       const basisVragen = (fase.gekozenAntwoorden || []).slice(0, veiligeIndex);
       const optieVragen = (fase.gekozenAntwoorden || []).slice(veiligeIndex);
 
-      // BASISVRAGEN
       basisVragen.forEach(item => {
         html += `
           <div class="qa-regel">
@@ -2111,14 +2111,12 @@ function toonSamenvatting() {
         `;
       });
 
-      // m² & RUIMTES
       html += `
         <hr>
         <div>Aantal m²: <strong>${fase.gekozenOppervlakte || "-"} m²</strong></div>
         <div>Aantal ruimtes: <strong>${fase.gekozenRuimtes || "-"} ruimte${fase.gekozenRuimtes > 1 ? "s" : ""}</strong></div>
       `;
 
-      // SYSTEEM
       html += `
         <hr>
         <div class="gekozen-systeem">
@@ -2133,7 +2131,6 @@ function toonSamenvatting() {
         </div>
       `;
 
-      // OPTIES
       if (optieVragen.length > 0) {
         html += "<hr>";
         optieVragen.forEach(item => {
@@ -2146,7 +2143,6 @@ function toonSamenvatting() {
         });
       }
 
-      // EXTRA'S
       if (fase.backendExtras && fase.backendExtras.length > 0) {
         html += "<hr><div><strong>Extra’s</strong></div>";
         fase.backendExtras.forEach(extra => {
@@ -2195,8 +2191,22 @@ function toonSamenvatting() {
       `;
     }
 
+    // ========================
+    // VERWIJDERKNOP
+    // ========================
+    if (fases.length > 1) {
+      html += `
+        <div class="fase-verwijder-wrapper">
+          <button onclick="verwijderFase(${index})" class="fase-verwijder-knop">
+            Fase ${index + 1} verwijderen
+          </button>
+        </div>
+      `;
+    }
+
     html += `<div class="fase-scheiding"></div>`;
     html += `</div>`;
+
   });
 
   // ========================
@@ -2210,6 +2220,7 @@ function toonSamenvatting() {
 
   resultEl.innerHTML = html;
 }
+```
 
 
 // ========================
