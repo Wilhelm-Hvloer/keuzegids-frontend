@@ -2037,7 +2037,6 @@ function slaHuidigeFaseOp() {
   }
 }
 
-
 // ========================
 // SAMENVATTING TONEN (MULTI-FASE MET COATING + POLIJSTEN)
 // ========================
@@ -2049,20 +2048,31 @@ function toonSamenvatting() {
   const optionsEl  = document.getElementById("options-box");
   const resultEl   = document.getElementById("result-box");
 
+  // ========================
+  // TITEL + FASE KNOPPEN
+  // ========================
   questionEl.innerHTML = `
     <strong>Samenvatting</strong>
     <div style="margin-top:15px; display:flex; flex-direction:column; gap:10px;">
+
       <button onclick="startNieuweFase()" class="fase-knop">
-        + fase coating
+        + fase coating (gids)
       </button>
+
+      <button onclick="startPrijslijstCoatingFase()" class="fase-knop">
+        + fase coating (lijst)
+      </button>
+
       <button onclick="startNieuwePolijstFase()" class="fase-knop">
         + fase polijsten
       </button>
+
     </div>
   `;
 
   optionsEl.innerHTML = "";
   optionsEl.style.display = "none";
+
   resultEl.style.display = "block";
   resultEl.innerHTML = "";
 
@@ -2157,34 +2167,49 @@ function toonSamenvatting() {
     // ========================
     // POLIJST FASE
     // ========================
-if (fase.type === "polijsten") {
+    if (fase.type === "polijsten") {
 
-  html += `<h3>Fase ${index + 1} – Polijsten</h3>`;
+      html += `<h3>Fase ${index + 1} – Polijsten</h3>`;
 
+      html += `
+        <div class="gekozen-systeem">
+          ${fase.gekozenSysteem || "-"}
+        </div>
+
+        <div>
+          Aantal m²: 
+          <strong>${fase.gekozenOppervlakte || "-"} m²</strong>
+        </div>
+
+        <div>
+          Prijs per m²: 
+          <strong>€ ${formatPrijs(fase.prijsPerM2 || 0)},-</strong>
+        </div>
+
+        <div style="margin-top:12px;">
+          <strong>
+            Totaal fase ${index + 1}: 
+            € ${formatPrijs(fase.totaalPrijs || 0)},-
+          </strong>
+        </div>
+      `;
+    }
+
+    html += `<div class="fase-scheiding"></div>`;
+    html += `</div>`;
+  });
+
+  // ========================
+  // PROJECT TOTAAL
+  // ========================
   html += `
-    <div class="gekozen-systeem">
-      ${fase.gekozenSysteem || "-"}
-    </div>
-
-    <div>
-      Aantal m²: 
-      <strong>${fase.gekozenOppervlakte || "-"} m²</strong>
-    </div>
-
-    <div>
-      Prijs per m²: 
-      <strong>€ ${formatPrijs(fase.prijsPerM2 || 0)},-</strong>
-    </div>
-
-    <div style="margin-top:12px;">
-      <strong>
-        Totaal fase ${index + 1}: 
-        € ${formatPrijs(fase.totaalPrijs || 0)},-
-      </strong>
-    </div>
+    <hr>
+    <div><strong>Totaal project:</strong></div>
+    <div class="totaalprijs">€ ${formatPrijs(totaalProject)},-</div>
   `;
-}
 
+  resultEl.innerHTML = html;
+}
     // ========================
     // VERWIJDERKNOP
     // ========================
