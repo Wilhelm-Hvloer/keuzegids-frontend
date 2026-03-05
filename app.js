@@ -2037,7 +2037,7 @@ function slaHuidigeFaseOp() {
   }
 }
 
-```javascript
+
 // ========================
 // SAMENVATTING TONEN (MULTI-FASE MET COATING + POLIJSTEN)
 // ========================
