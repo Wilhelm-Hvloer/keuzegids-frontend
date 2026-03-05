@@ -2338,6 +2338,46 @@ function startNieuweFase() {
   startKeuzegids();
 }
 
+// ========================
+// NIEUWE COATING FASE VIA PRIJSLIJST
+// ========================
+function startPrijslijstCoatingFase() {
+
+  if (fases.length >= 5) {
+    alert("Maximaal 5 fases toegestaan.");
+    return;
+  }
+
+  // fase type instellen
+  actieveFaseType = "coating";
+
+  // nieuwe fase index
+  actieveFaseIndex = fases.length;
+
+  // state resetten (zoals bij startNieuweFase)
+  gekozenAntwoorden = [];
+  gekozenSysteem = null;
+  gekozenOppervlakte = null;
+  gekozenRuimtes = null;
+
+  prijsPerM2 = null;
+  basisPrijs = null;
+  totaalPrijs = null;
+
+  backendExtras = [];
+  currentSystemOmschrijving = [];
+
+  gekozenExtras = [];
+  forcedExtras = [];
+
+  systeemKeuzeIndex = null;
+  currentNode = null;
+  currentSystemNode = null;
+
+  // 🔑 start coating prijslijst
+  startPrijslijst();
+}
+
 
 // ========================
 // FASE VERWIJDEREN
