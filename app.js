@@ -2220,7 +2220,7 @@ function toonSamenvatting() {
 
   resultEl.innerHTML = html;
 }
-```
+
 
 
 // ========================
