@@ -2143,7 +2143,6 @@ function slaHuidigeFaseOp() {
 }
 
 
-
 // ========================
 // SAMENVATTING TONEN (MULTI-FASE MET COATING + POLIJSTEN)
 // ========================
@@ -2161,7 +2160,6 @@ function toonSamenvatting() {
   questionEl.innerHTML = `
     <strong>Samenvatting</strong>
     <div style="margin-top:15px; display:flex; flex-direction:column; gap:10px;">
-
       <button onclick="openFaseMenu()" class="fase-knop">
         + fase toevoegen
       </button>
@@ -2190,13 +2188,8 @@ function toonSamenvatting() {
     if (fase.type === "coating") {
 
       html += `
-        <div class="fase-header" style="display:flex;justify-content:space-between;align-items:center;">
+        <div class="fase-header">
           <h3>Fase ${index + 1} – Coating</h3>
-          ${
-            fases.length > 1
-            ? `<button class="fase-verwijder" onclick="verwijderFase(${index})">✕</button>`
-            : ""
-          }
         </div>
       `;
 
@@ -2277,13 +2270,8 @@ function toonSamenvatting() {
     if (fase.type === "polijsten") {
 
       html += `
-        <div class="fase-header" style="display:flex;justify-content:space-between;align-items:center;">
+        <div class="fase-header">
           <h3>Fase ${index + 1} – Polijsten</h3>
-          ${
-            fases.length > 1
-            ? `<button class="fase-verwijder" onclick="verwijderFase(${index})">✕</button>`
-            : ""
-          }
         </div>
       `;
 
@@ -2311,6 +2299,20 @@ function toonSamenvatting() {
       `;
     }
 
+    // ========================
+    // VERWIJDER FASE KNOP
+    // ========================
+    if (fases.length > 1) {
+      html += `
+        <div style="margin-top:20px; display:flex; justify-content:flex-end;">
+          <button class="fase-verwijder" onclick="verwijderFase(${index})">
+            fase verwijderen
+          </button>
+        </div>
+      `;
+    }
+
+    // oranje scheidingslijn
     html += `<div class="fase-scheiding"></div>`;
     html += `</div>`;
   });
