@@ -2189,7 +2189,16 @@ function toonSamenvatting() {
     // ========================
     if (fase.type === "coating") {
 
-      html += `<h3>Fase ${index + 1} – Coating</h3>`;
+      html += `
+        <div class="fase-header" style="display:flex;justify-content:space-between;align-items:center;">
+          <h3>Fase ${index + 1} – Coating</h3>
+          ${
+            fases.length > 1
+            ? `<button class="fase-verwijder" onclick="verwijderFase(${index})">✕</button>`
+            : ""
+          }
+        </div>
+      `;
 
       const veiligeIndex =
         typeof fase.systeemKeuzeIndex === "number"
@@ -2267,7 +2276,16 @@ function toonSamenvatting() {
     // ========================
     if (fase.type === "polijsten") {
 
-      html += `<h3>Fase ${index + 1} – Polijsten</h3>`;
+      html += `
+        <div class="fase-header" style="display:flex;justify-content:space-between;align-items:center;">
+          <h3>Fase ${index + 1} – Polijsten</h3>
+          ${
+            fases.length > 1
+            ? `<button class="fase-verwijder" onclick="verwijderFase(${index})">✕</button>`
+            : ""
+          }
+        </div>
+      `;
 
       html += `
         <div class="gekozen-systeem">
@@ -2323,8 +2341,8 @@ function toonSamenvatting() {
         <strong>Planning</strong>
         <div style="opacity:0.6;">(komt later)</div>
       </div>
-  </div>
-`;
+    </div>
+  `;
 
   resultEl.innerHTML = html;
 }
