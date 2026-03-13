@@ -2038,6 +2038,9 @@ function slaHuidigeFaseOp() {
   }
 }
 
+// ========================
+// BESTELLIJST GENEREREN (MET SIMPELE VERPAKKINGSLOGICA)
+// ========================
 async function genereerBestellijst() {
 
   if (!Array.isArray(fases) || fases.length === 0) {
@@ -2046,10 +2049,17 @@ async function genereerBestellijst() {
 
   try {
 
+    // Alleen coating fases meesturen (veiliger)
+    const coatingFases = fases.filter(f => f.type === "coating");
+
+    if (coatingFases.length === 0) {
+      return "<div>Geen coatingmaterialen nodig.</div>";
+    }
+
     const res = await fetch(`${API_BASE}/api/materialen`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ fases })
+      body: JSON.stringify({ fases: coatingFases })
     });
 
     const data = await res.json();
@@ -2064,38 +2074,47 @@ async function genereerBestellijst() {
 
     Object.entries(materialen).forEach(([product, info]) => {
 
-      let kg = info.kg;
-      const verpakkingen = [...info.verpakking].sort((a,b)=>b-a);
+      const kg = info.kg || 0;
+      const verpakkingen = Array.isArray(info.verpakking)
+        ? [...info.verpakking].sort((a,b)=>b-a)
+        : [];
 
-      let resterend = kg;
-      let resultaat = [];
+      if (verpakkingen.length === 0) return;
 
-      verpakkingen.forEach(size => {
+      const grootste = verpakkingen[0];
+      const kleinste = verpakkingen[verpakkingen.length - 1];
 
-        if (size === 10) return;
+      let aantalGroot = Math.floor(kg / grootste);
+      let totaal = aantalGroot * grootste;
 
-        let aantal = Math.floor(resterend / size);
+      let aantalKlein = 0;
 
-        if (aantal > 0) {
-          resultaat.push({size, aantal});
-          resterend -= size * aantal;
+      // Probeer met 1 kleine verpakking
+      if (kleinste && kleinste !== grootste) {
+
+        if (totaal + kleinste >= kg) {
+          aantalKlein = 1;
+        } else {
+          // kleine vervangen door grote
+          aantalGroot += 1;
         }
 
-      });
-
-      if (resterend > 0 && verpakkingen.includes(10)) {
-        resultaat.push({size:10, aantal:1});
-        resterend -= 10;
+      } else {
+        // Alleen grote verpakking beschikbaar
+        if (totaal < kg) {
+          aantalGroot += 1;
+        }
       }
 
-      if (resterend > 0) {
-        const grootste = verpakkingen[0];
-        resultaat.push({size:grootste, aantal:1});
+      let verpakkingTekst = "";
+
+      if (aantalGroot > 0) {
+        verpakkingTekst += `${aantalGroot} x ${grootste}kg`;
       }
 
-      const verpakkingTekst = resultaat
-        .map(v => `${v.aantal} x ${v.size}kg`)
-        .join(" + ");
+      if (aantalKlein > 0) {
+        verpakkingTekst += ` + ${aantalKlein} x ${kleinste}kg`;
+      }
 
       html += `
         <div class="bestelregel">
@@ -2112,6 +2131,8 @@ async function genereerBestellijst() {
     return "<div>Materialen konden niet worden geladen.</div>";
   }
 }
+
+
 
 // ========================
 // SAMENVATTING TONEN (MULTI-FASE MET COATING + POLIJSTEN)
