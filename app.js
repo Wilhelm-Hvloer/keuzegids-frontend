@@ -2208,7 +2208,7 @@ function toonSamenvatting() {
         <div>Aantal ruimtes: <strong>${fase.gekozenRuimtes || "-"} ruimte${fase.gekozenRuimtes > 1 ? "s" : ""}</strong></div>
       `;
 
-=======
+
       // ========================
       // SYSTEEM + INFO BALON
       // ========================
@@ -2306,15 +2306,9 @@ function toonSamenvatting() {
     // ========================
     if (fases.length > 1) {
       html += `
-        <div class="fase-verwijder-wrapper">
-          <button onclick="verwijderFase(${index})" class="fase-verwijder-knop">
+        <div class="fase-verwijder-wrapper" style="margin-top:20px; display:flex; justify-content:flex-end;">
+          <button class="fase-verwijder-knop" onclick="verwijderFase(${index})">
             Fase ${index + 1} verwijderen
-=======
-    if (fases.length > 1) {
-      html += `
-        <div style="margin-top:20px; display:flex; justify-content:flex-end;">
-          <button class="fase-verwijder" onclick="verwijderFase(${index})">
-            fase verwijderen
           </button>
         </div>
       `;
