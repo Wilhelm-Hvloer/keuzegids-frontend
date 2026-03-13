@@ -29,6 +29,7 @@ function maakAntwoordGroep() {
 const API_BASE = "https://keuzegids-backend-dev.onrender.com";
 
 
+
 // ========================
 // STATE
 // ========================
@@ -2039,6 +2040,102 @@ function slaHuidigeFaseOp() {
 
 
 // ========================
+// BESTELLIJST GENEREREN (MET SIMPELE VERPAKKINGSLOGICA)
+// ========================
+async function genereerBestellijst() {
+
+  if (!Array.isArray(fases) || fases.length === 0) {
+    return "<div>Geen materialen berekend.</div>";
+  }
+
+  try {
+
+    // Alleen coating fases meesturen (veiliger)
+    const coatingFases = fases.filter(f => f.type === "coating");
+
+    if (coatingFases.length === 0) {
+      return "<div>Geen coatingmaterialen nodig.</div>";
+    }
+
+    const res = await fetch(`${API_BASE}/api/materialen`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ fases: coatingFases })
+    });
+
+    const data = await res.json();
+
+    if (!data || !data.materialen) {
+      return "<div>Geen materialen.</div>";
+    }
+
+    const materialen = data.materialen;
+
+    let html = "";
+
+    Object.entries(materialen).forEach(([product, info]) => {
+
+      const kg = info.kg || 0;
+      const verpakkingen = Array.isArray(info.verpakking)
+        ? [...info.verpakking].sort((a,b)=>b-a)
+        : [];
+
+      if (verpakkingen.length === 0) return;
+
+      const grootste = verpakkingen[0];
+      const kleinste = verpakkingen[verpakkingen.length - 1];
+
+      let aantalGroot = Math.floor(kg / grootste);
+      let totaal = aantalGroot * grootste;
+
+      let aantalKlein = 0;
+
+      // Probeer met 1 kleine verpakking
+      if (kleinste && kleinste !== grootste) {
+
+        if (totaal + kleinste >= kg) {
+          aantalKlein = 1;
+        } else {
+          // kleine vervangen door grote
+          aantalGroot += 1;
+        }
+
+      } else {
+        // Alleen grote verpakking beschikbaar
+        if (totaal < kg) {
+          aantalGroot += 1;
+        }
+      }
+
+      let verpakkingTekst = "";
+
+      if (aantalGroot > 0) {
+        verpakkingTekst += `${aantalGroot} x ${grootste}kg`;
+      }
+
+      if (aantalKlein > 0) {
+        verpakkingTekst += ` + ${aantalKlein} x ${kleinste}kg`;
+      }
+
+      html += `
+        <div class="bestelregel">
+          <div>${product}</div>
+          <div>${verpakkingTekst}</div>
+        </div>
+      `;
+    });
+
+    return html || "<div>Geen materialen.</div>";
+
+  } catch (err) {
+    console.error("❌ Fout bij ophalen materialen:", err);
+    return "<div>Materialen konden niet worden geladen.</div>";
+  }
+}
+
+
+
+// ========================
 // SAMENVATTING TONEN (MULTI-FASE MET COATING + POLIJSTEN)
 // ========================
 function toonSamenvatting() {
@@ -2055,19 +2152,9 @@ function toonSamenvatting() {
   questionEl.innerHTML = `
     <strong>Samenvatting</strong>
     <div style="margin-top:15px; display:flex; flex-direction:column; gap:10px;">
-
-      <button onclick="startNieuweFase()" class="fase-knop">
-        + fase coating (gids)
+      <button onclick="openFaseMenu()" class="fase-knop">
+        + fase toevoegen
       </button>
-
-      <button onclick="startPrijslijstCoatingFase()" class="fase-knop">
-        + fase coating (lijst)
-      </button>
-
-      <button onclick="startNieuwePolijstFase()" class="fase-knop">
-        + fase polijsten
-      </button>
-
     </div>
   `;
 
@@ -2092,7 +2179,11 @@ function toonSamenvatting() {
     // ========================
     if (fase.type === "coating") {
 
-      html += `<h3>Fase ${index + 1} – Coating</h3>`;
+      html += `
+        <div class="fase-header">
+          <h3>Fase ${index + 1} – Coating</h3>
+        </div>
+      `;
 
       const veiligeIndex =
         typeof fase.systeemKeuzeIndex === "number"
@@ -2117,11 +2208,28 @@ function toonSamenvatting() {
         <div>Aantal ruimtes: <strong>${fase.gekozenRuimtes || "-"} ruimte${fase.gekozenRuimtes > 1 ? "s" : ""}</strong></div>
       `;
 
+<<<<<<< HEAD
+=======
+      // ========================
+      // SYSTEEM + INFO BALON
+      // ========================
+>>>>>>> development
       html += `
         <hr>
         <div class="gekozen-systeem">
           ${fase.gekozenSysteem || "-"}
+          ${
+            fase.currentSystemOmschrijving && fase.currentSystemOmschrijving.length
+              ? `
+                <span class="info-icon"
+                      onclick='currentSystemOmschrijving = ${JSON.stringify(fase.currentSystemOmschrijving)}; openInfoModal();'>
+                  ⓘ
+                </span>
+              `
+              : ""
+          }
         </div>
+
         <div>Prijs per m²: <strong>€ ${formatPrijs(fase.prijsPerM2)},-</strong></div>
         <div>Basisprijs: <strong>€ ${formatPrijs(fase.basisPrijs)},-</strong></div>
         <div style="margin-top:10px;">
@@ -2165,9 +2273,11 @@ function toonSamenvatting() {
     // ========================
     if (fase.type === "polijsten") {
 
-      html += `<h3>Fase ${index + 1} – Polijsten</h3>`;
-
       html += `
+        <div class="fase-header">
+          <h3>Fase ${index + 1} – Polijsten</h3>
+        </div>
+
         <div class="gekozen-systeem">
           ${fase.gekozenSysteem || "-"}
         </div>
@@ -2191,6 +2301,7 @@ function toonSamenvatting() {
       `;
     }
 
+<<<<<<< HEAD
     // ========================
     // VERWIJDERKNOP
     // ========================
@@ -2199,6 +2310,13 @@ function toonSamenvatting() {
         <div class="fase-verwijder-wrapper">
           <button onclick="verwijderFase(${index})" class="fase-verwijder-knop">
             Fase ${index + 1} verwijderen
+=======
+    if (fases.length > 1) {
+      html += `
+        <div style="margin-top:20px; display:flex; justify-content:flex-end;">
+          <button class="fase-verwijder" onclick="verwijderFase(${index})">
+            fase verwijderen
+>>>>>>> development
           </button>
         </div>
       `;
@@ -2209,18 +2327,40 @@ function toonSamenvatting() {
 
   });
 
-  // ========================
-  // PROJECT TOTAAL
-  // ========================
   html += `
     <hr>
     <div><strong>Totaal project:</strong></div>
     <div class="totaalprijs">€ ${formatPrijs(totaalProject)},-</div>
   `;
 
-  resultEl.innerHTML = html;
-}
+  html += `
+    <div class="kaart project-info-kaart">
 
+      <h3>Project info</h3>
+
+      <div class="project-info-blok">
+        <strong>Bestellijst</strong>
+        <div id="bestellijst-container">
+          Materialen laden...
+        </div>
+      </div>
+
+      <div class="project-info-blok">
+        <strong>Planning</strong>
+        <div style="opacity:0.6;">(komt later)</div>
+      </div>
+    </div>
+  `;
+
+  resultEl.innerHTML = html;
+
+  genereerBestellijst().then(bestellijstHtml => {
+    const container = document.getElementById("bestellijst-container");
+    if (container) {
+      container.innerHTML = bestellijstHtml;
+    }
+  });
+}
 
 
 // ========================
@@ -2271,17 +2411,54 @@ document.addEventListener("keydown", function (e) {
 
 
 // ========================
+// FASE MENU
+// ========================
+function openFaseMenu() {
+
+  resetUI(); // 🔧 belangrijk
+
+  const questionEl = document.getElementById("question-text");
+  const optionsEl  = document.getElementById("options-box");
+  const resultEl   = document.getElementById("result-box");
+
+  questionEl.innerHTML = `
+    <strong>Fase toevoegen</strong>
+  `;
+
+  resultEl.style.display = "none";
+  optionsEl.style.display = "block";
+
+  optionsEl.innerHTML = `
+    <div class="antwoord-groep">
+
+      <button onclick="startNieuweFase()" class="secundaire-knop">
+        Coating (keuzegids)
+      </button>
+
+      <button onclick="startPrijslijstCoatingFase()" class="secundaire-knop">
+        Coating (prijslijst)
+      </button>
+
+      <button onclick="startNieuwePolijstFase()" class="secundaire-knop">
+        Polijsten
+      </button>
+
+      <button onclick="toonSamenvatting()" class="secundaire-knop">
+        ← terug naar samenvatting
+      </button>
+
+    </div>
+  `;
+}
+
+
+// ========================
 // NIEUWE POLIJST FASE STARTEN
 // ========================
 function startNieuwePolijstFase() {
 
   // Eerst huidige fase opslaan
   slaHuidigeFaseOp();
-
-  if (fases.length >= 5) {
-    alert("Maximaal 5 fases toegestaan.");
-    return;
-  }
 
   // Nieuwe actieve fase bepalen
   actieveFaseIndex = fases.length;
@@ -2316,10 +2493,6 @@ function startNieuwePolijstFase() {
 // ========================
 function startNieuweFase() {
 
-  if (fases.length >= 5) {
-    alert("Maximaal 5 fases toegestaan.");
-    return;
-  }
 
   // 🔑 Type expliciet instellen
   actieveFaseType = "coating";
@@ -2353,11 +2526,6 @@ function startNieuweFase() {
 // NIEUWE COATING FASE VIA PRIJSLIJST
 // ========================
 function startPrijslijstCoatingFase() {
-
-  if (fases.length >= 5) {
-    alert("Maximaal 5 fases toegestaan.");
-    return;
-  }
 
   // fase type instellen
   actieveFaseType = "coating";
