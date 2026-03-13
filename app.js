@@ -28,21 +28,6 @@ function maakAntwoordGroep() {
 
 const API_BASE = "https://keuzegids-backend-dev.onrender.com";
 
-// ========================
-// PRIJSTABELLEN JSON
-// ========================
-
-let prijstabellen = null;
-
-fetch("Prijstabellen coatingsystemen.json")
-  .then(res => res.json())
-  .then(data => {
-    prijstabellen = data;
-    console.log("Prijstabellen geladen:", prijstabellen);
-  })
-  .catch(err => {
-    console.error("Fout bij laden prijstabellen:", err);
-  });
 
 
 // ========================
@@ -2053,95 +2038,80 @@ function slaHuidigeFaseOp() {
   }
 }
 
+async function genereerBestellijst() {
 
-// ========================
-// BESTELLIJST GENEREREN
-// ========================
- function genereerBestellijst() {
-  if (!prijstabellen || !prijstabellen.systemen) {
-    return "<div>Prijstabellen laden...</div>";
-  }
   if (!Array.isArray(fases) || fases.length === 0) {
     return "<div>Geen materialen berekend.</div>";
   }
 
-  let materialen = {};
+  try {
 
-  fases.forEach(fase => {
-
-    if (!fase.gekozenSysteem) return;
-
-    const systeem = prijstabellen?.systemen?.[fase.gekozenSysteem];
-    if (!systeem || !Array.isArray(systeem.materialen)) return;
-
-    systeem.materialen.forEach(mat => {
-
-      const kg = (mat.kg_m2 || 0) * (fase.gekozenOppervlakte || 0);
-
-      if (!materialen[mat.product]) {
-        materialen[mat.product] = {
-          kg: 0,
-          verpakking: mat.verpakking || [25,10]
-        };
-      }
-
-      materialen[mat.product].kg += kg;
+    const res = await fetch(`${API_BASE}/api/materialen`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ fases })
     });
 
-  });
+    const data = await res.json();
 
-  let html = "";
+    if (!data || !data.materialen) {
+      return "<div>Geen materialen.</div>";
+    }
 
-  Object.entries(materialen).forEach(([product, data]) => {
+    const materialen = data.materialen;
 
-    let kg = data.kg;
-    const verpakkingen = [...data.verpakking].sort((a,b)=>b-a);
+    let html = "";
 
-    let resterend = kg;
-    let resultaat = [];
+    Object.entries(materialen).forEach(([product, info]) => {
 
-    // grote blikken eerst
-    verpakkingen.forEach(size => {
+      let kg = info.kg;
+      const verpakkingen = [...info.verpakking].sort((a,b)=>b-a);
 
-      if (size === 10) return; // 10kg later behandelen
+      let resterend = kg;
+      let resultaat = [];
 
-      let aantal = Math.floor(resterend / size);
+      verpakkingen.forEach(size => {
 
-      if (aantal > 0) {
-        resultaat.push({size, aantal});
-        resterend -= size * aantal;
+        if (size === 10) return;
+
+        let aantal = Math.floor(resterend / size);
+
+        if (aantal > 0) {
+          resultaat.push({size, aantal});
+          resterend -= size * aantal;
+        }
+
+      });
+
+      if (resterend > 0 && verpakkingen.includes(10)) {
+        resultaat.push({size:10, aantal:1});
+        resterend -= 10;
       }
 
+      if (resterend > 0) {
+        const grootste = verpakkingen[0];
+        resultaat.push({size:grootste, aantal:1});
+      }
+
+      const verpakkingTekst = resultaat
+        .map(v => `${v.aantal} x ${v.size}kg`)
+        .join(" + ");
+
+      html += `
+        <div class="bestelregel">
+          <div>${product}</div>
+          <div>${verpakkingTekst}</div>
+        </div>
+      `;
     });
 
-    // maximaal 1 x 10kg gebruiken
-    if (resterend > 0 && verpakkingen.includes(10)) {
-      resultaat.push({size:10, aantal:1});
-      resterend -= 10;
-    }
+    return html || "<div>Geen materialen.</div>";
 
-    // als er nog rest is → extra groot blik
-    if (resterend > 0) {
-      const grootste = verpakkingen[0];
-      resultaat.push({size:grootste, aantal:1});
-    }
-
-    const verpakkingTekst = resultaat
-      .map(v => `${v.aantal} x ${v.size}kg`)
-      .join(" + ");
-
-    html += `
-      <div class="bestelregel">
-        <div>${product}</div>
-        <div>${verpakkingTekst}</div>
-      </div>
-    `;
-
-  });
-
-  return html || "<div>Geen materialen.</div>";
+  } catch (err) {
+    console.error("❌ Fout bij ophalen materialen:", err);
+    return "<div>Materialen konden niet worden geladen.</div>";
+  }
 }
-
 
 // ========================
 // SAMENVATTING TONEN (MULTI-FASE MET COATING + POLIJSTEN)
@@ -2336,7 +2306,9 @@ function toonSamenvatting() {
 
       <div class="project-info-blok">
         <strong>Bestellijst</strong>
-        ${genereerBestellijst()}
+        <div id="bestellijst-container">
+          Materialen laden...
+        </div>
       </div>
 
       <div class="project-info-blok">
@@ -2347,8 +2319,15 @@ function toonSamenvatting() {
   `;
 
   resultEl.innerHTML = html;
-}
 
+  // 🔥 Nu async vullen
+  genereerBestellijst().then(bestellijstHtml => {
+    const container = document.getElementById("bestellijst-container");
+    if (container) {
+      container.innerHTML = bestellijstHtml;
+    }
+  });
+}
 
 // ========================
 // SYSTEEMOPBOUW POP-UP (PRO VERSIE)
