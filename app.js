@@ -2192,7 +2192,6 @@ function toonSamenvatting() {
       const basisVragen = (fase.gekozenAntwoorden || []).slice(0, veiligeIndex);
       const optieVragen = (fase.gekozenAntwoorden || []).slice(veiligeIndex);
 
-      // BASISVRAGEN
       basisVragen.forEach(item => {
         html += `
           <div class="qa-regel">
@@ -2202,19 +2201,31 @@ function toonSamenvatting() {
         `;
       });
 
-      // m² & RUIMTES
       html += `
         <hr>
         <div>Aantal m²: <strong>${fase.gekozenOppervlakte || "-"} m²</strong></div>
         <div>Aantal ruimtes: <strong>${fase.gekozenRuimtes || "-"} ruimte${fase.gekozenRuimtes > 1 ? "s" : ""}</strong></div>
       `;
 
-      // SYSTEEM
+      // ========================
+      // SYSTEEM + INFO BALON
+      // ========================
       html += `
         <hr>
         <div class="gekozen-systeem">
           ${fase.gekozenSysteem || "-"}
+          ${
+            fase.currentSystemOmschrijving && fase.currentSystemOmschrijving.length
+              ? `
+                <span class="info-icon"
+                      onclick='currentSystemOmschrijving = ${JSON.stringify(fase.currentSystemOmschrijving)}; openInfoModal();'>
+                  ⓘ
+                </span>
+              `
+              : ""
+          }
         </div>
+
         <div>Prijs per m²: <strong>€ ${formatPrijs(fase.prijsPerM2)},-</strong></div>
         <div>Basisprijs: <strong>€ ${formatPrijs(fase.basisPrijs)},-</strong></div>
         <div style="margin-top:10px;">
@@ -2224,7 +2235,6 @@ function toonSamenvatting() {
         </div>
       `;
 
-      // OPTIES
       if (optieVragen.length > 0) {
         html += "<hr>";
         optieVragen.forEach(item => {
@@ -2237,7 +2247,6 @@ function toonSamenvatting() {
         });
       }
 
-      // EXTRA'S
       if (fase.backendExtras && fase.backendExtras.length > 0) {
         html += "<hr><div><strong>Extra’s</strong></div>";
         fase.backendExtras.forEach(extra => {
@@ -2264,9 +2273,7 @@ function toonSamenvatting() {
         <div class="fase-header">
           <h3>Fase ${index + 1} – Polijsten</h3>
         </div>
-      `;
 
-      html += `
         <div class="gekozen-systeem">
           ${fase.gekozenSysteem || "-"}
         </div>
@@ -2290,9 +2297,6 @@ function toonSamenvatting() {
       `;
     }
 
-    // ========================
-    // VERWIJDER FASE KNOP
-    // ========================
     if (fases.length > 1) {
       html += `
         <div style="margin-top:20px; display:flex; justify-content:flex-end;">
@@ -2303,23 +2307,16 @@ function toonSamenvatting() {
       `;
     }
 
-    // oranje scheidingslijn
     html += `<div class="fase-scheiding"></div>`;
     html += `</div>`;
   });
 
-  // ========================
-  // PROJECT TOTAAL
-  // ========================
   html += `
     <hr>
     <div><strong>Totaal project:</strong></div>
     <div class="totaalprijs">€ ${formatPrijs(totaalProject)},-</div>
   `;
 
-  // ========================
-  // PROJECT INFO KAART
-  // ========================
   html += `
     <div class="kaart project-info-kaart">
 
@@ -2341,7 +2338,6 @@ function toonSamenvatting() {
 
   resultEl.innerHTML = html;
 
-  // 🔥 Nu async vullen
   genereerBestellijst().then(bestellijstHtml => {
     const container = document.getElementById("bestellijst-container");
     if (container) {
@@ -2447,11 +2443,6 @@ function startNieuwePolijstFase() {
   // Eerst huidige fase opslaan
   slaHuidigeFaseOp();
 
-  if (fases.length >= 5) {
-    alert("Maximaal 5 fases toegestaan.");
-    return;
-  }
-
   // Nieuwe actieve fase bepalen
   actieveFaseIndex = fases.length;
   actieveFaseType = "polijsten";
@@ -2485,10 +2476,6 @@ function startNieuwePolijstFase() {
 // ========================
 function startNieuweFase() {
 
-  if (fases.length >= 5) {
-    alert("Maximaal 5 fases toegestaan.");
-    return;
-  }
 
   // 🔑 Type expliciet instellen
   actieveFaseType = "coating";
@@ -2522,11 +2509,6 @@ function startNieuweFase() {
 // NIEUWE COATING FASE VIA PRIJSLIJST
 // ========================
 function startPrijslijstCoatingFase() {
-
-  if (fases.length >= 5) {
-    alert("Maximaal 5 fases toegestaan.");
-    return;
-  }
 
   // fase type instellen
   actieveFaseType = "coating";
