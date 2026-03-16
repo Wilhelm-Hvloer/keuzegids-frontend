@@ -1823,6 +1823,17 @@ function toonMateriaalPagina() {
   bedragInput.addEventListener("input", validate);
   toelichtingInput.addEventListener("input", validate);
 
+  function gaVerder() {
+    // 🔑 coating moet prijs opnieuw berekenen
+    if (actieveFaseType === "coating") {
+      herberekenPrijs().then(toonSamenvatting);
+    } 
+    // 🔑 polijsten heeft al prijs → direct samenvatting
+    else {
+      toonSamenvatting();
+    }
+  }
+
   btnNee.onclick = () => {
     if (bedragInput.value) {
       foutmelding.textContent =
@@ -1832,7 +1843,7 @@ function toonMateriaalPagina() {
 
     extraMateriaal.bedrag = null;
     extraMateriaal.toelichting = "";
-    herberekenPrijs().then(toonSamenvatting);
+    gaVerder();
   };
 
   btnJa.onclick = () => {
@@ -1843,10 +1854,9 @@ function toonMateriaalPagina() {
 
     extraMateriaal.bedrag = parseInt(bedragInput.value);
     extraMateriaal.toelichting = toelichtingInput.value.trim();
-    herberekenPrijs().then(toonSamenvatting);
+    gaVerder();
   };
 
-  // 🔑 ZELFDE OPLOSSING ALS EXTRA ARBEID
   const groep = document.createElement("div");
   groep.className = "antwoord-groep";
 
