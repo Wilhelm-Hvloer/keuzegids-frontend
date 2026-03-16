@@ -2018,12 +2018,11 @@ async function berekenBasisPrijsVoorSysteem(systeemNaam, m2, ruimtes) {
 // ========================
 function slaHuidigeFaseOp() {
 
-  if (!totaalPrijs) return;
+  if (!gekozenSysteem) return;
 
   const faseData = {
-    type: actieveFaseType,   // 🔑 NIEUW
+    type: actieveFaseType,
 
-    // Coating data (kan leeg zijn bij polijsten)
     gekozenAntwoorden: JSON.parse(JSON.stringify(gekozenAntwoorden || [])),
     gekozenSysteem,
     gekozenOppervlakte,
@@ -2031,7 +2030,6 @@ function slaHuidigeFaseOp() {
     prijsPerM2,
     basisPrijs,
 
-    // Gemeenschappelijk
     totaalPrijs,
 
     backendExtras: JSON.parse(JSON.stringify(backendExtras || [])),
@@ -2040,7 +2038,6 @@ function slaHuidigeFaseOp() {
     systeemKeuzeIndex
   };
 
-  // Nieuwe fase toevoegen als deze index nog niet bestaat
   if (!fases[actieveFaseIndex]) {
     fases.push(faseData);
   } else {
@@ -2155,9 +2152,6 @@ function toonSamenvatting() {
   const optionsEl  = document.getElementById("options-box");
   const resultEl   = document.getElementById("result-box");
 
-  // ========================
-  // TITEL + FASE KNOPPEN
-  // ========================
   questionEl.innerHTML = `
     <strong>Samenvatting</strong>
     <div style="margin-top:15px; display:flex; flex-direction:column; gap:10px;">
@@ -2184,25 +2178,20 @@ function toonSamenvatting() {
     html += `<div class="fase-blok">`;
 
     // ========================
-    // COATING FASE
+    // FASE HEADER
     // ========================
-    if (fase.type === "coating") {
+    html += `
+      <div class="fase-header">
+        <h3>Fase ${index + 1} – ${fase.type === "polijsten" ? "Polijsten" : "Coating"}</h3>
+      </div>
+    `;
 
-      html += `
-        <div class="fase-header">
-          <h3>Fase ${index + 1} – Coating</h3>
-        </div>
-      `;
+    // ========================
+    // VRAGEN + ANTWOORDEN
+    // ========================
+    if (fase.gekozenAntwoorden && fase.gekozenAntwoorden.length > 0) {
 
-      const veiligeIndex =
-        typeof fase.systeemKeuzeIndex === "number"
-          ? fase.systeemKeuzeIndex
-          : (fase.gekozenAntwoorden || []).length;
-
-      const basisVragen = (fase.gekozenAntwoorden || []).slice(0, veiligeIndex);
-      const optieVragen = (fase.gekozenAntwoorden || []).slice(veiligeIndex);
-
-      basisVragen.forEach(item => {
+      fase.gekozenAntwoorden.forEach(item => {
         html += `
           <div class="qa-regel">
             <span class="vraag"><em>${item.vraag}</em></span><br>
@@ -2211,102 +2200,93 @@ function toonSamenvatting() {
         `;
       });
 
-      html += `
-        <hr>
-        <div>Aantal m²: <strong>${fase.gekozenOppervlakte || "-"} m²</strong></div>
-        <div>Aantal ruimtes: <strong>${fase.gekozenRuimtes || "-"} ruimte${fase.gekozenRuimtes > 1 ? "s" : ""}</strong></div>
-      `;
+      html += `<hr>`;
+    }
 
-      // ========================
-      // SYSTEEM + INFO BALON
-      // ========================
+    // ========================
+    // BASIS PROJECT DATA
+    // ========================
+    html += `
+      <div>Aantal m²: <strong>${fase.gekozenOppervlakte || "-"} m²</strong></div>
+    `;
+
+    if (fase.gekozenRuimtes) {
       html += `
-        <hr>
-        <div class="gekozen-systeem">
-          ${fase.gekozenSysteem || "-"}
-          ${
-            fase.currentSystemOmschrijving && fase.currentSystemOmschrijving.length
-              ? `
-                <span class="info-icon"
-                      onclick='currentSystemOmschrijving = ${JSON.stringify(fase.currentSystemOmschrijving)}; openInfoModal();'>
-                  ⓘ
-                </span>
-              `
-              : ""
-          }
+        <div>Aantal ruimtes: 
+          <strong>${fase.gekozenRuimtes} ruimte${fase.gekozenRuimtes > 1 ? "s" : ""}</strong>
         </div>
+      `;
+    }
 
+    // ========================
+    // SYSTEEM
+    // ========================
+    html += `
+      <hr>
+      <div class="gekozen-systeem">
+        ${fase.gekozenSysteem || "-"}
+        ${
+          fase.currentSystemOmschrijving && fase.currentSystemOmschrijving.length
+            ? `
+              <span class="info-icon"
+                onclick='currentSystemOmschrijving = ${JSON.stringify(fase.currentSystemOmschrijving)}; openInfoModal();'>
+                ⓘ
+              </span>
+            `
+            : ""
+        }
+      </div>
+    `;
+
+    // ========================
+    // PRIJSINFO
+    // ========================
+    if (fase.prijsPerM2) {
+      html += `
         <div>Prijs per m²: <strong>€ ${formatPrijs(fase.prijsPerM2)},-</strong></div>
-        <div>Basisprijs: <strong>€ ${formatPrijs(fase.basisPrijs)},-</strong></div>
-        <div style="margin-top:10px;">
-          <strong>Totaal fase ${index + 1}: 
-            € ${formatPrijs(faseTotaal)},-
-          </strong>
-        </div>
       `;
-
-      if (optieVragen.length > 0) {
-        html += "<hr>";
-        optieVragen.forEach(item => {
-          html += `
-            <div class="qa-regel">
-              <span class="vraag"><em>${item.vraag}</em></span><br>
-              <span class="antwoord"><strong>${item.antwoord}</strong></span>
-            </div>
-          `;
-        });
-      }
-
-      if (fase.backendExtras && fase.backendExtras.length > 0) {
-        html += "<hr><div><strong>Extra’s</strong></div>";
-        fase.backendExtras.forEach(extra => {
-          html += `
-            <div class="extra-blok">
-              <div>
-                <strong>
-                  ${extra.naam}${extra.forced ? " (verplicht)" : ""}
-                </strong>
-              </div>
-              <div class="extra-bedrag">€ ${formatPrijs(extra.totaal)},-</div>
-            </div>
-          `;
-        });
-      }
     }
 
-    // ========================
-    // POLIJST FASE
-    // ========================
-    if (fase.type === "polijsten") {
-
+    if (fase.basisPrijs) {
       html += `
-        <div class="fase-header">
-          <h3>Fase ${index + 1} – Polijsten</h3>
-        </div>
-
-        <div class="gekozen-systeem">
-          ${fase.gekozenSysteem || "-"}
-        </div>
-
-        <div>
-          Aantal m²: 
-          <strong>${fase.gekozenOppervlakte || "-"} m²</strong>
-        </div>
-
-        <div>
-          Prijs per m²: 
-          <strong>€ ${formatPrijs(fase.prijsPerM2 || 0)},-</strong>
-        </div>
-
-        <div style="margin-top:12px;">
-          <strong>
-            Totaal fase ${index + 1}: 
-            € ${formatPrijs(fase.totaalPrijs || 0)},-
-          </strong>
-        </div>
+        <div>Basisprijs: <strong>€ ${formatPrijs(fase.basisPrijs)},-</strong></div>
       `;
     }
 
+    html += `
+      <div style="margin-top:10px;">
+        <strong>
+          Totaal fase ${index + 1}: € ${formatPrijs(faseTotaal)},-
+        </strong>
+      </div>
+    `;
+
+    // ========================
+    // EXTRA'S
+    // ========================
+    if (fase.backendExtras && fase.backendExtras.length > 0) {
+
+      html += `<hr><div><strong>Extra’s</strong></div>`;
+
+      fase.backendExtras.forEach(extra => {
+        html += `
+          <div class="extra-blok">
+            <div>
+              <strong>
+                ${extra.naam}${extra.forced ? " (verplicht)" : ""}
+              </strong>
+            </div>
+            <div class="extra-bedrag">
+              € ${formatPrijs(extra.totaal)},-
+            </div>
+          </div>
+        `;
+      });
+    }
+
+    // ========================
+    // FASE VERWIJDEREN
+    // ========================
     if (fases.length > 1) {
       html += `
         <div style="margin-top:20px; display:flex; justify-content:flex-end;">
@@ -2321,12 +2301,18 @@ function toonSamenvatting() {
     html += `</div>`;
   });
 
+  // ========================
+  // PROJECT TOTAAL
+  // ========================
   html += `
     <hr>
     <div><strong>Totaal project:</strong></div>
     <div class="totaalprijs">€ ${formatPrijs(totaalProject)},-</div>
   `;
 
+  // ========================
+  // PROJECT INFO
+  // ========================
   html += `
     <div class="kaart project-info-kaart">
 
@@ -2343,6 +2329,7 @@ function toonSamenvatting() {
         <strong>Planning</strong>
         <div style="opacity:0.6;">(komt later)</div>
       </div>
+
     </div>
   `;
 
@@ -2354,7 +2341,10 @@ function toonSamenvatting() {
       container.innerHTML = bestellijstHtml;
     }
   });
+
 }
+
+
 
 // ========================
 // SYSTEEMOPBOUW POP-UP (PRO VERSIE)
