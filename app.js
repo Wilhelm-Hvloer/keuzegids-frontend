@@ -2756,36 +2756,90 @@ function toonCuringVraag() {
 
 
 // ========================
-// POLIJST – MEERWERK START
+// POLIJST – MEERWERK
 // ========================
 function toonMeerwerkPaginaPolijsten() {
 
-  // bestaande meerwerkpagina openen
-  toonMeerwerkPagina();
+  const questionEl = document.getElementById("question-text");
+  const optionsEl  = document.getElementById("options-box");
 
-  const btnJa = document.querySelector(".actie-knop");
-  const btnNee = document.querySelector("button:not(.actie-knop)");
+  questionEl.innerHTML = "<strong>Extra arbeid polijsten toevoegen?</strong>";
+  optionsEl.style.display = "block";
+  optionsEl.innerHTML = "";
 
-  // JA → meerwerk opslaan
-  btnJa.onclick = async () => {
+  const foutmelding = document.createElement("div");
+  foutmelding.style.color = "#BC4C1F";
+  foutmelding.style.marginTop = "8px";
 
-    const urenInput = document.querySelector("input");
-    const toelichtingInput = document.querySelector("textarea");
+  const urenInput = document.createElement("input");
+  urenInput.type = "number";
+  urenInput.min = "0";
+  urenInput.step = "1";
+  urenInput.placeholder = "Aantal uren meerwerk";
+  urenInput.classList.add("input-vol");
 
-    extraMeerwerk.uren = parseInt(urenInput.value) || 0;
-    extraMeerwerk.toelichting = toelichtingInput.value.trim();
+  const toelichtingInput = document.createElement("textarea");
+  toelichtingInput.placeholder = "Geef toelichting voor meerwerk";
+  toelichtingInput.classList.add("input-vol");
 
-    await berekenPolijstPrijs();
-  };
+  const btnNee = document.createElement("button");
+  btnNee.type = "button";
+  btnNee.textContent = "Nee, geen meerwerk toevoegen";
 
-  // NEE → direct prijs berekenen
+  const btnJa = document.createElement("button");
+  btnJa.type = "button";
+  btnJa.textContent = "Ja, meerwerk toevoegen";
+  btnJa.classList.add("actie-knop");
+  btnJa.disabled = true;
+
+  function validate() {
+    const uren = urenInput.value;
+    const toel = toelichtingInput.value.trim();
+    btnJa.disabled = !(uren && parseInt(uren) > 0 && toel.length > 0);
+  }
+
+  urenInput.addEventListener("input", validate);
+  toelichtingInput.addEventListener("input", validate);
+
   btnNee.onclick = async () => {
+
+    if (urenInput.value) {
+      foutmelding.textContent =
+        'Maak invoerveld leeg, of kies "Ja, extra toevoegen"';
+      return;
+    }
 
     extraMeerwerk.uren = null;
     extraMeerwerk.toelichting = "";
 
     await berekenPolijstPrijs();
   };
+
+  btnJa.onclick = async () => {
+
+    if (!toelichtingInput.value.trim()) {
+      foutmelding.textContent = "Geef toelichting voor extra";
+      return;
+    }
+
+    extraMeerwerk.uren = parseInt(urenInput.value);
+    extraMeerwerk.toelichting = toelichtingInput.value.trim();
+
+    await berekenPolijstPrijs();
+  };
+
+  const groep = document.createElement("div");
+  groep.className = "antwoord-groep";
+
+  groep.appendChild(btnNee);
+  groep.appendChild(btnJa);
+
+  optionsEl.append(
+    urenInput,
+    toelichtingInput,
+    foutmelding,
+    groep
+  );
 }
 
 
