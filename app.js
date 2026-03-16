@@ -1698,10 +1698,15 @@ async function registreerVariableSurfaceExtra(extraKey, m2) {
 // EXTRA ARBEID (MEERWERK) – DEFINITIEF
 // ========================
 function toonMeerwerkPagina() {
-  const questionEl = document.getElementById("question-text");
-  const optionsEl = document.getElementById("options-box");
 
-  questionEl.innerHTML = "<strong>Extra arbeid toevoegen?</strong>";
+  const questionEl = document.getElementById("question-text");
+  const optionsEl  = document.getElementById("options-box");
+
+  questionEl.innerHTML =
+    actieveFaseType === "polijsten"
+      ? "<strong>Extra arbeid polijsten toevoegen?</strong>"
+      : "<strong>Extra arbeid toevoegen?</strong>";
+
   optionsEl.style.display = "block";
   optionsEl.innerHTML = "";
 
@@ -1739,18 +1744,32 @@ function toonMeerwerkPagina() {
   urenInput.addEventListener("input", validate);
   toelichtingInput.addEventListener("input", validate);
 
+  function gaVerder() {
+
+    if (actieveFaseType === "polijsten") {
+      berekenPolijstPrijs();
+    } else {
+      toonMateriaalPagina();
+    }
+
+  }
+
   btnNee.onclick = () => {
+
     if (urenInput.value) {
       foutmelding.textContent =
         'Maak invoerveld leeg, of kies "Ja, extra toevoegen"';
       return;
     }
+
     extraMeerwerk.uren = null;
     extraMeerwerk.toelichting = "";
-    toonMateriaalPagina();
+
+    gaVerder();
   };
 
   btnJa.onclick = () => {
+
     if (!toelichtingInput.value.trim()) {
       foutmelding.textContent = "Geef toelichting voor extra";
       return;
@@ -1758,10 +1777,10 @@ function toonMeerwerkPagina() {
 
     extraMeerwerk.uren = parseInt(urenInput.value);
     extraMeerwerk.toelichting = toelichtingInput.value.trim();
-    toonMateriaalPagina();
+
+    gaVerder();
   };
 
-  // 🔑 KNOPPEN ALTIJD IN ANTWOORD-GROEP
   const groep = document.createElement("div");
   groep.className = "antwoord-groep";
 
