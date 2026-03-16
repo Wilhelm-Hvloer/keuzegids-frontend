@@ -29,7 +29,6 @@ function maakAntwoordGroep() {
 const API_BASE = "https://keuzegids-backend-dev.onrender.com";
 
 
-
 // ========================
 // STATE
 // ========================
@@ -60,6 +59,7 @@ let gekozenExtras = [];        // vaste + variable_surface extras
 let forcedExtras = [];         // verplichte extras (uit systeemnode)
 let backendExtras = [];        // berekende extras uit backend
 
+
 // ========================
 // PRIJS
 // ========================
@@ -68,6 +68,15 @@ let totaalPrijs = null;
 
 let gekozenOppervlakte = null;
 let gekozenRuimtes = null;
+
+
+// ========================
+// POLIJST FLOW STATE (NIEUW)
+// ========================
+let polijstSysteem = null;
+let polijstKlanttype = null;
+let curingAanwezig = false;
+
 
 // ========================
 // FLOW STATE
@@ -88,6 +97,7 @@ let lastVraagTekst = null;
 // ⚠️ Backend rekent prijs
 let xtrCoatingVerwijderenUren = 0;
 
+
 // ========================
 // EXTRA ARBEID & MATERIAAL (NIEUW)
 // ========================
@@ -101,13 +111,13 @@ let extraMateriaal = {
   toelichting: ""             // verplicht bij Ja
 };
 
+
 // ========================
 // AFWEGING (afw)
 // ========================
 let afwegingNode = null;
 let afwegingResultaten = [];
 let inAfwegingPrijs = false;
-
 
 
 // ========================
@@ -2656,42 +2666,136 @@ function toonPolijstInvoer(systeem, klanttype) {
 
   const btn = document.createElement("button");
   btn.type = "button";
-  btn.textContent = "Bereken prijs";
+  btn.textContent = "Verder";
   btn.classList.add("actie-knop");
 
-  btn.onclick = async () => {
+  btn.onclick = () => {
 
     const m2 = parseFloat(input.value);
     if (!m2 || m2 <= 0) return;
 
-    // 🔧 FIX: m² opslaan voor samenvatting
+    // 🔧 m² opslaan voor vervolgflow
     gekozenOppervlakte = m2;
-    gekozenRuimtes = 1; // polijsten gebruikt geen ruimtes maar voorkomt null
+    gekozenRuimtes = 1;
 
-    const res = await fetch(`${API_BASE}/api/polijst-price`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        systeem,
-        klanttype,
-        oppervlakte: m2
-      })
-    });
+    // 🔧 systeem en klanttype bewaren
+    polijstSysteem = systeem;
+    polijstKlanttype = klanttype;
 
-    const data = await res.json();
-
-    if (data.error) {
-      alert(data.error);
-      return;
-    }
-
-    toonPolijstResultaat(data);
+    // 👉 curing scherm openen
+    toonCuringVraag();
   };
 
   groep.appendChild(input);
   groep.appendChild(btn);
 
   optionsEl.appendChild(groep);
+}
+
+
+// ========================
+// POLIJST – CURING VRAAG
+// ========================
+function toonCuringVraag() {
+
+  const questionEl = document.getElementById("question-text");
+  const optionsEl  = document.getElementById("options-box");
+
+  resetUI();
+  optionsEl.style.display = "block";
+
+  questionEl.innerHTML = `
+    <strong>Is curing compound aanwezig?</strong>
+  `;
+
+  const groep = document.createElement("div");
+  groep.className = "antwoord-groep";
+
+  const btnJa = document.createElement("button");
+  btnJa.type = "button";
+  btnJa.textContent = "Ja";
+
+  const btnNee = document.createElement("button");
+  btnNee.type = "button";
+  btnNee.textContent = "Nee";
+
+  btnJa.onclick = () => {
+    curingAanwezig = true;
+    toonMeerwerkPaginaPolijsten();
+  };
+
+  btnNee.onclick = () => {
+    curingAanwezig = false;
+    toonMeerwerkPaginaPolijsten();
+  };
+
+  groep.appendChild(btnJa);
+  groep.appendChild(btnNee);
+
+  optionsEl.appendChild(groep);
+}
+
+
+// ========================
+// POLIJST – MEERWERK START
+// ========================
+function toonMeerwerkPaginaPolijsten() {
+
+  // bestaande meerwerkpagina openen
+  toonMeerwerkPagina();
+
+  const btnJa = document.querySelector(".actie-knop");
+  const btnNee = document.querySelector("button:not(.actie-knop)");
+
+  // JA → meerwerk opslaan
+  btnJa.onclick = async () => {
+
+    const urenInput = document.querySelector("input");
+    const toelichtingInput = document.querySelector("textarea");
+
+    extraMeerwerk.uren = parseInt(urenInput.value) || 0;
+    extraMeerwerk.toelichting = toelichtingInput.value.trim();
+
+    await berekenPolijstPrijs();
+  };
+
+  // NEE → direct prijs berekenen
+  btnNee.onclick = async () => {
+
+    extraMeerwerk.uren = null;
+    extraMeerwerk.toelichting = "";
+
+    await berekenPolijstPrijs();
+  };
+}
+
+
+
+// ========================
+// POLIJST – PRIJS BEREKENEN
+// ========================
+async function berekenPolijstPrijs() {
+
+  const res = await fetch(`${API_BASE}/api/polijst-price`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      systeem: polijstSysteem,
+      klanttype: polijstKlanttype,
+      oppervlakte: gekozenOppervlakte,
+      curing: curingAanwezig,
+      meerwerk_uren: extraMeerwerk.uren || 0
+    })
+  });
+
+  const data = await res.json();
+
+  if (data.error) {
+    alert(data.error);
+    return;
+  }
+
+  toonPolijstResultaat(data);
 }
 
 
@@ -2705,7 +2809,31 @@ function toonPolijstResultaat(data) {
   prijsPerM2 = data.prijs_per_m2 || null;
   basisPrijs = null;
   totaalPrijs = data.totaalprijs;
+
+  // 🔑 Backend extras resetten
   backendExtras = [];
+
+  // ========================
+  // EXTRA'S TOEVOEGEN (CURING)
+  // ========================
+  if (curingAanwezig) {
+    backendExtras.push({
+      naam: "Curing compound verwijderen",
+      totaal: gekozenOppervlakte * 10,
+      forced: false
+    });
+  }
+
+  // ========================
+  // EXTRA'S TOEVOEGEN (MEERWERK)
+  // ========================
+  if (extraMeerwerk.uren) {
+    backendExtras.push({
+      naam: `Meerwerk (${extraMeerwerk.uren} uur)`,
+      totaal: 0,
+      forced: false
+    });
+  }
 
   // 🔑 Type moet polijsten zijn
   actieveFaseType = "polijsten";
@@ -2716,6 +2844,8 @@ function toonPolijstResultaat(data) {
   // 🔥 Direct terug naar projectsamenvatting
   toonSamenvatting();
 }
+
+
 
 
 // ========================
@@ -2731,6 +2861,7 @@ function stripPrefix(text = "") {
     .replace(/^Afw:\s*/i, "")
     .trim();
 }
+
 
 // ========================
 // FORMAT PRIJS (NL NOTATIE)
