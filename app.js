@@ -2740,11 +2740,21 @@ function toonCuringVraag() {
 
   btnJa.onclick = () => {
     curingAanwezig = true;
+
+    // 🔑 OPSLAAN OP FASE
+    if (!fases[actieveFaseIndex]) fases[actieveFaseIndex] = {};
+    fases[actieveFaseIndex].curing = true;
+
     toonMeerwerkPaginaPolijsten();
   };
 
   btnNee.onclick = () => {
     curingAanwezig = false;
+
+    // 🔑 OPSLAAN OP FASE
+    if (!fases[actieveFaseIndex]) fases[actieveFaseIndex] = {};
+    fases[actieveFaseIndex].curing = false;
+
     toonMeerwerkPaginaPolijsten();
   };
 
@@ -2753,7 +2763,6 @@ function toonCuringVraag() {
 
   optionsEl.appendChild(groep);
 }
-
 
 // ========================
 // POLIJST – MEERWERK
@@ -2849,6 +2858,11 @@ function toonMeerwerkPaginaPolijsten() {
 async function berekenPolijstPrijs() {
 
   try {
+
+    // 🔑 curing uit fase halen (fallback = huidige state)
+    const fase = fases[actieveFaseIndex] || {};
+    const curing = fase.curing ?? curingAanwezig;
+
     const res = await fetch(`${API_BASE}/api/polijst-price`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -2856,7 +2870,7 @@ async function berekenPolijstPrijs() {
         systeem: polijstSysteem,
         klanttype: polijstKlanttype,
         oppervlakte: gekozenOppervlakte,
-        curing: curingAanwezig,
+        curing: curing,
         meerwerk_uren: Number(extraMeerwerk?.uren || 0)
       })
     });
@@ -2868,6 +2882,10 @@ async function berekenPolijstPrijs() {
       return false;
     }
 
+    // 🔑 optioneel: ook resultaat opslaan op fase (aanrader)
+    if (!fases[actieveFaseIndex]) fases[actieveFaseIndex] = {};
+    fases[actieveFaseIndex].laatsteBerekening = data;
+
     toonPolijstResultaat(data);
 
     return true; // 🔑 BELANGRIJK
@@ -2877,7 +2895,6 @@ async function berekenPolijstPrijs() {
     return false;
   }
 }
-
 
 
 // ========================
