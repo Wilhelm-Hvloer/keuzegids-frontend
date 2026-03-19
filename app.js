@@ -51,12 +51,16 @@ let gekozenKleur = null;
 // ========================
 // FLOW HELPERS
 // ========================
-function gaNaarMeerwerkOfKleur() {
+async function gaNaarMeerwerkOfKleur() {
 
-  const kleurNodig =
+  let kleurNodig = false;
+
+  if (
     actieveFaseType === "coating" &&
-    typeof faseHeeftKleurNodig === "function" &&
-    faseHeeftKleurNodig();
+    typeof faseHeeftKleurNodig === "function"
+  ) {
+    kleurNodig = await faseHeeftKleurNodig(); // 🔥 BELANGRIJK
+  }
 
   if (kleurNodig) {
     toonKleurVraag();
@@ -734,7 +738,7 @@ async function renderNode(node) {
   // Alleen echte END-nodes hier afvangen
   if (node.id === "END" || node.type === "end") {
     console.log("🏁 END-node bereikt → kleur/meerwerk bepalen");
-    gaNaarMeerwerkOfKleur();
+    await gaNaarMeerwerkOfKleur();
     return;
   }
 
@@ -765,7 +769,7 @@ async function renderNode(node) {
       // Geen next = einde boom
       if (!Array.isArray(node.next) || node.next.length === 0) {
         console.log("🏁 Geen vervolg → kleur/meerwerk bepalen");
-        gaNaarMeerwerkOfKleur();
+        await gaNaarMeerwerkOfKleur();
       } else {
         console.warn("⚠️ Onbekend node-type:", node);
       }
@@ -795,7 +799,7 @@ async function handleAntwoordNode(node) {
 
   if (!Array.isArray(node.next) || node.next.length === 0) {
     console.log("🏁 Antwoord zonder vervolg → kleur/meerwerk bepalen");
-    gaNaarMeerwerkOfKleur();
+    await gaNaarMeerwerkOfKleur();
     return;
   }
 
@@ -816,7 +820,7 @@ async function handleAntwoordNode(node) {
 
     // END expliciet afhandelen
     if (vervolg.toUpperCase() === "END") {
-      gaNaarMeerwerkOfKleur();
+      await gaNaarMeerwerkOfKleur();
       return;
     }
 
@@ -825,7 +829,7 @@ async function handleAntwoordNode(node) {
 
       if (!res.ok) {
         console.warn("⚠️ Node niet gevonden:", vervolg);
-        gaNaarMeerwerkOfKleur(); // 🔥 FIX
+        await gaNaarMeerwerkOfKleur(); // 🔥 FIX
         return;
       }
 
@@ -834,7 +838,7 @@ async function handleAntwoordNode(node) {
 
     } catch (err) {
       console.error("❌ Fout bij antwoord-vervolg:", err);
-      gaNaarMeerwerkOfKleur(); // 🔥 FIX
+      await gaNaarMeerwerkOfKleur(); // 🔥 FIX
     }
 
     return;
@@ -844,7 +848,7 @@ async function handleAntwoordNode(node) {
   // ONBEKEND TYPE
   // ========================
   console.warn("⚠️ Onbekend next-type:", vervolg);
-  gaNaarMeerwerkOfKleur(); // 🔥 FIX
+  await gaNaarMeerwerkOfKleur(); // 🔥 FIX
 }
 
 
@@ -1265,7 +1269,7 @@ async function toonAfwegingMetPrijzen() {
         gekozenNode.next.length === 0 ||
         gekozenNode.next[0] === "END"
       ) {
-        gaNaarMeerwerkOfKleur();
+        await gaNaarMeerwerkOfKleur();
         return;
       }
 
@@ -1504,7 +1508,7 @@ function toonSysteemPrijsResultaat() {
     questionEl.innerHTML = "";
 
     if (!Array.isArray(currentNode?.next) || currentNode.next.length === 0) {
-      gaNaarMeerwerkOfKleur();
+      await gaNaarMeerwerkOfKleur();
       return;
     }
 
@@ -1512,7 +1516,7 @@ function toonSysteemPrijsResultaat() {
       currentNode.next.length === 1 &&
       currentNode.next[0] === "END"
     ) {
-      gaNaarMeerwerkOfKleur();
+      await gaNaarMeerwerkOfKleur();
       return;
     }
 
@@ -1689,7 +1693,7 @@ async function registreerVariableSurfaceExtra(extraKey, m2) {
 
   // 🔑 CASE 1: END → kleur/meerwerk bepalen
   if (nextNodeId && nextNodeId.toUpperCase() === "END") {
-    gaNaarMeerwerkOfKleur();
+    await gaNaarMeerwerkOfKleur();
     return;
   }
 
@@ -1712,7 +1716,7 @@ async function registreerVariableSurfaceExtra(extraKey, m2) {
   }
 
   // 🔑 CASE 3: Fallback → ook meerwerk starten
-  gaNaarMeerwerkOfKleur();
+  await gaNaarMeerwerkOfKleur();
 }
 
 
@@ -1720,20 +1724,35 @@ async function registreerVariableSurfaceExtra(extraKey, m2) {
 // ========================
 // IS KLEUR NODIG?
 // ========================
-function faseHeeftKleurNodig() {
+async function faseHeeftKleurNodig() {
 
-  if (!gekozenSysteem) return false;
+  if (!gekozenSysteem || !gekozenOppervlakte) return false;
 
-  const systeemData = PRIJS_DATA?.systemen?.[gekozenSysteem];
-  if (!systeemData) return false;
+  try {
 
-  return systeemData.materialen.some(mat => {
-    const product = mat.product;
-    const productData = PRIJS_DATA?.producten?.[product];
-    return productData?.kleur_verplicht === true;
-  });
+    const res = await fetch(`${API_BASE}/api/materialen`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        fases: [{
+          gekozenSysteem,
+          gekozenOppervlakte,
+          kleur: null
+        }]
+      })
+    });
+
+    const data = await res.json();
+
+    if (!data || !data.materialen) return false;
+
+    return Object.values(data.materialen).some(info => info.kleur_verplicht === true);
+
+  } catch (err) {
+    console.error("❌ Fout bij kleur-check:", err);
+    return false;
+  }
 }
-
 
 
 
@@ -2243,7 +2262,7 @@ async function genereerBestellijst() {
         const kg = info.kg || 0;
 
         const verpakkingen = Array.isArray(info.verpakkingen)
-          ? [...info.verpakkingen].sort((a,b)=>b-a)
+          ? [...info.verpakkingen].sort((a, b) => b - a)
           : [];
 
         if (verpakkingen.length === 0) return;
@@ -2282,8 +2301,8 @@ async function genereerBestellijst() {
 
         const exacteKg = kg.toFixed(1);
 
-        const productData = PRIJS_DATA?.producten?.[product];
-        const heeftKleur = productData?.kleur_verplicht === true;
+        // 🔥 NIEUW: kleur uit backend + fase
+        const heeftKleur = info.kleur_verplicht === true;
 
         const kleurTekst = (heeftKleur && fase.kleur)
           ? ` (${fase.kleur})`
