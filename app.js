@@ -2077,7 +2077,7 @@ function slaHuidigeFaseOp() {
 
 
 // ========================
-// BESTELLIJST GENEREREN (MET SIMPELE VERPAKKINGSLOGICA)
+// BESTELLIJST GENEREREN (PER FASE MET VERPAKKINGSLOGICA)
 // ========================
 async function genereerBestellijst() {
 
@@ -2087,83 +2087,88 @@ async function genereerBestellijst() {
 
   try {
 
-    const coatingFases = fases.filter(f => f.type === "coating");
-
-    if (coatingFases.length === 0) {
-      return "<div>Geen coatingmaterialen nodig.</div>";
-    }
-
-    const res = await fetch(`${API_BASE}/api/materialen`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ fases: coatingFases })
-    });
-
-    const data = await res.json();
-
-    if (!data || !data.materialen) {
-      return "<div>Geen materialen.</div>";
-    }
-
-    const materialen = data.materialen;
-
     let html = "";
 
-    Object.entries(materialen).forEach(([product, info]) => {
+    for (let i = 0; i < fases.length; i++) {
 
-      const kg = info.kg || 0;
+      const fase = fases[i];
 
-      // 🔥 FIX HIER
-      const verpakkingen = Array.isArray(info.verpakkingen)
-        ? [...info.verpakkingen].sort((a,b)=>b-a)
-        : [];
+      if (fase.type !== "coating") continue;
 
-      if (verpakkingen.length === 0) return;
+      const res = await fetch(`${API_BASE}/api/materialen`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ fases: [fase] }) // 🔑 per fase
+      });
 
-      const grootste = verpakkingen[0];
-      const kleinste = verpakkingen[verpakkingen.length - 1];
+      const data = await res.json();
 
-      let aantalGroot = Math.floor(kg / grootste);
-      let totaal = aantalGroot * grootste;
+      if (!data || !data.materialen) continue;
 
-      let aantalKlein = 0;
-
-      if (kleinste && kleinste !== grootste) {
-
-        if (totaal + kleinste >= kg) {
-          aantalKlein = 1;
-        } else {
-          aantalGroot += 1;
-        }
-
-      } else {
-        if (totaal < kg) {
-          aantalGroot += 1;
-        }
-      }
-
-      let verpakkingTekst = "";
-
-      if (aantalGroot > 0) {
-        verpakkingTekst += `${aantalGroot} x ${grootste}kg`;
-      }
-
-      if (aantalKlein > 0) {
-        verpakkingTekst += ` + ${aantalKlein} x ${kleinste}kg`;
-      }
-
-      const exacteKg = kg.toFixed(1);
+      const materialen = data.materialen;
 
       html += `
-        <div class="bestelregel">
-          <div>
-            ${product} 
-            <span style="opacity:0.6;">(${exacteKg} kg)</span>
-          </div>
-          <div>${verpakkingTekst}</div>
+        <div style="margin-top:10px;">
+          <strong>Fase ${i + 1}:</strong>
         </div>
       `;
-    });
+
+      Object.entries(materialen).forEach(([product, info]) => {
+
+        const kg = info.kg || 0;
+
+        const verpakkingen = Array.isArray(info.verpakkingen)
+          ? [...info.verpakkingen].sort((a,b)=>b-a)
+          : [];
+
+        if (verpakkingen.length === 0) return;
+
+        const grootste = verpakkingen[0];
+        const kleinste = verpakkingen[verpakkingen.length - 1];
+
+        let aantalGroot = Math.floor(kg / grootste);
+        let totaal = aantalGroot * grootste;
+
+        let aantalKlein = 0;
+
+        if (kleinste && kleinste !== grootste) {
+
+          if (totaal + kleinste >= kg) {
+            aantalKlein = 1;
+          } else {
+            aantalGroot += 1;
+          }
+
+        } else {
+          if (totaal < kg) {
+            aantalGroot += 1;
+          }
+        }
+
+        let verpakkingTekst = "";
+
+        if (aantalGroot > 0) {
+          verpakkingTekst += `${aantalGroot} x ${grootste}kg`;
+        }
+
+        if (aantalKlein > 0) {
+          verpakkingTekst += `${aantalGroot > 0 ? " + " : ""}${aantalKlein} x ${kleinste}kg`;
+        }
+
+        const exacteKg = kg.toFixed(1);
+
+        html += `
+          <div class="bestelregel">
+            <div>
+              ${product} 
+              <span style="opacity:0.6;">(${exacteKg} kg)</span>
+            </div>
+            <div>${verpakkingTekst}</div>
+          </div>
+        `;
+      });
+
+    }
 
     return html || "<div>Geen materialen.</div>";
 
@@ -2172,6 +2177,7 @@ async function genereerBestellijst() {
     return "<div>Materialen konden niet worden geladen.</div>";
   }
 }
+
 
 
 
