@@ -2272,13 +2272,24 @@ function toonSamenvatting() {
     // ========================
     if (fase.prijsPerM2) {
       html += `
-        <div>Prijs per m²: <strong>€ ${formatPrijs(fase.prijsPerM2)},-</strong></div>
+        <div>
+          Prijs per m²: 
+          <strong>
+            € ${formatPrijs(fase.prijsPerM2)},-
+            ${
+              fase.basisPrijs
+                ? `<span style="opacity:0.7;"> (€ ${formatPrijs(fase.basisPrijs)},-)</span>`
+                : ""
+            }
+          </strong>
+        </div>
       `;
-    }
-
-    if (fase.basisPrijs) {
+    } else if (fase.basisPrijs) {
       html += `
-        <div>Basisprijs: <strong>€ ${formatPrijs(fase.basisPrijs)},-</strong></div>
+        <div>
+          Totaal (polijsten): 
+          <strong>€ ${formatPrijs(fase.basisPrijs)},-</strong>
+        </div>
       `;
     }
 
@@ -2907,7 +2918,9 @@ function toonPolijstResultaat(data) {
   // ========================
   gekozenSysteem = data.systeem;
   prijsPerM2     = data.prijs_per_m2 ?? null;
-  basisPrijs     = null;
+
+  // 🔑 NIEUW: basis totaal (zonder extras)
+  basisPrijs     = data.basis_totaal ?? null;
 
   // 🔑 BELANGRIJK: totaalprijs komt 100% uit backend
   totaalPrijs = data.totaalprijs ?? 0;
