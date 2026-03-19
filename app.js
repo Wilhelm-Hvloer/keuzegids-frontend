@@ -1744,13 +1744,16 @@ function toonMeerwerkPagina() {
   urenInput.addEventListener("input", validate);
   toelichtingInput.addEventListener("input", validate);
 
-  function gaVerder() {
+  async function gaVerder() {
 
     if (actieveFaseType === "polijsten") {
-      berekenPolijstPrijs();
-    } else {
-      toonMateriaalPagina();
+      const ok = await berekenPolijstPrijs();
+      if (!ok) return;
+
+      return; // 🔑 HARD STOPPEN
     }
+
+    toonMateriaalPagina();
 
   }
 
@@ -1842,15 +1845,23 @@ function toonMateriaalPagina() {
   bedragInput.addEventListener("input", validate);
   toelichtingInput.addEventListener("input", validate);
 
-  function gaVerder() {
-    // 🔑 coating moet prijs opnieuw berekenen
+  async function gaVerder() {
+
+    // 🔑 coating → eerst herberekenen
     if (actieveFaseType === "coating") {
-      herberekenPrijs().then(toonSamenvatting);
-    } 
-    // 🔑 polijsten heeft al prijs → direct samenvatting
-    else {
+      const ok = await herberekenPrijs();
+      if (!ok) return;
+
       toonSamenvatting();
+      return;
     }
+
+    // 🔑 polijsten → OOK opnieuw berekenen (anders mis je extras)
+    const ok = await berekenPolijstPrijs();
+    if (!ok) return;
+
+    toonSamenvatting();
+
   }
 
   btnNee.onclick = () => {
@@ -2832,33 +2843,41 @@ function toonMeerwerkPaginaPolijsten() {
 }
 
 
-
 // ========================
 // POLIJST – PRIJS BEREKENEN
 // ========================
 async function berekenPolijstPrijs() {
 
-  const res = await fetch(`${API_BASE}/api/polijst-price`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({
-      systeem: polijstSysteem,
-      klanttype: polijstKlanttype,
-      oppervlakte: gekozenOppervlakte,
-      curing: curingAanwezig,
-      meerwerk_uren: extraMeerwerk?.uren || 0
-    })
-  });
+  try {
+    const res = await fetch(`${API_BASE}/api/polijst-price`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        systeem: polijstSysteem,
+        klanttype: polijstKlanttype,
+        oppervlakte: gekozenOppervlakte,
+        curing: curingAanwezig,
+        meerwerk_uren: Number(extraMeerwerk?.uren || 0)
+      })
+    });
 
-  const data = await res.json();
+    const data = await res.json();
 
-  if (data.error) {
-    alert(data.error);
-    return;
+    if (data.error) {
+      alert(data.error);
+      return false;
+    }
+
+    toonPolijstResultaat(data);
+
+    return true; // 🔑 BELANGRIJK
+
+  } catch (err) {
+    console.error("❌ polijstprijs fout:", err);
+    return false;
   }
-
-  toonPolijstResultaat(data);
 }
+
 
 
 // ========================
