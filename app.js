@@ -1897,19 +1897,26 @@ function toonMeerwerkPagina() {
   urenInput.addEventListener("input", validate);
   toelichtingInput.addEventListener("input", validate);
 
+  // ========================
+  // VERDER FLOW
+  // ========================
   async function gaVerder() {
 
     if (actieveFaseType === "polijsten") {
       const ok = await berekenPolijstPrijs();
       if (!ok) return;
-
-      return; // 🔑 HARD STOPPEN
+      return;
     }
 
-    toonMateriaalPagina();
+    // 🔥 ZORGT DAT BACKEND DIT MEENEEMT
+    await herberekenPrijs();
 
+    toonMateriaalPagina();
   }
 
+  // ========================
+  // GEEN MEERWERK
+  // ========================
   btnNee.onclick = () => {
 
     if (urenInput.value) {
@@ -1924,6 +1931,9 @@ function toonMeerwerkPagina() {
     gaVerder();
   };
 
+  // ========================
+  // WEL MEERWERK
+  // ========================
   btnJa.onclick = () => {
 
     if (!toelichtingInput.value.trim()) {
@@ -1937,6 +1947,9 @@ function toonMeerwerkPagina() {
     gaVerder();
   };
 
+  // ========================
+  // UI OPBOUW
+  // ========================
   const groep = document.createElement("div");
   groep.className = "antwoord-groep";
 
@@ -1957,6 +1970,7 @@ function toonMeerwerkPagina() {
 // EXTRA MATERIAAL – DEFINITIEF (CONSISTENT)
 // ========================
 function toonMateriaalPagina() {
+
   const questionEl = document.getElementById("question-text");
   const optionsEl = document.getElementById("options-box");
 
@@ -1998,9 +2012,12 @@ function toonMateriaalPagina() {
   bedragInput.addEventListener("input", validate);
   toelichtingInput.addEventListener("input", validate);
 
+  // ========================
+  // VERDER FLOW
+  // ========================
   async function gaVerder() {
 
-    // 🔑 coating → eerst herberekenen
+    // 🔥 BELANGRIJK: altijd herberekenen met nieuwe data
     if (actieveFaseType === "coating") {
       const ok = await herberekenPrijs();
       if (!ok) return;
@@ -2009,15 +2026,17 @@ function toonMateriaalPagina() {
       return;
     }
 
-    // 🔑 polijsten → OOK opnieuw berekenen (anders mis je extras)
     const ok = await berekenPolijstPrijs();
     if (!ok) return;
 
     toonSamenvatting();
-
   }
 
+  // ========================
+  // GEEN EXTRA
+  // ========================
   btnNee.onclick = () => {
+
     if (bedragInput.value) {
       foutmelding.textContent =
         'Maak invoerveld leeg, of kies "Ja, extra toevoegen"';
@@ -2026,10 +2045,15 @@ function toonMateriaalPagina() {
 
     extraMateriaal.bedrag = null;
     extraMateriaal.toelichting = "";
+
     gaVerder();
   };
 
+  // ========================
+  // WEL EXTRA
+  // ========================
   btnJa.onclick = () => {
+
     if (!toelichtingInput.value.trim()) {
       foutmelding.textContent = "Geef toelichting voor extra";
       return;
@@ -2037,9 +2061,13 @@ function toonMateriaalPagina() {
 
     extraMateriaal.bedrag = parseInt(bedragInput.value);
     extraMateriaal.toelichting = toelichtingInput.value.trim();
+
     gaVerder();
   };
 
+  // ========================
+  // UI
+  // ========================
   const groep = document.createElement("div");
   groep.className = "antwoord-groep";
 
@@ -2095,12 +2123,16 @@ async function herberekenPrijs() {
         forced_extras: forcedPayload,
         xtr_coating_verwijderen_uren: xtrCoatingVerwijderenUren || 0,
 
-        // ✅ FIX
+        // 🔥 MEERWERK
         meerwerk_uren: extraMeerwerk?.uren || 0,
         meerwerk_toelichting: extraMeerwerk?.toelichting || "",
 
+        // 🔥 EXTRA MATERIAAL
         materiaal_bedrag: extraMateriaal?.bedrag || 0,
-        materiaal_toelichting: extraMateriaal?.toelichting || ""
+        materiaal_toelichting: extraMateriaal?.toelichting || "",
+
+        // 🔥 NIEUW: KLEUR
+        kleur: gekozenKleur || null
       })
     });
 
