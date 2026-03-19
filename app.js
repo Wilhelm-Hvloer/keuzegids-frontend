@@ -2846,7 +2846,7 @@ async function berekenPolijstPrijs() {
       klanttype: polijstKlanttype,
       oppervlakte: gekozenOppervlakte,
       curing: curingAanwezig,
-      meerwerk_uren: extraMeerwerk.uren || 0
+      meerwerk_uren: extraMeerwerk?.uren || 0
     })
   });
 
@@ -2866,27 +2866,34 @@ async function berekenPolijstPrijs() {
 // ========================
 function toonPolijstResultaat(data) {
 
-  // 🔑 Vul state zodat fase kan worden opgeslagen
+  // ========================
+  // BASIS DATA UIT BACKEND
+  // ========================
   gekozenSysteem = data.systeem;
-  prijsPerM2 = data.prijs_per_m2 || null;
-  basisPrijs = null;
+  prijsPerM2     = data.prijs_per_m2 ?? null;
+  basisPrijs     = null;
 
-  // 🔑 BELANGRIJK: gebruik backend totaalprijs
-  totaalPrijs = data.totaalprijs;
+  // 🔑 BELANGRIJK: totaalprijs komt 100% uit backend
+  totaalPrijs = data.totaalprijs ?? 0;
 
-  // 🔑 BELANGRIJK: gebruik backend extras (NIET zelf bouwen)
-  backendExtras = data.extras || [];
+  // 🔑 BELANGRIJK: extras ALLEEN vanuit backend
+  backendExtras = Array.isArray(data.extras) ? data.extras : [];
 
-  // 🔑 Type moet polijsten zijn
+  // ========================
+  // TYPE INSTELLEN
+  // ========================
   actieveFaseType = "polijsten";
 
-  // 🔥 Fase opslaan
+  // ========================
+  // FASE OPSLAAN
+  // ========================
   slaHuidigeFaseOp();
 
-  // 🔥 Direct naar samenvatting
+  // ========================
+  // NAAR SAMENVATTING
+  // ========================
   toonSamenvatting();
 }
-
 
 
 // ========================
