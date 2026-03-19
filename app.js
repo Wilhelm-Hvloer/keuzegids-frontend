@@ -2074,6 +2074,8 @@ function slaHuidigeFaseOp() {
   }
 }
 
+
+
 // ========================
 // BESTELLIJST GENEREREN (MET SIMPELE VERPAKKINGSLOGICA)
 // ========================
@@ -2085,7 +2087,6 @@ async function genereerBestellijst() {
 
   try {
 
-    // Alleen coating fases meesturen (veiliger)
     const coatingFases = fases.filter(f => f.type === "coating");
 
     if (coatingFases.length === 0) {
@@ -2111,8 +2112,10 @@ async function genereerBestellijst() {
     Object.entries(materialen).forEach(([product, info]) => {
 
       const kg = info.kg || 0;
-      const verpakkingen = Array.isArray(info.verpakking)
-        ? [...info.verpakking].sort((a,b)=>b-a)
+
+      // 🔥 FIX HIER
+      const verpakkingen = Array.isArray(info.verpakkingen)
+        ? [...info.verpakkingen].sort((a,b)=>b-a)
         : [];
 
       if (verpakkingen.length === 0) return;
@@ -2125,18 +2128,15 @@ async function genereerBestellijst() {
 
       let aantalKlein = 0;
 
-      // Probeer met 1 kleine verpakking
       if (kleinste && kleinste !== grootste) {
 
         if (totaal + kleinste >= kg) {
           aantalKlein = 1;
         } else {
-          // kleine vervangen door grote
           aantalGroot += 1;
         }
 
       } else {
-        // Alleen grote verpakking beschikbaar
         if (totaal < kg) {
           aantalGroot += 1;
         }
