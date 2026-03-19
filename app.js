@@ -1776,7 +1776,9 @@ function toonKleurVraag() {
 
   let gekozenKleurTemp = "";
 
-  // 🔘 standaard kleuren
+  // ========================
+  // STANDAARD KLEUREN
+  // ========================
   const btnStandaard = document.createElement("button");
   btnStandaard.textContent = "Standaard kleur kiezen";
 
@@ -1790,24 +1792,32 @@ function toonKleurVraag() {
 
     btn.onclick = () => {
       gekozenKleurTemp = kleur;
+      input.value = kleur; // 🔥 sync met inputveld
     };
 
     kleurenLijst.appendChild(btn);
   });
 
   btnStandaard.onclick = () => {
-    kleurenLijst.style.display = "block";
+    kleurenLijst.style.display =
+      kleurenLijst.style.display === "none" ? "block" : "none";
   };
 
-  // 🔤 invoer veld
+  // ========================
+  // INPUT VELD (FIXED STYLING)
+  // ========================
   const input = document.createElement("input");
+  input.type = "text";
   input.placeholder = "Voer kleurcode in";
+  input.classList.add("input-vol");
 
   input.oninput = () => {
     gekozenKleurTemp = input.value;
   };
 
-  // ▶️ verder knop
+  // ========================
+  // VERDER KNOP
+  // ========================
   const btnVerder = document.createElement("button");
   btnVerder.textContent = "Verder";
 
@@ -1820,9 +1830,12 @@ function toonKleurVraag() {
 
     gekozenKleur = gekozenKleurTemp;
 
-    toonMeerwerkPagina(); // 🔑 hier ga je pas verder
+    toonMeerwerkPagina();
   };
 
+  // ========================
+  // BUILD UI
+  // ========================
   container.appendChild(btnStandaard);
   container.appendChild(kleurenLijst);
   container.appendChild(input);
@@ -1830,7 +1843,6 @@ function toonKleurVraag() {
 
   optionsEl.appendChild(container);
 }
-
 
 
 
