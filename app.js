@@ -43,6 +43,29 @@ let potentieleSystemen = [];
 
 let gekozenSysteem = null;
 let gekozenAntwoorden = [];
+let gekozenKleur = null;
+
+
+
+
+// ========================
+// FLOW HELPERS
+// ========================
+function gaNaarMeerwerkOfKleur() {
+
+  const kleurNodig =
+    actieveFaseType === "coating" &&
+    typeof faseHeeftKleurNodig === "function" &&
+    faseHeeftKleurNodig();
+
+  if (kleurNodig) {
+    toonKleurVraag();
+  } else {
+    toonMeerwerkPagina();
+  }
+
+}
+
 
 
 // ========================
@@ -171,6 +194,7 @@ function startPrijslijst() {
   gekozenExtras = [];
   forcedExtras = [];
   backendExtras = [];
+  gekozenKleur = null;
 
   // ========================
   // PRIJS STATE RESET
@@ -449,6 +473,8 @@ async function startKeuzegids() {
   gekozenSysteem = null;
   gekozenAntwoorden = [];
 
+  gekozenKleur = null; // 🔥 TOEVOEGEN
+
   gekozenExtras = [];
   forcedExtras = [];
   backendExtras = [];
@@ -707,8 +733,8 @@ async function renderNode(node) {
   // ========================
   // Alleen echte END-nodes hier afvangen
   if (node.id === "END" || node.type === "end") {
-    console.log("🏁 END-node bereikt → meerwerk starten");
-    toonMeerwerkPagina();
+    console.log("🏁 END-node bereikt → kleur/meerwerk bepalen");
+    gaNaarMeerwerkOfKleur();
     return;
   }
 
@@ -738,8 +764,8 @@ async function renderNode(node) {
     default:
       // Geen next = einde boom
       if (!Array.isArray(node.next) || node.next.length === 0) {
-        console.log("🏁 Geen vervolg → meerwerk starten");
-        toonMeerwerkPagina();
+        console.log("🏁 Geen vervolg → kleur/meerwerk bepalen");
+        gaNaarMeerwerkOfKleur();
       } else {
         console.warn("⚠️ Onbekend node-type:", node);
       }
@@ -761,15 +787,15 @@ function handleVraagNode(node) {
 
 
 // ========================
-// ANTWOORD NODE AFHANDELEN – ROBUUST
+// ANTWOORD NODE AFHANDELEN – ROBUUST (GEFIXT)
 // ========================
 async function handleAntwoordNode(node) {
 
   console.log("📩 Antwoord-node ontvangen:", node.id);
 
   if (!Array.isArray(node.next) || node.next.length === 0) {
-    console.log("🏁 Antwoord zonder vervolg → start meerwerk");
-    toonMeerwerkPagina();
+    console.log("🏁 Antwoord zonder vervolg → kleur/meerwerk bepalen");
+    gaNaarMeerwerkOfKleur();
     return;
   }
 
@@ -790,7 +816,7 @@ async function handleAntwoordNode(node) {
 
     // END expliciet afhandelen
     if (vervolg.toUpperCase() === "END") {
-      toonMeerwerkPagina();
+      gaNaarMeerwerkOfKleur();
       return;
     }
 
@@ -799,7 +825,7 @@ async function handleAntwoordNode(node) {
 
       if (!res.ok) {
         console.warn("⚠️ Node niet gevonden:", vervolg);
-        toonMeerwerkPagina();
+        gaNaarMeerwerkOfKleur(); // 🔥 FIX
         return;
       }
 
@@ -808,7 +834,7 @@ async function handleAntwoordNode(node) {
 
     } catch (err) {
       console.error("❌ Fout bij antwoord-vervolg:", err);
-      toonMeerwerkPagina();
+      gaNaarMeerwerkOfKleur(); // 🔥 FIX
     }
 
     return;
@@ -818,7 +844,7 @@ async function handleAntwoordNode(node) {
   // ONBEKEND TYPE
   // ========================
   console.warn("⚠️ Onbekend next-type:", vervolg);
-  toonMeerwerkPagina();
+  gaNaarMeerwerkOfKleur(); // 🔥 FIX
 }
 
 
@@ -1239,7 +1265,7 @@ async function toonAfwegingMetPrijzen() {
         gekozenNode.next.length === 0 ||
         gekozenNode.next[0] === "END"
       ) {
-        toonMeerwerkPagina();
+        gaNaarMeerwerkOfKleur();
         return;
       }
 
@@ -1478,7 +1504,7 @@ function toonSysteemPrijsResultaat() {
     questionEl.innerHTML = "";
 
     if (!Array.isArray(currentNode?.next) || currentNode.next.length === 0) {
-      toonMeerwerkPagina();
+      gaNaarMeerwerkOfKleur();
       return;
     }
 
@@ -1486,7 +1512,7 @@ function toonSysteemPrijsResultaat() {
       currentNode.next.length === 1 &&
       currentNode.next[0] === "END"
     ) {
-      toonMeerwerkPagina();
+      gaNaarMeerwerkOfKleur();
       return;
     }
 
@@ -1661,9 +1687,9 @@ async function registreerVariableSurfaceExtra(extraKey, m2) {
   // FLOW HERVATTEN
   // ========================
 
-  // 🔑 CASE 1: END → start meerwerk flow (NIET direct samenvatting)
+  // 🔑 CASE 1: END → kleur/meerwerk bepalen
   if (nextNodeId && nextNodeId.toUpperCase() === "END") {
-    toonMeerwerkPagina();
+    gaNaarMeerwerkOfKleur();
     return;
   }
 
@@ -1686,9 +1712,105 @@ async function registreerVariableSurfaceExtra(extraKey, m2) {
   }
 
   // 🔑 CASE 3: Fallback → ook meerwerk starten
-  toonMeerwerkPagina();
+  gaNaarMeerwerkOfKleur();
 }
 
+
+
+// ========================
+// IS KLEUR NODIG?
+// ========================
+function faseHeeftKleurNodig() {
+
+  if (!gekozenSysteem) return false;
+
+  const systeemData = PRIJS_DATA?.systemen?.[gekozenSysteem];
+  if (!systeemData) return false;
+
+  return systeemData.materialen.some(mat => {
+    const product = mat.product;
+    const productData = PRIJS_DATA?.producten?.[product];
+    return productData?.kleur_verplicht === true;
+  });
+}
+
+
+
+
+// ========================
+// KLEUR VRAGEN
+// ========================
+function toonKleurVraag() {
+
+  const questionEl = document.getElementById("question-text");
+  const optionsEl  = document.getElementById("options-box");
+
+  resetUI();
+  optionsEl.style.display = "block";
+
+  questionEl.innerHTML = `
+    <strong>Welke kleur voor afwerking?</strong>
+  `;
+
+  const container = document.createElement("div");
+  container.className = "antwoord-groep";
+
+  let gekozenKleurTemp = "";
+
+  // 🔘 standaard kleuren
+  const btnStandaard = document.createElement("button");
+  btnStandaard.textContent = "Standaard kleur kiezen";
+
+  const kleurenLijst = document.createElement("div");
+  kleurenLijst.style.display = "none";
+
+  ["RAL 7035", "RAL 7040", "RAL 9005"].forEach(kleur => {
+
+    const btn = document.createElement("button");
+    btn.textContent = kleur;
+
+    btn.onclick = () => {
+      gekozenKleurTemp = kleur;
+    };
+
+    kleurenLijst.appendChild(btn);
+  });
+
+  btnStandaard.onclick = () => {
+    kleurenLijst.style.display = "block";
+  };
+
+  // 🔤 invoer veld
+  const input = document.createElement("input");
+  input.placeholder = "Voer kleurcode in";
+
+  input.oninput = () => {
+    gekozenKleurTemp = input.value;
+  };
+
+  // ▶️ verder knop
+  const btnVerder = document.createElement("button");
+  btnVerder.textContent = "Verder";
+
+  btnVerder.onclick = () => {
+
+    if (!gekozenKleurTemp) {
+      alert("Voer een kleur in");
+      return;
+    }
+
+    gekozenKleur = gekozenKleurTemp;
+
+    toonMeerwerkPagina(); // 🔑 hier ga je pas verder
+  };
+
+  container.appendChild(btnStandaard);
+  container.appendChild(kleurenLijst);
+  container.appendChild(input);
+  container.appendChild(btnVerder);
+
+  optionsEl.appendChild(container);
+}
 
 
 
@@ -2064,7 +2186,10 @@ function slaHuidigeFaseOp() {
     backendExtras: JSON.parse(JSON.stringify(backendExtras || [])),
     currentSystemOmschrijving: JSON.parse(JSON.stringify(currentSystemOmschrijving || [])),
 
-    systeemKeuzeIndex
+    systeemKeuzeIndex,
+
+    // 🔥 NIEUW
+    kleur: gekozenKleur || null
   };
 
   if (!fases[actieveFaseIndex]) {
@@ -2157,10 +2282,17 @@ async function genereerBestellijst() {
 
         const exacteKg = kg.toFixed(1);
 
+        const productData = PRIJS_DATA?.producten?.[product];
+        const heeftKleur = productData?.kleur_verplicht === true;
+
+        const kleurTekst = (heeftKleur && fase.kleur)
+          ? ` (${fase.kleur})`
+          : "";
+
         html += `
           <div class="bestelregel">
             <div>
-              ${product} 
+              ${product}${kleurTekst} 
               <span style="opacity:0.6;">(${exacteKg} kg)</span>
             </div>
             <div>${verpakkingTekst}</div>
@@ -2504,6 +2636,7 @@ function startNieuwePolijstFase() {
   gekozenOppervlakte = null;
   gekozenRuimtes = null;
 
+  gekozenKleur = null;
   prijsPerM2 = null;
   basisPrijs = null;
   totaalPrijs = null;
@@ -2545,6 +2678,7 @@ function startNieuweFase() {
   backendExtras = [];
   currentSystemOmschrijving = [];
 
+  gekozenKleur = null;
   gekozenExtras = [];
   forcedExtras = [];
 
@@ -2573,6 +2707,7 @@ function startPrijslijstCoatingFase() {
   gekozenOppervlakte = null;
   gekozenRuimtes = null;
 
+  gekozenKleur = null;
   prijsPerM2 = null;
   basisPrijs = null;
   totaalPrijs = null;
