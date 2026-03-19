@@ -1899,9 +1899,7 @@ async function herberekenPrijs() {
 
   console.log("=== herberekenPrijs START ===");
 
-  const resultEl = document.getElementById("result-box");
   const errorEl  = document.getElementById("m2-error");
-
   if (errorEl) errorEl.innerHTML = "";
 
   // ========================
@@ -1912,9 +1910,6 @@ async function herberekenPrijs() {
     return false;
   }
 
-  // ========================
-  // EXTRAS NAAR BACKEND
-  // ========================
   const extrasPayload = Array.isArray(gekozenExtras)
     ? [...gekozenExtras]
     : [];
@@ -1935,8 +1930,11 @@ async function herberekenPrijs() {
         extras: extrasPayload,
         forced_extras: forcedPayload,
         xtr_coating_verwijderen_uren: xtrCoatingVerwijderenUren || 0,
-        meerwerk_bedrag: extraMeerwerk?.uren || 0,
+
+        // ✅ FIX
+        meerwerk_uren: extraMeerwerk?.uren || 0,
         meerwerk_toelichting: extraMeerwerk?.toelichting || "",
+
         materiaal_bedrag: extraMateriaal?.bedrag || 0,
         materiaal_toelichting: extraMateriaal?.toelichting || ""
       })
@@ -1946,11 +1944,9 @@ async function herberekenPrijs() {
     console.log("📥 Backend data ontvangen:", data);
 
     // ========================
-    // 🔴 M2 TE KLEIN
+    // ERROR HANDLING
     // ========================
     if (data.error === "m2_te_klein") {
-
-      const errorEl = document.getElementById("m2-error");
 
       if (errorEl) {
         errorEl.innerHTML =
@@ -1964,13 +1960,7 @@ async function herberekenPrijs() {
       return false;
     }
 
-
-    // ========================
-    // STAFFEL OUT-OF-RANGE
-    // ========================
     if (data.error === "m2_out_of_range") {
-
-      const errorEl = document.getElementById("m2-error");
 
       if (errorEl) {
         errorEl.innerHTML =
@@ -2003,14 +1993,13 @@ async function herberekenPrijs() {
 
     console.log("=== herberekenPrijs EINDE ===");
 
-    return true;   // ✅ alles ok
+    return true;
 
   } catch (err) {
     console.error("❌ herberekenPrijs crash:", err);
     return false;
   }
 }
-
 
 
 
@@ -2881,32 +2870,12 @@ function toonPolijstResultaat(data) {
   gekozenSysteem = data.systeem;
   prijsPerM2 = data.prijs_per_m2 || null;
   basisPrijs = null;
+
+  // 🔑 BELANGRIJK: gebruik backend totaalprijs
   totaalPrijs = data.totaalprijs;
 
-  // 🔑 Backend extras resetten
-  backendExtras = [];
-
-  // ========================
-  // EXTRA'S TOEVOEGEN (CURING)
-  // ========================
-  if (curingAanwezig) {
-    backendExtras.push({
-      naam: "Curing compound verwijderen",
-      totaal: gekozenOppervlakte * 10,
-      forced: false
-    });
-  }
-
-  // ========================
-  // EXTRA'S TOEVOEGEN (MEERWERK)
-  // ========================
-  if (extraMeerwerk.uren) {
-    backendExtras.push({
-      naam: `Meerwerk (${extraMeerwerk.uren} uur)`,
-      totaal: 0,
-      forced: false
-    });
-  }
+  // 🔑 BELANGRIJK: gebruik backend extras (NIET zelf bouwen)
+  backendExtras = data.extras || [];
 
   // 🔑 Type moet polijsten zijn
   actieveFaseType = "polijsten";
@@ -2914,10 +2883,9 @@ function toonPolijstResultaat(data) {
   // 🔥 Fase opslaan
   slaHuidigeFaseOp();
 
-  // 🔥 Direct terug naar projectsamenvatting
+  // 🔥 Direct naar samenvatting
   toonSamenvatting();
 }
-
 
 
 
