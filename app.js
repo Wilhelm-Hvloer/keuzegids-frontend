@@ -2152,9 +2152,14 @@ async function genereerBestellijst() {
         verpakkingTekst += ` + ${aantalKlein} x ${kleinste}kg`;
       }
 
+      const exacteKg = kg.toFixed(1);
+
       html += `
         <div class="bestelregel">
-          <div>${product}</div>
+          <div>
+            ${product} 
+            <span style="opacity:0.6;">(${exacteKg} kg)</span>
+          </div>
           <div>${verpakkingTekst}</div>
         </div>
       `;
