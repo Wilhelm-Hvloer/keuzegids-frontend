@@ -29,6 +29,9 @@ function maakAntwoordGroep() {
 const API_BASE = "https://keuzegids-backend.onrender.com";
 
 
+=======
+
+
 
 // ========================
 // STATE
@@ -44,6 +47,33 @@ let potentieleSystemen = [];
 
 let gekozenSysteem = null;
 let gekozenAntwoorden = [];
+let gekozenKleur = null;
+
+
+
+
+// ========================
+// FLOW HELPERS
+// ========================
+async function gaNaarMeerwerkOfKleur() {
+
+  let kleurNodig = false;
+
+  if (
+    actieveFaseType === "coating" &&
+    typeof faseHeeftKleurNodig === "function"
+  ) {
+    kleurNodig = await faseHeeftKleurNodig(); // 🔥 BELANGRIJK
+  }
+
+  if (kleurNodig) {
+    toonKleurVraag();
+  } else {
+    toonMeerwerkPagina();
+  }
+
+}
+
 
 
 // ========================
@@ -60,6 +90,7 @@ let gekozenExtras = [];        // vaste + variable_surface extras
 let forcedExtras = [];         // verplichte extras (uit systeemnode)
 let backendExtras = [];        // berekende extras uit backend
 
+
 // ========================
 // PRIJS
 // ========================
@@ -68,6 +99,15 @@ let totaalPrijs = null;
 
 let gekozenOppervlakte = null;
 let gekozenRuimtes = null;
+
+
+// ========================
+// POLIJST FLOW STATE (NIEUW)
+// ========================
+let polijstSysteem = null;
+let polijstKlanttype = null;
+let curingAanwezig = false;
+
 
 // ========================
 // FLOW STATE
@@ -88,6 +128,7 @@ let lastVraagTekst = null;
 // ⚠️ Backend rekent prijs
 let xtrCoatingVerwijderenUren = 0;
 
+
 // ========================
 // EXTRA ARBEID & MATERIAAL (NIEUW)
 // ========================
@@ -101,13 +142,13 @@ let extraMateriaal = {
   toelichting: ""             // verplicht bij Ja
 };
 
+
 // ========================
 // AFWEGING (afw)
 // ========================
 let afwegingNode = null;
 let afwegingResultaten = [];
 let inAfwegingPrijs = false;
-
 
 
 // ========================
@@ -161,6 +202,7 @@ function startPrijslijst() {
   gekozenExtras = [];
   forcedExtras = [];
   backendExtras = [];
+  gekozenKleur = null;
 
   // ========================
   // PRIJS STATE RESET
@@ -439,6 +481,8 @@ async function startKeuzegids() {
   gekozenSysteem = null;
   gekozenAntwoorden = [];
 
+  gekozenKleur = null; // 🔥 TOEVOEGEN
+
   gekozenExtras = [];
   forcedExtras = [];
   backendExtras = [];
@@ -697,8 +741,8 @@ async function renderNode(node) {
   // ========================
   // Alleen echte END-nodes hier afvangen
   if (node.id === "END" || node.type === "end") {
-    console.log("🏁 END-node bereikt → meerwerk starten");
-    toonMeerwerkPagina();
+    console.log("🏁 END-node bereikt → kleur/meerwerk bepalen");
+    await gaNaarMeerwerkOfKleur();
     return;
   }
 
@@ -728,8 +772,8 @@ async function renderNode(node) {
     default:
       // Geen next = einde boom
       if (!Array.isArray(node.next) || node.next.length === 0) {
-        console.log("🏁 Geen vervolg → meerwerk starten");
-        toonMeerwerkPagina();
+        console.log("🏁 Geen vervolg → kleur/meerwerk bepalen");
+        await gaNaarMeerwerkOfKleur();
       } else {
         console.warn("⚠️ Onbekend node-type:", node);
       }
@@ -751,15 +795,15 @@ function handleVraagNode(node) {
 
 
 // ========================
-// ANTWOORD NODE AFHANDELEN – ROBUUST
+// ANTWOORD NODE AFHANDELEN – ROBUUST (GEFIXT)
 // ========================
 async function handleAntwoordNode(node) {
 
   console.log("📩 Antwoord-node ontvangen:", node.id);
 
   if (!Array.isArray(node.next) || node.next.length === 0) {
-    console.log("🏁 Antwoord zonder vervolg → start meerwerk");
-    toonMeerwerkPagina();
+    console.log("🏁 Antwoord zonder vervolg → kleur/meerwerk bepalen");
+    await gaNaarMeerwerkOfKleur();
     return;
   }
 
@@ -780,7 +824,7 @@ async function handleAntwoordNode(node) {
 
     // END expliciet afhandelen
     if (vervolg.toUpperCase() === "END") {
-      toonMeerwerkPagina();
+      await gaNaarMeerwerkOfKleur();
       return;
     }
 
@@ -789,7 +833,7 @@ async function handleAntwoordNode(node) {
 
       if (!res.ok) {
         console.warn("⚠️ Node niet gevonden:", vervolg);
-        toonMeerwerkPagina();
+        await gaNaarMeerwerkOfKleur(); // 🔥 FIX
         return;
       }
 
@@ -798,7 +842,7 @@ async function handleAntwoordNode(node) {
 
     } catch (err) {
       console.error("❌ Fout bij antwoord-vervolg:", err);
-      toonMeerwerkPagina();
+      await gaNaarMeerwerkOfKleur(); // 🔥 FIX
     }
 
     return;
@@ -808,7 +852,7 @@ async function handleAntwoordNode(node) {
   // ONBEKEND TYPE
   // ========================
   console.warn("⚠️ Onbekend next-type:", vervolg);
-  toonMeerwerkPagina();
+  await gaNaarMeerwerkOfKleur(); // 🔥 FIX
 }
 
 
@@ -1229,7 +1273,7 @@ async function toonAfwegingMetPrijzen() {
         gekozenNode.next.length === 0 ||
         gekozenNode.next[0] === "END"
       ) {
-        toonMeerwerkPagina();
+        await gaNaarMeerwerkOfKleur();
         return;
       }
 
@@ -1468,7 +1512,7 @@ function toonSysteemPrijsResultaat() {
     questionEl.innerHTML = "";
 
     if (!Array.isArray(currentNode?.next) || currentNode.next.length === 0) {
-      toonMeerwerkPagina();
+      await gaNaarMeerwerkOfKleur();
       return;
     }
 
@@ -1476,7 +1520,7 @@ function toonSysteemPrijsResultaat() {
       currentNode.next.length === 1 &&
       currentNode.next[0] === "END"
     ) {
-      toonMeerwerkPagina();
+      await gaNaarMeerwerkOfKleur();
       return;
     }
 
@@ -1651,9 +1695,9 @@ async function registreerVariableSurfaceExtra(extraKey, m2) {
   // FLOW HERVATTEN
   // ========================
 
-  // 🔑 CASE 1: END → start meerwerk flow (NIET direct samenvatting)
+  // 🔑 CASE 1: END → kleur/meerwerk bepalen
   if (nextNodeId && nextNodeId.toUpperCase() === "END") {
-    toonMeerwerkPagina();
+    await gaNaarMeerwerkOfKleur();
     return;
   }
 
@@ -1676,10 +1720,133 @@ async function registreerVariableSurfaceExtra(extraKey, m2) {
   }
 
   // 🔑 CASE 3: Fallback → ook meerwerk starten
-  toonMeerwerkPagina();
+  await gaNaarMeerwerkOfKleur();
 }
 
 
+
+// ========================
+// IS KLEUR NODIG?
+// ========================
+async function faseHeeftKleurNodig() {
+
+  if (!gekozenSysteem || !gekozenOppervlakte) return false;
+
+  try {
+
+    const res = await fetch(`${API_BASE}/api/materialen`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        fases: [{
+          gekozenSysteem,
+          gekozenOppervlakte,
+          kleur: null
+        }]
+      })
+    });
+
+    const data = await res.json();
+
+    if (!data || !data.materialen) return false;
+
+    return Object.values(data.materialen).some(info => info.kleur_verplicht === true);
+
+  } catch (err) {
+    console.error("❌ Fout bij kleur-check:", err);
+    return false;
+  }
+}
+
+
+
+// ========================
+// KLEUR VRAGEN
+// ========================
+function toonKleurVraag() {
+
+  const questionEl = document.getElementById("question-text");
+  const optionsEl  = document.getElementById("options-box");
+
+  resetUI();
+  optionsEl.style.display = "block";
+
+  questionEl.innerHTML = `
+    <strong>Welke kleur voor afwerking?</strong>
+  `;
+
+  const container = document.createElement("div");
+  container.className = "antwoord-groep";
+
+  let gekozenKleurTemp = "";
+
+  // ========================
+  // STANDAARD KLEUREN
+  // ========================
+  const btnStandaard = document.createElement("button");
+  btnStandaard.textContent = "Standaard kleur kiezen";
+
+  const kleurenLijst = document.createElement("div");
+  kleurenLijst.style.display = "none";
+
+  ["RAL 7035", "RAL 7040", "RAL 9005"].forEach(kleur => {
+
+    const btn = document.createElement("button");
+    btn.textContent = kleur;
+
+    btn.onclick = () => {
+      gekozenKleurTemp = kleur;
+      input.value = kleur; // 🔥 sync met inputveld
+    };
+
+    kleurenLijst.appendChild(btn);
+  });
+
+  btnStandaard.onclick = () => {
+    kleurenLijst.style.display =
+      kleurenLijst.style.display === "none" ? "block" : "none";
+  };
+
+  // ========================
+  // INPUT VELD (FIXED STYLING)
+  // ========================
+  const input = document.createElement("input");
+  input.type = "text";
+  input.placeholder = "Voer kleurcode in";
+  input.classList.add("input-vol");
+
+  input.oninput = () => {
+    gekozenKleurTemp = input.value;
+  };
+
+  // ========================
+  // VERDER KNOP
+  // ========================
+  const btnVerder = document.createElement("button");
+  btnVerder.textContent = "Verder";
+
+  btnVerder.onclick = () => {
+
+    if (!gekozenKleurTemp) {
+      alert("Voer een kleur in");
+      return;
+    }
+
+    gekozenKleur = gekozenKleurTemp;
+
+    toonMeerwerkPagina();
+  };
+
+  // ========================
+  // BUILD UI
+  // ========================
+  container.appendChild(btnStandaard);
+  container.appendChild(kleurenLijst);
+  container.appendChild(input);
+  container.appendChild(btnVerder);
+
+  optionsEl.appendChild(container);
+}
 
 
 
@@ -1688,10 +1855,15 @@ async function registreerVariableSurfaceExtra(extraKey, m2) {
 // EXTRA ARBEID (MEERWERK) – DEFINITIEF
 // ========================
 function toonMeerwerkPagina() {
-  const questionEl = document.getElementById("question-text");
-  const optionsEl = document.getElementById("options-box");
 
-  questionEl.innerHTML = "<strong>Extra arbeid toevoegen?</strong>";
+  const questionEl = document.getElementById("question-text");
+  const optionsEl  = document.getElementById("options-box");
+
+  questionEl.innerHTML =
+    actieveFaseType === "polijsten"
+      ? "<strong>Extra arbeid polijsten toevoegen?</strong>"
+      : "<strong>Extra arbeid toevoegen?</strong>";
+
   optionsEl.style.display = "block";
   optionsEl.innerHTML = "";
 
@@ -1729,18 +1901,45 @@ function toonMeerwerkPagina() {
   urenInput.addEventListener("input", validate);
   toelichtingInput.addEventListener("input", validate);
 
+  // ========================
+  // VERDER FLOW
+  // ========================
+  async function gaVerder() {
+
+    if (actieveFaseType === "polijsten") {
+      const ok = await berekenPolijstPrijs();
+      if (!ok) return;
+      return;
+    }
+
+    // 🔥 ZORGT DAT BACKEND DIT MEENEEMT
+    await herberekenPrijs();
+
+    toonMateriaalPagina();
+  }
+
+  // ========================
+  // GEEN MEERWERK
+  // ========================
   btnNee.onclick = () => {
+
     if (urenInput.value) {
       foutmelding.textContent =
         'Maak invoerveld leeg, of kies "Ja, extra toevoegen"';
       return;
     }
+
     extraMeerwerk.uren = null;
     extraMeerwerk.toelichting = "";
-    toonMateriaalPagina();
+
+    gaVerder();
   };
 
+  // ========================
+  // WEL MEERWERK
+  // ========================
   btnJa.onclick = () => {
+
     if (!toelichtingInput.value.trim()) {
       foutmelding.textContent = "Geef toelichting voor extra";
       return;
@@ -1748,10 +1947,13 @@ function toonMeerwerkPagina() {
 
     extraMeerwerk.uren = parseInt(urenInput.value);
     extraMeerwerk.toelichting = toelichtingInput.value.trim();
-    toonMateriaalPagina();
+
+    gaVerder();
   };
 
-  // 🔑 KNOPPEN ALTIJD IN ANTWOORD-GROEP
+  // ========================
+  // UI OPBOUW
+  // ========================
   const groep = document.createElement("div");
   groep.className = "antwoord-groep";
 
@@ -1772,6 +1974,7 @@ function toonMeerwerkPagina() {
 // EXTRA MATERIAAL – DEFINITIEF (CONSISTENT)
 // ========================
 function toonMateriaalPagina() {
+
   const questionEl = document.getElementById("question-text");
   const optionsEl = document.getElementById("options-box");
 
@@ -1813,7 +2016,31 @@ function toonMateriaalPagina() {
   bedragInput.addEventListener("input", validate);
   toelichtingInput.addEventListener("input", validate);
 
+  // ========================
+  // VERDER FLOW
+  // ========================
+  async function gaVerder() {
+
+    // 🔥 BELANGRIJK: altijd herberekenen met nieuwe data
+    if (actieveFaseType === "coating") {
+      const ok = await herberekenPrijs();
+      if (!ok) return;
+
+      toonSamenvatting();
+      return;
+    }
+
+    const ok = await berekenPolijstPrijs();
+    if (!ok) return;
+
+    toonSamenvatting();
+  }
+
+  // ========================
+  // GEEN EXTRA
+  // ========================
   btnNee.onclick = () => {
+
     if (bedragInput.value) {
       foutmelding.textContent =
         'Maak invoerveld leeg, of kies "Ja, extra toevoegen"';
@@ -1822,10 +2049,15 @@ function toonMateriaalPagina() {
 
     extraMateriaal.bedrag = null;
     extraMateriaal.toelichting = "";
-    herberekenPrijs().then(toonSamenvatting);
+
+    gaVerder();
   };
 
+  // ========================
+  // WEL EXTRA
+  // ========================
   btnJa.onclick = () => {
+
     if (!toelichtingInput.value.trim()) {
       foutmelding.textContent = "Geef toelichting voor extra";
       return;
@@ -1833,10 +2065,13 @@ function toonMateriaalPagina() {
 
     extraMateriaal.bedrag = parseInt(bedragInput.value);
     extraMateriaal.toelichting = toelichtingInput.value.trim();
-    herberekenPrijs().then(toonSamenvatting);
+
+    gaVerder();
   };
 
-  // 🔑 ZELFDE OPLOSSING ALS EXTRA ARBEID
+  // ========================
+  // UI
+  // ========================
   const groep = document.createElement("div");
   groep.className = "antwoord-groep";
 
@@ -1860,9 +2095,7 @@ async function herberekenPrijs() {
 
   console.log("=== herberekenPrijs START ===");
 
-  const resultEl = document.getElementById("result-box");
   const errorEl  = document.getElementById("m2-error");
-
   if (errorEl) errorEl.innerHTML = "";
 
   // ========================
@@ -1873,9 +2106,6 @@ async function herberekenPrijs() {
     return false;
   }
 
-  // ========================
-  // EXTRAS NAAR BACKEND
-  // ========================
   const extrasPayload = Array.isArray(gekozenExtras)
     ? [...gekozenExtras]
     : [];
@@ -1896,10 +2126,17 @@ async function herberekenPrijs() {
         extras: extrasPayload,
         forced_extras: forcedPayload,
         xtr_coating_verwijderen_uren: xtrCoatingVerwijderenUren || 0,
-        meerwerk_bedrag: extraMeerwerk?.uren || 0,
+
+        // 🔥 MEERWERK
+        meerwerk_uren: extraMeerwerk?.uren || 0,
         meerwerk_toelichting: extraMeerwerk?.toelichting || "",
+
+        // 🔥 EXTRA MATERIAAL
         materiaal_bedrag: extraMateriaal?.bedrag || 0,
-        materiaal_toelichting: extraMateriaal?.toelichting || ""
+        materiaal_toelichting: extraMateriaal?.toelichting || "",
+
+        // 🔥 NIEUW: KLEUR
+        kleur: gekozenKleur || null
       })
     });
 
@@ -1907,11 +2144,9 @@ async function herberekenPrijs() {
     console.log("📥 Backend data ontvangen:", data);
 
     // ========================
-    // 🔴 M2 TE KLEIN
+    // ERROR HANDLING
     // ========================
     if (data.error === "m2_te_klein") {
-
-      const errorEl = document.getElementById("m2-error");
 
       if (errorEl) {
         errorEl.innerHTML =
@@ -1925,13 +2160,7 @@ async function herberekenPrijs() {
       return false;
     }
 
-
-    // ========================
-    // STAFFEL OUT-OF-RANGE
-    // ========================
     if (data.error === "m2_out_of_range") {
-
-      const errorEl = document.getElementById("m2-error");
 
       if (errorEl) {
         errorEl.innerHTML =
@@ -1964,14 +2193,13 @@ async function herberekenPrijs() {
 
     console.log("=== herberekenPrijs EINDE ===");
 
-    return true;   // ✅ alles ok
+    return true;
 
   } catch (err) {
     console.error("❌ herberekenPrijs crash:", err);
     return false;
   }
 }
-
 
 
 
@@ -2008,12 +2236,11 @@ async function berekenBasisPrijsVoorSysteem(systeemNaam, m2, ruimtes) {
 // ========================
 function slaHuidigeFaseOp() {
 
-  if (!totaalPrijs) return;
+  if (!gekozenSysteem) return;
 
   const faseData = {
-    type: actieveFaseType,   // 🔑 NIEUW
+    type: actieveFaseType,
 
-    // Coating data (kan leeg zijn bij polijsten)
     gekozenAntwoorden: JSON.parse(JSON.stringify(gekozenAntwoorden || [])),
     gekozenSysteem,
     gekozenOppervlakte,
@@ -2021,16 +2248,17 @@ function slaHuidigeFaseOp() {
     prijsPerM2,
     basisPrijs,
 
-    // Gemeenschappelijk
     totaalPrijs,
 
     backendExtras: JSON.parse(JSON.stringify(backendExtras || [])),
     currentSystemOmschrijving: JSON.parse(JSON.stringify(currentSystemOmschrijving || [])),
 
-    systeemKeuzeIndex
+    systeemKeuzeIndex,
+
+    // 🔥 NIEUW
+    kleur: gekozenKleur || null
   };
 
-  // Nieuwe fase toevoegen als deze index nog niet bestaat
   if (!fases[actieveFaseIndex]) {
     fases.push(faseData);
   } else {
@@ -2039,8 +2267,11 @@ function slaHuidigeFaseOp() {
 }
 
 
+
+
+
 // ========================
-// BESTELLIJST GENEREREN (MET SIMPELE VERPAKKINGSLOGICA)
+// BESTELLIJST GENEREREN (PER FASE MET VERPAKKINGSLOGICA)
 // ========================
 async function genereerBestellijst() {
 
@@ -2050,80 +2281,95 @@ async function genereerBestellijst() {
 
   try {
 
-    // Alleen coating fases meesturen (veiliger)
-    const coatingFases = fases.filter(f => f.type === "coating");
-
-    if (coatingFases.length === 0) {
-      return "<div>Geen coatingmaterialen nodig.</div>";
-    }
-
-    const res = await fetch(`${API_BASE}/api/materialen`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ fases: coatingFases })
-    });
-
-    const data = await res.json();
-
-    if (!data || !data.materialen) {
-      return "<div>Geen materialen.</div>";
-    }
-
-    const materialen = data.materialen;
-
     let html = "";
 
-    Object.entries(materialen).forEach(([product, info]) => {
+    for (let i = 0; i < fases.length; i++) {
 
-      const kg = info.kg || 0;
-      const verpakkingen = Array.isArray(info.verpakking)
-        ? [...info.verpakking].sort((a,b)=>b-a)
-        : [];
+      const fase = fases[i];
 
-      if (verpakkingen.length === 0) return;
+      if (fase.type !== "coating") continue;
 
-      const grootste = verpakkingen[0];
-      const kleinste = verpakkingen[verpakkingen.length - 1];
+      const res = await fetch(`${API_BASE}/api/materialen`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ fases: [fase] }) // 🔑 per fase
+      });
 
-      let aantalGroot = Math.floor(kg / grootste);
-      let totaal = aantalGroot * grootste;
+      const data = await res.json();
 
-      let aantalKlein = 0;
+      if (!data || !data.materialen) continue;
 
-      // Probeer met 1 kleine verpakking
-      if (kleinste && kleinste !== grootste) {
-
-        if (totaal + kleinste >= kg) {
-          aantalKlein = 1;
-        } else {
-          // kleine vervangen door grote
-          aantalGroot += 1;
-        }
-
-      } else {
-        // Alleen grote verpakking beschikbaar
-        if (totaal < kg) {
-          aantalGroot += 1;
-        }
-      }
-
-      let verpakkingTekst = "";
-
-      if (aantalGroot > 0) {
-        verpakkingTekst += `${aantalGroot} x ${grootste}kg`;
-      }
-
-      if (aantalKlein > 0) {
-        verpakkingTekst += ` + ${aantalKlein} x ${kleinste}kg`;
-      }
+      const materialen = data.materialen;
 
       html += `
-        <div class="bestelregel">
-          <div>${product}</div>
-          <div>${verpakkingTekst}</div>
+        <div style="margin-top:10px;">
+          <strong>Fase ${i + 1}:</strong>
         </div>
       `;
-    });
+
+      Object.entries(materialen).forEach(([product, info]) => {
+
+        const kg = info.kg || 0;
+
+        const verpakkingen = Array.isArray(info.verpakkingen)
+          ? [...info.verpakkingen].sort((a, b) => b - a)
+          : [];
+
+        if (verpakkingen.length === 0) return;
+
+        const grootste = verpakkingen[0];
+        const kleinste = verpakkingen[verpakkingen.length - 1];
+
+        let aantalGroot = Math.floor(kg / grootste);
+        let totaal = aantalGroot * grootste;
+
+        let aantalKlein = 0;
+
+        if (kleinste && kleinste !== grootste) {
+
+          if (totaal + kleinste >= kg) {
+            aantalKlein = 1;
+          } else {
+            aantalGroot += 1;
+          }
+
+        } else {
+          if (totaal < kg) {
+            aantalGroot += 1;
+          }
+        }
+
+        let verpakkingTekst = "";
+
+        if (aantalGroot > 0) {
+          verpakkingTekst += `${aantalGroot} x ${grootste}kg`;
+        }
+
+        if (aantalKlein > 0) {
+          verpakkingTekst += `${aantalGroot > 0 ? " + " : ""}${aantalKlein} x ${kleinste}kg`;
+        }
+
+        const exacteKg = kg.toFixed(1);
+
+        // 🔥 NIEUW: kleur uit backend + fase
+        const heeftKleur = info.kleur_verplicht === true;
+
+        const kleurTekst = (heeftKleur && fase.kleur)
+          ? ` (${fase.kleur})`
+          : "";
+
+        html += `
+          <div class="bestelregel">
+            <div>
+              ${product}${kleurTekst} 
+              <span style="opacity:0.6;">(${exacteKg} kg)</span>
+            </div>
+            <div>${verpakkingTekst}</div>
+          </div>
+        `;
+      });
+
+    }
 
     return html || "<div>Geen materialen.</div>";
 
@@ -2132,6 +2378,7 @@ async function genereerBestellijst() {
     return "<div>Materialen konden niet worden geladen.</div>";
   }
 }
+
 
 
 
@@ -2146,9 +2393,6 @@ function toonSamenvatting() {
   const optionsEl  = document.getElementById("options-box");
   const resultEl   = document.getElementById("result-box");
 
-  // ========================
-  // TITEL + FASE KNOPPEN
-  // ========================
   questionEl.innerHTML = `
     <strong>Samenvatting</strong>
     <div style="margin-top:15px; display:flex; flex-direction:column; gap:10px;">
@@ -2175,25 +2419,20 @@ function toonSamenvatting() {
     html += `<div class="fase-blok">`;
 
     // ========================
-    // COATING FASE
+    // FASE HEADER
     // ========================
-    if (fase.type === "coating") {
+    html += `
+      <div class="fase-header">
+        <h3>Fase ${index + 1} – ${fase.type === "polijsten" ? "Polijsten" : "Coating"}</h3>
+      </div>
+    `;
 
-      html += `
-        <div class="fase-header">
-          <h3>Fase ${index + 1} – Coating</h3>
-        </div>
-      `;
+    // ========================
+    // VRAGEN + ANTWOORDEN
+    // ========================
+    if (fase.gekozenAntwoorden && fase.gekozenAntwoorden.length > 0) {
 
-      const veiligeIndex =
-        typeof fase.systeemKeuzeIndex === "number"
-          ? fase.systeemKeuzeIndex
-          : (fase.gekozenAntwoorden || []).length;
-
-      const basisVragen = (fase.gekozenAntwoorden || []).slice(0, veiligeIndex);
-      const optieVragen = (fase.gekozenAntwoorden || []).slice(veiligeIndex);
-
-      basisVragen.forEach(item => {
+      fase.gekozenAntwoorden.forEach(item => {
         html += `
           <div class="qa-regel">
             <span class="vraag"><em>${item.vraag}</em></span><br>
@@ -2201,6 +2440,7 @@ function toonSamenvatting() {
           </div>
         `;
       });
+
 
       html += `
         <hr>
@@ -2265,37 +2505,68 @@ function toonSamenvatting() {
           `;
         });
       }
+=======
+      html += `<hr>`;
+
     }
 
     // ========================
-    // POLIJST FASE
+    // BASIS PROJECT DATA
     // ========================
-    if (fase.type === "polijsten") {
+    html += `
+      <div>Aantal m²: <strong>${fase.gekozenOppervlakte || "-"} m²</strong></div>
+    `;
 
+    if (fase.gekozenRuimtes) {
       html += `
-        <div class="fase-header">
-          <h3>Fase ${index + 1} – Polijsten</h3>
+        <div>Aantal ruimtes: 
+          <strong>${fase.gekozenRuimtes} ruimte${fase.gekozenRuimtes > 1 ? "s" : ""}</strong>
         </div>
+      `;
+    }
 
-        <div class="gekozen-systeem">
-          ${fase.gekozenSysteem || "-"}
-        </div>
+    // ========================
+    // SYSTEEM
+    // ========================
+    html += `
+      <hr>
+      <div class="gekozen-systeem">
+        ${fase.gekozenSysteem || "-"}
+        ${
+          fase.currentSystemOmschrijving && fase.currentSystemOmschrijving.length
+            ? `
+              <span class="info-icon"
+                onclick='currentSystemOmschrijving = ${JSON.stringify(fase.currentSystemOmschrijving)}; openInfoModal();'>
+                ⓘ
+              </span>
+            `
+            : ""
+        }
+      </div>
+    `;
 
-        <div>
-          Aantal m²: 
-          <strong>${fase.gekozenOppervlakte || "-"} m²</strong>
-        </div>
-
+    // ========================
+    // PRIJSINFO
+    // ========================
+    if (fase.prijsPerM2) {
+      html += `
         <div>
           Prijs per m²: 
-          <strong>€ ${formatPrijs(fase.prijsPerM2 || 0)},-</strong>
-        </div>
-
-        <div style="margin-top:12px;">
           <strong>
-            Totaal fase ${index + 1}: 
-            € ${formatPrijs(fase.totaalPrijs || 0)},-
+            € ${formatPrijs(fase.prijsPerM2)},-
+            ${
+              fase.basisPrijs
+                ? `<span style="opacity:0.7;"> (€ ${formatPrijs(fase.basisPrijs)},-)</span>`
+                : ""
+            }
           </strong>
+        </div>
+      `;
+    } else if (fase.basisPrijs) {
+      html += `
+        <div>
+          Totaal (polijsten): 
+          <strong>€ ${formatPrijs(fase.basisPrijs)},-</strong>
         </div>
       `;
     }
@@ -2303,6 +2574,41 @@ function toonSamenvatting() {
 
     // ========================
     // VERWIJDERKNOP
+    // ========================
+    html += `
+      <div style="margin-top:10px;">
+        <strong>
+          Totaal fase ${index + 1}: € ${formatPrijs(faseTotaal)},-
+        </strong>
+      </div>
+    `;
+
+    // ========================
+    // EXTRA'S
+    // ========================
+    if (fase.backendExtras && fase.backendExtras.length > 0) {
+
+      html += `<hr><div><strong>Extra’s</strong></div>`;
+
+      fase.backendExtras.forEach(extra => {
+        html += `
+          <div class="extra-blok">
+            <div>
+              <strong>
+                ${extra.naam}${extra.forced ? " (verplicht)" : ""}
+              </strong>
+            </div>
+            <div class="extra-bedrag">
+              € ${formatPrijs(extra.totaal)},-
+            </div>
+          </div>
+        `;
+      });
+    }
+
+    // ========================
+    // FASE VERWIJDEREN
+
     // ========================
     if (fases.length > 1) {
       html += `
@@ -2319,12 +2625,18 @@ function toonSamenvatting() {
 
   });
 
+  // ========================
+  // PROJECT TOTAAL
+  // ========================
   html += `
     <hr>
     <div><strong>Totaal project:</strong></div>
     <div class="totaalprijs">€ ${formatPrijs(totaalProject)},-</div>
   `;
 
+  // ========================
+  // PROJECT INFO
+  // ========================
   html += `
     <div class="kaart project-info-kaart">
 
@@ -2341,6 +2653,7 @@ function toonSamenvatting() {
         <strong>Planning</strong>
         <div style="opacity:0.6;">(komt later)</div>
       </div>
+
     </div>
   `;
 
@@ -2352,7 +2665,9 @@ function toonSamenvatting() {
       container.innerHTML = bestellijstHtml;
     }
   });
+
 }
+
 
 
 // ========================
@@ -2462,6 +2777,7 @@ function startNieuwePolijstFase() {
   gekozenOppervlakte = null;
   gekozenRuimtes = null;
 
+  gekozenKleur = null;
   prijsPerM2 = null;
   basisPrijs = null;
   totaalPrijs = null;
@@ -2503,6 +2819,7 @@ function startNieuweFase() {
   backendExtras = [];
   currentSystemOmschrijving = [];
 
+  gekozenKleur = null;
   gekozenExtras = [];
   forcedExtras = [];
 
@@ -2531,6 +2848,7 @@ function startPrijslijstCoatingFase() {
   gekozenOppervlakte = null;
   gekozenRuimtes = null;
 
+  gekozenKleur = null;
   prijsPerM2 = null;
   basisPrijs = null;
   totaalPrijs = null;
@@ -2665,36 +2983,24 @@ function toonPolijstInvoer(systeem, klanttype) {
 
   const btn = document.createElement("button");
   btn.type = "button";
-  btn.textContent = "Bereken prijs";
+  btn.textContent = "Verder";
   btn.classList.add("actie-knop");
 
-  btn.onclick = async () => {
+  btn.onclick = () => {
 
     const m2 = parseFloat(input.value);
     if (!m2 || m2 <= 0) return;
 
-    // 🔧 FIX: m² opslaan voor samenvatting
+    // 🔧 m² opslaan voor vervolgflow
     gekozenOppervlakte = m2;
-    gekozenRuimtes = 1; // polijsten gebruikt geen ruimtes maar voorkomt null
+    gekozenRuimtes = 1;
 
-    const res = await fetch(`${API_BASE}/api/polijst-price`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        systeem,
-        klanttype,
-        oppervlakte: m2
-      })
-    });
+    // 🔧 systeem en klanttype bewaren
+    polijstSysteem = systeem;
+    polijstKlanttype = klanttype;
 
-    const data = await res.json();
-
-    if (data.error) {
-      alert(data.error);
-      return;
-    }
-
-    toonPolijstResultaat(data);
+    // 👉 curing scherm openen
+    toonCuringVraag();
   };
 
   groep.appendChild(input);
@@ -2705,24 +3011,223 @@ function toonPolijstInvoer(systeem, klanttype) {
 
 
 // ========================
+// POLIJST – CURING VRAAG
+// ========================
+function toonCuringVraag() {
+
+  const questionEl = document.getElementById("question-text");
+  const optionsEl  = document.getElementById("options-box");
+
+  resetUI();
+  optionsEl.style.display = "block";
+
+  questionEl.innerHTML = `
+    <strong>Is curing compound aanwezig?</strong>
+  `;
+
+  const groep = document.createElement("div");
+  groep.className = "antwoord-groep";
+
+  const btnJa = document.createElement("button");
+  btnJa.type = "button";
+  btnJa.textContent = "Ja";
+
+  const btnNee = document.createElement("button");
+  btnNee.type = "button";
+  btnNee.textContent = "Nee";
+
+  btnJa.onclick = () => {
+    curingAanwezig = true;
+
+    // 🔑 OPSLAAN OP FASE
+    if (!fases[actieveFaseIndex]) fases[actieveFaseIndex] = {};
+    fases[actieveFaseIndex].curing = true;
+
+    toonMeerwerkPaginaPolijsten();
+  };
+
+  btnNee.onclick = () => {
+    curingAanwezig = false;
+
+    // 🔑 OPSLAAN OP FASE
+    if (!fases[actieveFaseIndex]) fases[actieveFaseIndex] = {};
+    fases[actieveFaseIndex].curing = false;
+
+    toonMeerwerkPaginaPolijsten();
+  };
+
+  groep.appendChild(btnJa);
+  groep.appendChild(btnNee);
+
+  optionsEl.appendChild(groep);
+}
+
+// ========================
+// POLIJST – MEERWERK
+// ========================
+function toonMeerwerkPaginaPolijsten() {
+
+  const questionEl = document.getElementById("question-text");
+  const optionsEl  = document.getElementById("options-box");
+
+  questionEl.innerHTML = "<strong>Extra arbeid polijsten toevoegen?</strong>";
+  optionsEl.style.display = "block";
+  optionsEl.innerHTML = "";
+
+  const foutmelding = document.createElement("div");
+  foutmelding.style.color = "#BC4C1F";
+  foutmelding.style.marginTop = "8px";
+
+  const urenInput = document.createElement("input");
+  urenInput.type = "number";
+  urenInput.min = "0";
+  urenInput.step = "1";
+  urenInput.placeholder = "Aantal uren meerwerk";
+  urenInput.classList.add("input-vol");
+
+  const toelichtingInput = document.createElement("textarea");
+  toelichtingInput.placeholder = "Geef toelichting voor meerwerk";
+  toelichtingInput.classList.add("input-vol");
+
+  const btnNee = document.createElement("button");
+  btnNee.type = "button";
+  btnNee.textContent = "Nee, geen meerwerk toevoegen";
+
+  const btnJa = document.createElement("button");
+  btnJa.type = "button";
+  btnJa.textContent = "Ja, meerwerk toevoegen";
+  btnJa.classList.add("actie-knop");
+  btnJa.disabled = true;
+
+  function validate() {
+    const uren = urenInput.value;
+    const toel = toelichtingInput.value.trim();
+    btnJa.disabled = !(uren && parseInt(uren) > 0 && toel.length > 0);
+  }
+
+  urenInput.addEventListener("input", validate);
+  toelichtingInput.addEventListener("input", validate);
+
+  btnNee.onclick = async () => {
+
+    if (urenInput.value) {
+      foutmelding.textContent =
+        'Maak invoerveld leeg, of kies "Ja, extra toevoegen"';
+      return;
+    }
+
+    extraMeerwerk.uren = null;
+    extraMeerwerk.toelichting = "";
+
+    await berekenPolijstPrijs();
+  };
+
+  btnJa.onclick = async () => {
+
+    if (!toelichtingInput.value.trim()) {
+      foutmelding.textContent = "Geef toelichting voor extra";
+      return;
+    }
+
+    extraMeerwerk.uren = parseInt(urenInput.value);
+    extraMeerwerk.toelichting = toelichtingInput.value.trim();
+
+    await berekenPolijstPrijs();
+  };
+
+  const groep = document.createElement("div");
+  groep.className = "antwoord-groep";
+
+  groep.appendChild(btnNee);
+  groep.appendChild(btnJa);
+
+  optionsEl.append(
+    urenInput,
+    toelichtingInput,
+    foutmelding,
+    groep
+  );
+}
+
+
+// ========================
+// POLIJST – PRIJS BEREKENEN
+// ========================
+async function berekenPolijstPrijs() {
+
+  try {
+
+    // 🔑 curing uit fase halen (fallback = huidige state)
+    const fase = fases[actieveFaseIndex] || {};
+    const curing = fase.curing ?? curingAanwezig;
+
+    const res = await fetch(`${API_BASE}/api/polijst-price`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        systeem: polijstSysteem,
+        klanttype: polijstKlanttype,
+        oppervlakte: gekozenOppervlakte,
+        curing: curing,
+        meerwerk_uren: Number(extraMeerwerk?.uren || 0)
+      })
+    });
+
+    const data = await res.json();
+
+    if (data.error) {
+      alert(data.error);
+      return false;
+    }
+
+    // 🔑 optioneel: ook resultaat opslaan op fase (aanrader)
+    if (!fases[actieveFaseIndex]) fases[actieveFaseIndex] = {};
+    fases[actieveFaseIndex].laatsteBerekening = data;
+
+    toonPolijstResultaat(data);
+
+    return true; // 🔑 BELANGRIJK
+
+  } catch (err) {
+    console.error("❌ polijstprijs fout:", err);
+    return false;
+  }
+}
+
+
+// ========================
 // POLIJST – RESULTAAT
 // ========================
 function toonPolijstResultaat(data) {
 
-  // 🔑 Vul state zodat fase kan worden opgeslagen
+  // ========================
+  // BASIS DATA UIT BACKEND
+  // ========================
   gekozenSysteem = data.systeem;
-  prijsPerM2 = data.prijs_per_m2 || null;
-  basisPrijs = null;
-  totaalPrijs = data.totaalprijs;
-  backendExtras = [];
+  prijsPerM2     = data.prijs_per_m2 ?? null;
 
-  // 🔑 Type moet polijsten zijn
+  // 🔑 NIEUW: basis totaal (zonder extras)
+  basisPrijs     = data.basis_totaal ?? null;
+
+  // 🔑 BELANGRIJK: totaalprijs komt 100% uit backend
+  totaalPrijs = data.totaalprijs ?? 0;
+
+  // 🔑 BELANGRIJK: extras ALLEEN vanuit backend
+  backendExtras = Array.isArray(data.extras) ? data.extras : [];
+
+  // ========================
+  // TYPE INSTELLEN
+  // ========================
   actieveFaseType = "polijsten";
 
-  // 🔥 Fase opslaan
+  // ========================
+  // FASE OPSLAAN
+  // ========================
   slaHuidigeFaseOp();
 
-  // 🔥 Direct terug naar projectsamenvatting
+  // ========================
+  // NAAR SAMENVATTING
+  // ========================
   toonSamenvatting();
 }
 
@@ -2740,6 +3245,7 @@ function stripPrefix(text = "") {
     .replace(/^Afw:\s*/i, "")
     .trim();
 }
+
 
 // ========================
 // FORMAT PRIJS (NL NOTATIE)
