@@ -26,11 +26,7 @@ function maakAntwoordGroep() {
 // CONFIG
 // ========================
 
-const API_BASE = "https://keuzegids-backend-dev.onrender.com";
-
-
-=======
-
+const API_BASE = "https://keuzegids-backend.onrender.com";
 
 
 // ========================
@@ -2268,8 +2264,6 @@ function slaHuidigeFaseOp() {
 
 
 
-
-
 // ========================
 // BESTELLIJST GENEREREN (PER FASE MET VERPAKKINGSLOGICA)
 // ========================
@@ -2441,73 +2435,7 @@ function toonSamenvatting() {
         `;
       });
 
-
-      html += `
-        <hr>
-        <div>Aantal m²: <strong>${fase.gekozenOppervlakte || "-"} m²</strong></div>
-        <div>Aantal ruimtes: <strong>${fase.gekozenRuimtes || "-"} ruimte${fase.gekozenRuimtes > 1 ? "s" : ""}</strong></div>
-      `;
-
-
-      // ========================
-      // SYSTEEM + INFO BALON
-      // ========================
-
-      html += `
-        <hr>
-        <div class="gekozen-systeem">
-          ${fase.gekozenSysteem || "-"}
-          ${
-            fase.currentSystemOmschrijving && fase.currentSystemOmschrijving.length
-              ? `
-                <span class="info-icon"
-                      onclick='currentSystemOmschrijving = ${JSON.stringify(fase.currentSystemOmschrijving)}; openInfoModal();'>
-                  ⓘ
-                </span>
-              `
-              : ""
-          }
-        </div>
-
-        <div>Prijs per m²: <strong>€ ${formatPrijs(fase.prijsPerM2)},-</strong></div>
-        <div>Basisprijs: <strong>€ ${formatPrijs(fase.basisPrijs)},-</strong></div>
-        <div style="margin-top:10px;">
-          <strong>Totaal fase ${index + 1}: 
-            € ${formatPrijs(faseTotaal)},-
-          </strong>
-        </div>
-      `;
-
-      if (optieVragen.length > 0) {
-        html += "<hr>";
-        optieVragen.forEach(item => {
-          html += `
-            <div class="qa-regel">
-              <span class="vraag"><em>${item.vraag}</em></span><br>
-              <span class="antwoord"><strong>${item.antwoord}</strong></span>
-            </div>
-          `;
-        });
-      }
-
-      if (fase.backendExtras && fase.backendExtras.length > 0) {
-        html += "<hr><div><strong>Extra’s</strong></div>";
-        fase.backendExtras.forEach(extra => {
-          html += `
-            <div class="extra-blok">
-              <div>
-                <strong>
-                  ${extra.naam}${extra.forced ? " (verplicht)" : ""}
-                </strong>
-              </div>
-              <div class="extra-bedrag">€ ${formatPrijs(extra.totaal)},-</div>
-            </div>
-          `;
-        });
-      }
-=======
       html += `<hr>`;
-
     }
 
     // ========================
@@ -2571,10 +2499,6 @@ function toonSamenvatting() {
       `;
     }
 
-
-    // ========================
-    // VERWIJDERKNOP
-    // ========================
     html += `
       <div style="margin-top:10px;">
         <strong>
@@ -2608,13 +2532,12 @@ function toonSamenvatting() {
 
     // ========================
     // FASE VERWIJDEREN
-
     // ========================
     if (fases.length > 1) {
       html += `
-        <div class="fase-verwijder-wrapper" style="margin-top:20px; display:flex; justify-content:flex-end;">
-          <button class="fase-verwijder-knop" onclick="verwijderFase(${index})">
-            Fase ${index + 1} verwijderen
+        <div style="margin-top:20px; display:flex; justify-content:flex-end;">
+          <button class="fase-verwijder" onclick="verwijderFase(${index})">
+            fase verwijderen
           </button>
         </div>
       `;
@@ -2622,7 +2545,6 @@ function toonSamenvatting() {
 
     html += `<div class="fase-scheiding"></div>`;
     html += `</div>`;
-
   });
 
   // ========================
