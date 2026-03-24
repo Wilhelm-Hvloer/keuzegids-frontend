@@ -26,7 +26,7 @@ function maakAntwoordGroep() {
 // CONFIG
 // ========================
 
-const API_BASE = "https://keuzegids-backend.onrender.com";
+const API_BASE = "https://keuzegids-backend-dev.onrender.com";
 
 
 =======
