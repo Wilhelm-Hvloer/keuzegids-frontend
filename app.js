@@ -44,8 +44,8 @@ let potentieleSystemen = [];
 let gekozenSysteem = null;
 let gekozenAntwoorden = [];
 let gekozenKleur = null;
-
-
+let planning = [];
+let gekozenReistijd = 0; // minuten
 
 
 // ========================
@@ -1830,7 +1830,7 @@ function toonKleurVraag() {
 
     gekozenKleur = gekozenKleurTemp;
 
-    toonMeerwerkPagina();
+    toonReistijdVraag();
   };
 
   // ========================
@@ -1840,6 +1840,50 @@ function toonKleurVraag() {
   container.appendChild(kleurenLijst);
   container.appendChild(input);
   container.appendChild(btnVerder);
+
+  optionsEl.appendChild(container);
+}
+
+
+
+// ========================
+// REISTIJD VRAGEN
+// ========================
+function toonReistijdVraag() {
+
+  const questionEl = document.getElementById("question-text");
+  const optionsEl  = document.getElementById("options-box");
+
+  resetUI();
+  optionsEl.style.display = "block";
+
+  questionEl.innerHTML = `
+    <strong>Hoeveel minuten is de heenreis?</strong>
+  `;
+
+  const container = document.createElement("div");
+  container.className = "antwoord-groep";
+
+  const opties = [
+    0, 15, 30, 45, 60, 75, 90, 105, 120
+  ];
+
+  opties.forEach(minuten => {
+
+    const btn = document.createElement("button");
+    btn.type = "button";
+    btn.textContent = `${minuten} min.`;
+
+    btn.onclick = () => {
+
+      gekozenReistijd = minuten;
+
+      // 👉 daarna verder in flow
+      toonMeerwerkPagina();
+    };
+
+    container.appendChild(btn);
+  });
 
   optionsEl.appendChild(container);
 }
@@ -2196,6 +2240,48 @@ async function herberekenPrijs() {
     return false;
   }
 }
+
+
+// ========================
+// PLANNING OPHALEN (BACKEND)
+// ========================
+async function haalPlanningOp() {
+
+  if (!gekozenSysteem || !gekozenOppervlakte || !gekozenRuimtes) {
+    console.warn("⛔ planning gestopt: ontbrekende data");
+    return null;
+  }
+
+  try {
+
+    const res = await fetch(`${API_BASE}/api/planning`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify({
+        systeem: gekozenSysteem,
+        oppervlakte: gekozenOppervlakte,
+        ruimtes: gekozenRuimtes,
+        reistijd: gekozenReistijd || 0
+      })
+    });
+
+    const data = await res.json();
+
+    if (data.error) {
+      console.error("❌ planning fout:", data.error);
+      return null;
+    }
+
+    return data.planning;
+
+  } catch (err) {
+    console.error("❌ planning crash:", err);
+    return null;
+  }
+}
+
 
 
 
@@ -2573,7 +2659,9 @@ function toonSamenvatting() {
 
       <div class="project-info-blok">
         <strong>Planning</strong>
-        <div style="opacity:0.6;">(komt later)</div>
+        <div id="planning-container">
+          Planning laden...
+        </div>
       </div>
 
     </div>
@@ -2587,6 +2675,35 @@ function toonSamenvatting() {
       container.innerHTML = bestellijstHtml;
     }
   });
+
+haalPlanningOp().then(planning => {
+
+  const container = document.getElementById("planning-container");
+
+  if (!container) return;
+
+  if (!planning || planning.length === 0) {
+    container.innerHTML = "<div>Geen planning beschikbaar.</div>";
+    return;
+  }
+
+  let html = "";
+
+  planning.forEach(dag => {
+
+    const reistijdTotaal = dag.totaal_incl_reistijd - dag.totaal_werk;
+
+    html += `
+      <div style="margin-bottom:10px;">
+        <strong>Dag ${dag.dag}</strong><br>
+        ${dag.man} man ${dag.uren_per_persoon} uur (${dag.totaal_werk} + ${reistijdTotaal} uur)<br>
+        ${dag.werkzaamheden.join(", ")}
+      </div>
+    `;
+  });
+
+  container.innerHTML = html;
+});
 
 }
 
