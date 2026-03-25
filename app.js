@@ -1889,6 +1889,40 @@ function toonReistijdVraag() {
 }
 
 
+// ========================
+// OPEN EXTRA ACTIES (FASE-GEBONDEN)
+// ========================
+function openMeerwerk(faseIndex) {
+  actieveFaseIndex = faseIndex;
+
+  const fase = fases[faseIndex];
+
+  // 🔥 data terugladen (anders zie je oude invoer niet)
+  if (fase?.extraMeerwerk) {
+    extraMeerwerk = { ...fase.extraMeerwerk };
+  } else {
+    extraMeerwerk = { uren: null, toelichting: "" };
+  }
+
+  toonMeerwerkPagina();
+}
+
+function openMateriaal(faseIndex) {
+  actieveFaseIndex = faseIndex;
+
+  const fase = fases[faseIndex];
+
+  // 🔥 data terugladen
+  if (fase?.extraMateriaal) {
+    extraMateriaal = { ...fase.extraMateriaal };
+  } else {
+    extraMateriaal = { bedrag: null, toelichting: "" };
+  }
+
+  toonMateriaalPagina();
+}
+
+
 
 
 // ========================
@@ -1922,6 +1956,10 @@ function toonMeerwerkPagina() {
   toelichtingInput.placeholder = "Geef toelichting voor meerwerk";
   toelichtingInput.classList.add("input-vol");
 
+  // 🔥 PREFILL (DIT IS DE BELANGRIJKE TOEVOEGING)
+  urenInput.value = extraMeerwerk?.uren || "";
+  toelichtingInput.value = extraMeerwerk?.toelichting || "";
+
   const btnNee = document.createElement("button");
   btnNee.type = "button";
   btnNee.textContent = "Nee, geen meerwerk toevoegen";
@@ -1941,6 +1979,9 @@ function toonMeerwerkPagina() {
   urenInput.addEventListener("input", validate);
   toelichtingInput.addEventListener("input", validate);
 
+  // 🔥 BELANGRIJK: direct valideren bij openen (voor prefill)
+  validate();
+
   // ========================
   // VERDER FLOW
   // ========================
@@ -1952,9 +1993,7 @@ function toonMeerwerkPagina() {
       return;
     }
 
-    // 🔥 ZORGT DAT BACKEND DIT MEENEEMT
     await herberekenPrijs();
-
     toonMateriaalPagina();
   }
 
@@ -1969,8 +2008,7 @@ function toonMeerwerkPagina() {
       return;
     }
 
-    extraMeerwerk.uren = null;
-    extraMeerwerk.toelichting = "";
+    extraMeerwerk = { uren: null, toelichting: "" };
 
     gaVerder();
   };
@@ -1985,8 +2023,10 @@ function toonMeerwerkPagina() {
       return;
     }
 
-    extraMeerwerk.uren = parseInt(urenInput.value);
-    extraMeerwerk.toelichting = toelichtingInput.value.trim();
+    extraMeerwerk = {
+      uren: parseInt(urenInput.value),
+      toelichting: toelichtingInput.value.trim()
+    };
 
     gaVerder();
   };
@@ -2007,7 +2047,6 @@ function toonMeerwerkPagina() {
     groep
   );
 }
-
 
 
 // ========================
@@ -2037,6 +2076,10 @@ function toonMateriaalPagina() {
   toelichtingInput.placeholder = "Geef toelichting voor extra materiaal";
   toelichtingInput.classList.add("input-vol");
 
+  // 🔥 PREFILL (BELANGRIJK)
+  bedragInput.value = extraMateriaal?.bedrag || "";
+  toelichtingInput.value = extraMateriaal?.toelichting || "";
+
   const btnNee = document.createElement("button");
   btnNee.type = "button";
   btnNee.textContent = "Nee, geen extra materiaal toevoegen";
@@ -2056,12 +2099,14 @@ function toonMateriaalPagina() {
   bedragInput.addEventListener("input", validate);
   toelichtingInput.addEventListener("input", validate);
 
+  // 🔥 BELANGRIJK: direct valideren (voor prefill)
+  validate();
+
   // ========================
   // VERDER FLOW
   // ========================
   async function gaVerder() {
 
-    // 🔥 BELANGRIJK: altijd herberekenen met nieuwe data
     if (actieveFaseType === "coating") {
       const ok = await herberekenPrijs();
       if (!ok) return;
@@ -2087,8 +2132,7 @@ function toonMateriaalPagina() {
       return;
     }
 
-    extraMateriaal.bedrag = null;
-    extraMateriaal.toelichting = "";
+    extraMateriaal = { bedrag: null, toelichting: "" };
 
     gaVerder();
   };
@@ -2103,8 +2147,10 @@ function toonMateriaalPagina() {
       return;
     }
 
-    extraMateriaal.bedrag = parseInt(bedragInput.value);
-    extraMateriaal.toelichting = toelichtingInput.value.trim();
+    extraMateriaal = {
+      bedrag: parseInt(bedragInput.value),
+      toelichting: toelichtingInput.value.trim()
+    };
 
     gaVerder();
   };
@@ -2125,7 +2171,6 @@ function toonMateriaalPagina() {
     groep
   );
 }
-
 
 
 // ========================
@@ -2338,8 +2383,12 @@ function slaHuidigeFaseOp() {
 
     systeemKeuzeIndex,
 
-    // 🔥 NIEUW
-    kleur: gekozenKleur || null
+    // 🔥 BESTAAND
+    kleur: gekozenKleur || null,
+
+    // 🔥 NIEUW (DIT IS JE FIX)
+    extraMeerwerk: JSON.parse(JSON.stringify(extraMeerwerk || {})),
+    extraMateriaal: JSON.parse(JSON.stringify(extraMateriaal || {}))
   };
 
   if (!fases[actieveFaseIndex]) {
@@ -2594,28 +2643,87 @@ function toonSamenvatting() {
       </div>
     `;
 
-    // ========================
-    // EXTRA'S
-    // ========================
-    if (fase.backendExtras && fase.backendExtras.length > 0) {
+// ========================
+// EXTRA'S
+// ========================
+if (
+  (fase.backendExtras && fase.backendExtras.length > 0) ||
+  fase.extraMeerwerk?.uren ||
+  fase.extraMateriaal?.bedrag
+) {
 
-      html += `<hr><div><strong>Extra’s</strong></div>`;
+  html += `<hr><div><strong>Extra’s</strong></div>`;
 
-      fase.backendExtras.forEach(extra => {
-        html += `
-          <div class="extra-blok">
-            <div>
-              <strong>
-                ${extra.naam}${extra.forced ? " (verplicht)" : ""}
-              </strong>
-            </div>
-            <div class="extra-bedrag">
-              € ${formatPrijs(extra.totaal)},-
-            </div>
+  // ========================
+  // BACKEND EXTRAS
+  // ========================
+  if (fase.backendExtras && fase.backendExtras.length > 0) {
+    fase.backendExtras.forEach(extra => {
+      html += `
+        <div class="extra-blok">
+          <div>
+            <strong>
+              ${extra.naam}${extra.forced ? " (verplicht)" : ""}
+            </strong>
           </div>
-        `;
-      });
-    }
+          <div class="extra-bedrag">
+            € ${formatPrijs(extra.totaal)},-
+          </div>
+        </div>
+      `;
+    });
+  }
+
+  // ========================
+  // MEERWERK (HANDMATIG)
+  // ========================
+  if (fase.extraMeerwerk?.uren) {
+    html += `
+      <div class="extra-blok">
+        <div>
+          <strong>Meerwerk</strong>
+        </div>
+        <div>
+          ${fase.extraMeerwerk.uren} uur
+        </div>
+        ${
+          fase.extraMeerwerk.toelichting
+            ? `
+              <div style="opacity:0.7;">
+                ${fase.extraMeerwerk.toelichting}
+              </div>
+            `
+            : ""
+        }
+      </div>
+    `;
+  }
+
+  // ========================
+  // MATERIAAL (HANDMATIG)
+  // ========================
+  if (fase.extraMateriaal?.bedrag) {
+    html += `
+      <div class="extra-blok">
+        <div>
+          <strong>Extra materiaal</strong>
+        </div>
+        <div>
+          € ${formatPrijs(fase.extraMateriaal.bedrag)},-
+        </div>
+        ${
+          fase.extraMateriaal.toelichting
+            ? `
+              <div style="opacity:0.7;">
+                ${fase.extraMateriaal.toelichting}
+              </div>
+            `
+            : ""
+        }
+      </div>
+    `;
+  }
+}
 
     // ========================
     // FASE VERWIJDEREN
@@ -2641,6 +2749,22 @@ function toonSamenvatting() {
         </div>
       </div>
     `;
+
+// ========================
+// EXTRA KNOPPEN (NIEUW)
+// ========================
+html += `
+  <div class="extras-acties">
+    <button onclick="openMateriaal(${index})" class="extra-btn">
+      + materiaal
+    </button>
+    <button onclick="openMeerwerk(${index})" class="extra-btn">
+      + meerwerk
+    </button>
+  </div>
+`;
+
+
 
     html += `<div class="fase-scheiding"></div>`;
     html += `</div>`;
@@ -2863,7 +2987,6 @@ function startNieuwePolijstFase() {
 // ========================
 function startNieuweFase() {
 
-
   // 🔑 Type expliciet instellen
   actieveFaseType = "coating";
 
@@ -2888,6 +3011,10 @@ function startNieuweFase() {
   systeemKeuzeIndex = null;
   currentNode = null;
   currentSystemNode = null;
+
+  // 🔥 NIEUW (CRUCIAAL)
+  extraMeerwerk = { uren: null, toelichting: "" };
+  extraMateriaal = { bedrag: null, toelichting: "" };
 
   // Keuzegids opnieuw starten
   startKeuzegids();
@@ -2924,6 +3051,10 @@ function startPrijslijstCoatingFase() {
   systeemKeuzeIndex = null;
   currentNode = null;
   currentSystemNode = null;
+
+  // 🔥 NIEUW (CRUCIAAL)
+  extraMeerwerk = { uren: null, toelichting: "" };
+  extraMateriaal = { bedrag: null, toelichting: "" };
 
   // 🔑 start coating prijslijst
   startPrijslijst();
@@ -3124,8 +3255,9 @@ function toonCuringVraag() {
   optionsEl.appendChild(groep);
 }
 
+
 // ========================
-// POLIJST – MEERWERK
+// POLIJST – MEERWERK (GECORRIGEERD)
 // ========================
 function toonMeerwerkPaginaPolijsten() {
 
@@ -3151,6 +3283,10 @@ function toonMeerwerkPaginaPolijsten() {
   toelichtingInput.placeholder = "Geef toelichting voor meerwerk";
   toelichtingInput.classList.add("input-vol");
 
+  // 🔥 PREFILL (DIT MIS JE NU)
+  urenInput.value = extraMeerwerk?.uren || "";
+  toelichtingInput.value = extraMeerwerk?.toelichting || "";
+
   const btnNee = document.createElement("button");
   btnNee.type = "button";
   btnNee.textContent = "Nee, geen meerwerk toevoegen";
@@ -3170,6 +3306,9 @@ function toonMeerwerkPaginaPolijsten() {
   urenInput.addEventListener("input", validate);
   toelichtingInput.addEventListener("input", validate);
 
+  // 🔥 BELANGRIJK: direct valideren bij openen
+  validate();
+
   btnNee.onclick = async () => {
 
     if (urenInput.value) {
@@ -3178,8 +3317,8 @@ function toonMeerwerkPaginaPolijsten() {
       return;
     }
 
-    extraMeerwerk.uren = null;
-    extraMeerwerk.toelichting = "";
+    // 🔥 CONSISTENT MET REST VAN APP
+    extraMeerwerk = { uren: null, toelichting: "" };
 
     await berekenPolijstPrijs();
   };
@@ -3191,8 +3330,11 @@ function toonMeerwerkPaginaPolijsten() {
       return;
     }
 
-    extraMeerwerk.uren = parseInt(urenInput.value);
-    extraMeerwerk.toelichting = toelichtingInput.value.trim();
+    // 🔥 CONSISTENT OBJECT (GEEN MUTATIE)
+    extraMeerwerk = {
+      uren: parseInt(urenInput.value),
+      toelichting: toelichtingInput.value.trim()
+    };
 
     await berekenPolijstPrijs();
   };
@@ -3210,7 +3352,6 @@ function toonMeerwerkPaginaPolijsten() {
     groep
   );
 }
-
 
 // ========================
 // POLIJST – PRIJS BEREKENEN
