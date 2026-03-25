@@ -2585,11 +2585,29 @@ function toonSamenvatting() {
     // ========================
     // FASE HEADER
     // ========================
-    html += `
-      <div class="fase-header">
-        <h3>Fase ${index + 1} – ${fase.type === "polijsten" ? "Polijsten" : "Coating"}</h3>
-      </div>
-    `;
+html += `
+  <div class="fase-header">
+    <h3>
+      Fase ${index + 1} – ${fase.type === "polijsten" ? "Polijsten" : "Coating"}
+    </h3>
+
+    ${
+      fases.length > 1
+        ? `
+          <button 
+            class="fase-verwijder-knop" 
+            onclick="verwijderFase(${index})"
+            title="Fase verwijderen"
+          >
+            ✕
+          </button>
+        `
+        : ""
+    }
+
+  </div>
+`;
+
 
     // ========================
     // VRAGEN + ANTWOORDEN
