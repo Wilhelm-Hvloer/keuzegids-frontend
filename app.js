@@ -2771,7 +2771,6 @@ html += `
   // PROJECT TOTAAL
   // ========================
   html += `
-    <hr>
     <div><strong>Totaal project:</strong></div>
     <div class="totaalprijs">€ ${formatPrijs(totaalProject)},-</div>
   `;
