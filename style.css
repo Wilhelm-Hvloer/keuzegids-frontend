@@ -307,20 +307,23 @@ hr {
    FASE SCHEIDING
    ========================= */
 
-.fase-scheiding {
-  height: 2px;
-  background-color: var(--accent);
-  margin: 28px 0;
-  border-radius: 2px;
-}
-
-.fase-verwijder-wrapper {
-  margin-top: 28px;   /* ruimte boven knop */
-}
-
 .fase-verwijder-knop {
-  width: 100%;
+  background: transparent;
+  border: none;
+  color: var(--text-muted);   /* 👈 zelfde grijstint als kg */
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  padding: 4px 8px;
+  width: auto;                /* 👈 belangrijk */
+  display: flex;
+  align-items: center;
 }
+
+.fase-verwijder-knop:hover {
+  color: var(--accent);
+}
+
 
 /* =========================
    FLOW – DEFINITIEVE SPACING
