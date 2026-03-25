@@ -2329,6 +2329,7 @@ function slaHuidigeFaseOp() {
     gekozenRuimtes,
     prijsPerM2,
     basisPrijs,
+    gekozenReistijd,
 
     totaalPrijs,
 
@@ -2629,6 +2630,18 @@ function toonSamenvatting() {
       `;
     }
 
+    // ========================
+    // PLANNING PER FASE
+    // ========================
+    html += `
+      <div class="project-info-blok">
+        <strong>Planning</strong>
+        <div id="planning-${index}">
+          Planning laden...
+        </div>
+      </div>
+    `;
+
     html += `<div class="fase-scheiding"></div>`;
     html += `</div>`;
   });
@@ -2657,18 +2670,14 @@ function toonSamenvatting() {
         </div>
       </div>
 
-      <div class="project-info-blok">
-        <strong>Planning</strong>
-        <div id="planning-container">
-          Planning laden...
-        </div>
-      </div>
-
     </div>
   `;
 
   resultEl.innerHTML = html;
 
+  // ========================
+  // BESTELLIJST LADEN
+  // ========================
   genereerBestellijst().then(bestellijstHtml => {
     const container = document.getElementById("bestellijst-container");
     if (container) {
@@ -2676,36 +2685,44 @@ function toonSamenvatting() {
     }
   });
 
-haalPlanningOp(fase).then(planning => {
 
-  const container = document.getElementById("planning-container");
 
-  if (!container) return;
 
-  if (!planning || planning.length === 0) {
-    container.innerHTML = "<div>Geen planning beschikbaar.</div>";
-    return;
-  }
+// ========================
+// PLANNING PER FASE LADEN
+// ========================
+fases.forEach((fase, index) => {
 
-  let html = "";
+  haalPlanningOp(fase).then(planning => {
 
-  planning.forEach(dag => {
+    const container = document.getElementById(`planning-${index}`);
+    if (!container) return;
 
-    const reistijdTotaal = dag.totaal_incl_reistijd - dag.totaal_werk;
+    if (!planning || planning.length === 0) {
+      container.innerHTML = "<div>Geen planning beschikbaar.</div>";
+      return;
+    }
 
-    html += `
-      <div style="margin-bottom:10px;">
-        <strong>Dag ${dag.dag}</strong><br>
-        ${dag.man} man ${dag.uren_per_persoon} uur (${dag.totaal_werk} + ${reistijdTotaal} uur)<br>
-        ${dag.werkzaamheden.join(", ")}
-      </div>
-    `;
+    let planningHtml = "";
+
+    planning.forEach(dag => {
+
+      const reistijdTotaal = dag.totaal_incl_reistijd - dag.totaal_werk;
+
+      planningHtml += `
+        <div style="margin-bottom:10px;">
+          <strong>Dag ${dag.dag}</strong><br>
+          ${dag.man} man ${dag.uren_per_persoon} uur (${dag.totaal_werk} + ${reistijdTotaal} uur)<br>
+          ${dag.werkzaamheden.join(", ")}
+        </div>
+      `;
+    });
+
+    container.innerHTML = planningHtml;
+
   });
 
-  container.innerHTML = html;
 });
-
-}
 
 
 
