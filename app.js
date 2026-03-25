@@ -2243,12 +2243,12 @@ async function herberekenPrijs() {
 
 
 // ========================
-// PLANNING OPHALEN (BACKEND)
+// PLANNING OPHALEN (PER FASE)
 // ========================
-async function haalPlanningOp() {
+async function haalPlanningOp(fase) {
 
-  if (!gekozenSysteem || !gekozenOppervlakte || !gekozenRuimtes) {
-    console.warn("⛔ planning gestopt: ontbrekende data");
+  if (!fase.gekozenSysteem || !fase.gekozenOppervlakte || !fase.gekozenRuimtes) {
+    console.warn("⛔ planning gestopt: ontbrekende data in fase");
     return null;
   }
 
@@ -2260,10 +2260,10 @@ async function haalPlanningOp() {
         "Content-Type": "application/json"
       },
       body: JSON.stringify({
-        systeem: gekozenSysteem,
-        m2: gekozenOppervlakte,
-        ruimtes: gekozenRuimtes,
-        reistijd: gekozenReistijd || 0
+        systeem: fase.gekozenSysteem,
+        m2: fase.gekozenOppervlakte,
+        ruimtes: fase.gekozenRuimtes,
+        reistijd: fase.gekozenReistijd || 0
       })
     });
 
@@ -2676,7 +2676,7 @@ function toonSamenvatting() {
     }
   });
 
-haalPlanningOp().then(planning => {
+haalPlanningOp(fase).then(planning => {
 
   const container = document.getElementById("planning-container");
 
