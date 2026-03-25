@@ -2261,7 +2261,7 @@ async function haalPlanningOp() {
       },
       body: JSON.stringify({
         systeem: gekozenSysteem,
-        oppervlakte: gekozenOppervlakte,
+        m2: gekozenOppervlakte,
         ruimtes: gekozenRuimtes,
         reistijd: gekozenReistijd || 0
       })
