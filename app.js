@@ -1762,7 +1762,7 @@ async function faseHeeftKleurNodig() {
 
 
 // ========================
-// KLEUR VRAGEN
+// KLEUR VRAGEN (VERBETERD)
 // ========================
 function toonKleurVraag() {
 
@@ -1782,38 +1782,29 @@ function toonKleurVraag() {
   let gekozenKleurTemp = "";
 
   // ========================
-  // STANDAARD KLEUREN
+  // STANDAARD KLEUREN (DIRECT ZICHTBAAR)
   // ========================
-  const btnStandaard = document.createElement("button");
-  btnStandaard.textContent = "Standaard kleur kiezen";
+  const kleuren = ["RAL 7035", "RAL 7040", "RAL 9005"];
 
-  const kleurenLijst = document.createElement("div");
-  kleurenLijst.style.display = "none";
-
-  ["RAL 7035", "RAL 7040", "RAL 9005"].forEach(kleur => {
+  kleuren.forEach(kleur => {
 
     const btn = document.createElement("button");
     btn.textContent = kleur;
 
     btn.onclick = () => {
       gekozenKleurTemp = kleur;
-      input.value = kleur; // 🔥 sync met inputveld
+      input.value = kleur; // sync met inputveld
     };
 
-    kleurenLijst.appendChild(btn);
+    container.appendChild(btn);
   });
 
-  btnStandaard.onclick = () => {
-    kleurenLijst.style.display =
-      kleurenLijst.style.display === "none" ? "block" : "none";
-  };
-
   // ========================
-  // INPUT VELD (FIXED STYLING)
+  // INPUT VELD
   // ========================
   const input = document.createElement("input");
   input.type = "text";
-  input.placeholder = "Voer kleurcode in";
+  input.placeholder = "Of voer kleurcode in";
   input.classList.add("input-vol");
 
   input.oninput = () => {
@@ -1825,6 +1816,7 @@ function toonKleurVraag() {
   // ========================
   const btnVerder = document.createElement("button");
   btnVerder.textContent = "Verder";
+  btnVerder.classList.add("actie-knop");
 
   btnVerder.onclick = () => {
 
@@ -1841,14 +1833,8 @@ function toonKleurVraag() {
   // ========================
   // BUILD UI
   // ========================
-  container.appendChild(btnStandaard);
-  container.appendChild(kleurenLijst);
-  container.appendChild(input);
-  container.appendChild(btnVerder);
-
-  optionsEl.appendChild(container);
+  optionsEl.append(container, input, btnVerder);
 }
-
 
 
 // ========================
