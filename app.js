@@ -2691,38 +2691,44 @@ function toonSamenvatting() {
 // ========================
 // PLANNING PER FASE LADEN
 // ========================
-fases.forEach((fase, index) => {
+setTimeout(() => {
 
-  haalPlanningOp(fase).then(planning => {
+  fases.forEach((fase, index) => {
 
-    const container = document.getElementById(`planning-${index}`);
-    if (!container) return;
+    haalPlanningOp(fase).then(planning => {
 
-    if (!planning || planning.length === 0) {
-      container.innerHTML = "<div>Geen planning beschikbaar.</div>";
-      return;
-    }
+      const container = document.getElementById(`planning-${index}`);
+      if (!container) return;
 
-    let planningHtml = "";
+      if (!planning || planning.length === 0) {
+        container.innerHTML = "<div>Geen planning beschikbaar.</div>";
+        return;
+      }
 
-    planning.forEach(dag => {
+      let planningHtml = "";
 
-      const reistijdTotaal = dag.totaal_incl_reistijd - dag.totaal_werk;
+      planning.forEach(dag => {
 
-      planningHtml += `
-        <div style="margin-bottom:10px;">
-          <strong>Dag ${dag.dag}</strong><br>
-          ${dag.man} man ${dag.uren_per_persoon} uur (${dag.totaal_werk} + ${reistijdTotaal} uur)<br>
-          ${dag.werkzaamheden.join(", ")}
-        </div>
-      `;
+        const reistijdTotaal = dag.totaal_incl_reistijd - dag.totaal_werk;
+
+        planningHtml += `
+          <div style="margin-bottom:10px;">
+            <strong>Dag ${dag.dag}</strong><br>
+            ${dag.man} man ${dag.uren_per_persoon} uur (${dag.totaal_werk} + ${reistijdTotaal} uur)<br>
+            ${dag.werkzaamheden.join(", ")}
+          </div>
+        `;
+      });
+
+      container.innerHTML = planningHtml;
+
     });
-
-    container.innerHTML = planningHtml;
 
   });
 
-});
+}, 0);
+
+}
 
 
 
