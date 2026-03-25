@@ -2587,24 +2587,18 @@ function toonSamenvatting() {
     // ========================
 html += `
   <div class="fase-header">
-    <h3>
-      Fase ${index + 1} – ${fase.type === "polijsten" ? "Polijsten" : "Coating"}
-    </h3>
-
+    <h3>Fase ${index + 1} – ${fase.type === "polijsten" ? "Polijsten" : "Coating"}</h3>
     ${
       fases.length > 1
-        ? `
-          <button 
+        ? `<button 
             class="fase-verwijder-knop" 
             onclick="verwijderFase(${index})"
             title="Fase verwijderen"
           >
-            ✕
-          </button>
-        `
+            fase verwijderen
+          </button>`
         : ""
     }
-
   </div>
 `;
 
@@ -2741,7 +2735,7 @@ if (fase.backendExtras && fase.backendExtras.length > 0) {
   });
 }
 
-
+html += `<div class="fase-scheiding"></div>`;
 
 
     // ========================

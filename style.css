@@ -306,18 +306,40 @@ hr {
 /* =========================
    FASE SCHEIDING
    ========================= */
+.fase-scheiding {
+  height: 2px;
+  background-color: var(--accent);
+  margin: 28px 0;
+  border-radius: 2px;
+}
+
+/* =========================
+   FASE verwijderen
+   ========================= */
+
+.fase-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.fase-header h3 {
+  margin: 0;
+}
 
 .fase-verwijder-knop {
   background: transparent;
   border: none;
-  color: var(--text-muted);   /* 👈 zelfde grijstint als kg */
-  font-size: 14px;
+  color: var(--text-muted);
+  font-size: 13px;         /* iets subtieler dan titel */
   font-weight: 500;
   cursor: pointer;
-  padding: 4px 8px;
-  width: auto;                /* 👈 belangrijk */
+  padding: 4px 6px;
+  width: auto;
   display: flex;
   align-items: center;
+  flex-shrink: 0;          /* 🔥 voorkomt verschuiven */
+  transition: color 0.2s ease;  /* 🔥 smooth hover */
 }
 
 .fase-verwijder-knop:hover {
