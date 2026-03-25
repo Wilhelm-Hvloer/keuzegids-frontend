@@ -2735,8 +2735,6 @@ if (fase.backendExtras && fase.backendExtras.length > 0) {
   });
 }
 
-html += `<div class="fase-scheiding"></div>`;
-
 
     // ========================
     // PLANNING PER FASE
@@ -2767,7 +2765,6 @@ html += `
 
 
     html += `<div class="fase-scheiding"></div>`;
-    html += `</div>`;
   });
 
   // ========================
