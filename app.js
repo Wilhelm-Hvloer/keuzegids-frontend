@@ -2389,13 +2389,22 @@ async function berekenBasisPrijsVoorSysteem(systeemNaam, m2, ruimtes) {
 // ========================
 function slaHuidigeFaseOp() {
 
-  if (!gekozenSysteem) return;
+  const bestaandeFase = fases[actieveFaseIndex] || {};
+
+  // 🔥 BETERE fallback (volgorde is belangrijk)
+  const systeemNaam =
+    gekozenSysteem ||
+    bestaandeFase.gekozenSysteem ||
+    polijstSysteem;
+
+  if (!systeemNaam) return;
 
   const faseData = {
     type: actieveFaseType,
 
     gekozenAntwoorden: JSON.parse(JSON.stringify(gekozenAntwoorden || [])),
-    gekozenSysteem,
+
+    gekozenSysteem: systeemNaam,
     gekozenOppervlakte,
     gekozenRuimtes,
     prijsPerM2,
@@ -2409,10 +2418,8 @@ function slaHuidigeFaseOp() {
 
     systeemKeuzeIndex,
 
-    // 🔥 BESTAAND
     kleur: gekozenKleur || null,
 
-    // 🔥 NIEUW (DIT IS JE FIX)
     extraMeerwerk: JSON.parse(JSON.stringify(extraMeerwerk || {})),
     extraMateriaal: JSON.parse(JSON.stringify(extraMateriaal || {}))
   };
@@ -2692,11 +2699,15 @@ if (fase.backendExtras && fase.backendExtras.length > 0) {
 
     let toelichting = "";
 
-    // 🔥 KOPPEL TOELICHTING VAN FRONTEND
-    if (extra.key === "algemeen_meerwerk") {
+    // 🔥 MEERWERK (coating + polijsten)
+    if (
+      extra.key === "algemeen_meerwerk" ||
+      extra.key === "meerwerk_polijsten"
+    ) {
       toelichting = fase.extraMeerwerk?.toelichting || "";
     }
 
+    // 🔥 MATERIAAL
     if (extra.key === "extra_materiaal") {
       toelichting = fase.extraMateriaal?.toelichting || "";
     }
@@ -3275,7 +3286,7 @@ async function berekenPolijstPrijs() {
         meerwerk_uren: Number(extraMeerwerk?.uren || 0),
         meerwerk_toelichting: extraMeerwerk?.toelichting || "",
 
-        // 🔥 EXTRA MATERIAAL
+        // 🔥 MATERIAAL
         materiaal_bedrag: Number(extraMateriaal?.bedrag || 0),
         materiaal_toelichting: extraMateriaal?.toelichting || ""
       })
@@ -3289,22 +3300,23 @@ async function berekenPolijstPrijs() {
     }
 
     // ========================
-    // RESULTAAT IN STATE ZETTEN (CRUCIAAL)
+    // 🔥 ALLES UIT BACKEND = WAARHEID
     // ========================
-    basisPrijs    = data.basisprijs;
-    prijsPerM2    = data.prijs_per_m2;
-    totaalPrijs   = data.totaalprijs;
+    basisPrijs  = data.basis_totaal ?? data.basisprijs ?? null;
+    prijsPerM2  = data.prijs_per_m2 ?? null;
+    totaalPrijs = data.totaalprijs ?? 0;
 
     backendExtras = Array.isArray(data.extras) ? data.extras : [];
+
+    // 🔥 BELANGRIJK: systeem zetten (anders mist titel)
+    gekozenSysteem = data.systeem || polijstSysteem;
 
     // 🔥 opslaan op fase
     if (!fases[actieveFaseIndex]) fases[actieveFaseIndex] = {};
 
-    fases[actieveFaseIndex].laatsteBerekening = data;
-
-    // 🔥 belangrijk voor samenvatting
     fases[actieveFaseIndex].backendExtras = backendExtras;
     fases[actieveFaseIndex].totaalPrijs = totaalPrijs;
+    fases[actieveFaseIndex].basisPrijs = basisPrijs;
 
     return true;
 
