@@ -2191,6 +2191,7 @@ function toonMateriaalPagina() {
 // PRIJS HERBEREKENEN (BACKEND IS ENIGE WAARHEID)
 // ========================
 async function herberekenPrijs() {
+console.log("🚨 herberekenPrijs aangeroepen", actieveFaseType);
 
   console.log("=== herberekenPrijs START ===");
 
@@ -3255,6 +3256,7 @@ function toonCuringVraag() {
 // POLIJST – PRIJS BEREKENEN (GECORRIGEERD)
 // ========================
 async function berekenPolijstPrijs() {
+console.log("✅ berekenPolijstPrijs aangeroepen");
 
   try {
 
