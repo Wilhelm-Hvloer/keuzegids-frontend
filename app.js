@@ -1782,7 +1782,19 @@ function toonKleurVraag() {
   let gekozenKleurTemp = "";
 
   // ========================
-  // STANDAARD KLEUREN (DIRECT ZICHTBAAR)
+  // INPUT VELD (eerder nodig voor gebruik in buttons)
+  // ========================
+  const input = document.createElement("input");
+  input.type = "text";
+  input.placeholder = "Of voer kleurcode in";
+  input.classList.add("input-vol");
+
+  input.oninput = () => {
+    gekozenKleurTemp = input.value;
+  };
+
+  // ========================
+  // STANDAARD KLEUREN
   // ========================
   const kleuren = ["RAL 7035", "RAL 7040", "RAL 9005"];
 
@@ -1793,23 +1805,11 @@ function toonKleurVraag() {
 
     btn.onclick = () => {
       gekozenKleurTemp = kleur;
-      input.value = kleur; // sync met inputveld
+      input.value = kleur;
     };
 
     container.appendChild(btn);
   });
-
-  // ========================
-  // INPUT VELD
-  // ========================
-  const input = document.createElement("input");
-  input.type = "text";
-  input.placeholder = "Of voer kleurcode in";
-  input.classList.add("input-vol");
-
-  input.oninput = () => {
-    gekozenKleurTemp = input.value;
-  };
 
   // ========================
   // VERDER KNOP
@@ -1831,9 +1831,12 @@ function toonKleurVraag() {
   };
 
   // ========================
-  // BUILD UI
+  // BUILD UI (alles in 1 container!)
   // ========================
-  optionsEl.append(container, input, btnVerder);
+  container.appendChild(input);
+  container.appendChild(btnVerder);
+
+  optionsEl.appendChild(container);
 }
 
 
