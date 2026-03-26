@@ -2187,15 +2187,23 @@ function toonMateriaalPagina() {
 }
 
 
+
 // ========================
-// PRIJS HERBEREKENEN (BACKEND IS ENIGE WAARHEID)
+// PRIJS HERBEREKENEN (ALLEEN COATING)
 // ========================
 async function herberekenPrijs() {
-console.log("🚨 herberekenPrijs aangeroepen", actieveFaseType);
+
+  console.log("🚨 herberekenPrijs aangeroepen", actieveFaseType);
+
+  // 🔥 HARD STOP voor polijsten
+  if (actieveFaseType === "polijsten") {
+    console.error("❌ herberekenPrijs mag niet bij polijsten");
+    return false;
+  }
 
   console.log("=== herberekenPrijs START ===");
 
-  const errorEl  = document.getElementById("m2-error");
+  const errorEl = document.getElementById("m2-error");
   if (errorEl) errorEl.innerHTML = "";
 
   // ========================
@@ -2227,15 +2235,15 @@ console.log("🚨 herberekenPrijs aangeroepen", actieveFaseType);
         forced_extras: forcedPayload,
         xtr_coating_verwijderen_uren: xtrCoatingVerwijderenUren || 0,
 
-        // 🔥 MEERWERK
-        meerwerk_uren: extraMeerwerk?.uren || 0,
+        // 🔥 ALGEMEEN MEERWERK
+        meerwerk_uren: Number(extraMeerwerk?.uren || 0),
         meerwerk_toelichting: extraMeerwerk?.toelichting || "",
 
-        // 🔥 EXTRA MATERIAAL
-        materiaal_bedrag: extraMateriaal?.bedrag || 0,
+        // 🔥 ALGEMEEN MATERIAAL
+        materiaal_bedrag: Number(extraMateriaal?.bedrag || 0),
         materiaal_toelichting: extraMateriaal?.toelichting || "",
 
-        // 🔥 NIEUW: KLEUR
+        // 🔥 KLEUR
         kleur: gekozenKleur || null
       })
     });
@@ -3256,7 +3264,7 @@ function toonCuringVraag() {
 // POLIJST – PRIJS BEREKENEN (GECORRIGEERD)
 // ========================
 async function berekenPolijstPrijs() {
-console.log("✅ berekenPolijstPrijs aangeroepen");
+
 
   try {
 
