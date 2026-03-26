@@ -3414,6 +3414,16 @@ async function berekenPolijstPrijs() {
       return false;
     }
 
+    // 🔥 RESULTAAT DOORGEVEN
+    toonPolijstResultaat(data);
+
+    return true;
+
+  } catch (err) {
+    console.error("❌ polijst prijs crash:", err);
+    return false;
+  }
+}
 
 
 // ========================
@@ -3451,18 +3461,6 @@ function toonPolijstResultaat(data) {
   // ========================
   toonSamenvatting();
 }
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 
