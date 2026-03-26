@@ -49,11 +49,16 @@ let gekozenReistijd = 0; // minuten
 
 
 // ========================
-// FLOW HELPERS (GEFIXT - FASE-GEKOPPELD)
+// FLOW HELPERS (DEFINITIEF STABIEL)
 // ========================
 async function gaNaarMeerwerkOfKleur() {
 
-  const fase = fases[actieveFaseIndex] || {};
+  // 🔥 Zorg dat fase altijd bestaat
+  if (!fases[actieveFaseIndex]) {
+    fases[actieveFaseIndex] = {};
+  }
+
+  const fase = fases[actieveFaseIndex];
   const faseType = fase.type || "coating";
 
   let kleurNodig = false;
@@ -87,7 +92,6 @@ async function gaNaarMeerwerkOfKleur() {
   slaHuidigeFaseOp();
   toonSamenvatting();
 }
-
 
 
 // ========================
@@ -993,7 +997,12 @@ function handleSystemNode(node) {
   // ========================
   if (gekozenOppervlakte && gekozenRuimtes) {
 
-    const fase = fases[actieveFaseIndex] || {};
+    // 🔥 Zorg dat fase altijd bestaat
+    if (!fases[actieveFaseIndex]) {
+      fases[actieveFaseIndex] = {};
+    }
+
+    const fase = fases[actieveFaseIndex];
     const faseType = fase.type || "coating";
 
     if (faseType === "polijsten") {
@@ -1837,11 +1846,15 @@ function toonKleurVraag() {
 
     btn.onclick = () => {
       gekozenKleurTemp = kleur;
+      gekozenKleur = kleur;        // 🔥 definitief zetten
       input.value = kleur;
+
+      toonReistijdVraag();         // 🔥 direct door
     };
 
     container.appendChild(btn);
   });
+
 
   // ========================
   // VERDER KNOP
@@ -1883,8 +1896,13 @@ function toonReistijdVraag() {
   resetUI();
   optionsEl.style.display = "block";
 
+  // 🔥 Zorg dat fase altijd bestaat
+  if (!fases[actieveFaseIndex]) {
+    fases[actieveFaseIndex] = {};
+  }
+
   // 🔑 FASE BEPALEN
-  const fase = fases[actieveFaseIndex] || {};
+  const fase = fases[actieveFaseIndex];
   const faseType = fase.type || "coating";
 
   questionEl.innerHTML = `
@@ -2464,8 +2482,14 @@ function slaHuidigeFaseOp() {
 
   if (!systeemNaam) return;
 
+  // 🔥 CRUCIAAL: fase type NIET blind overschrijven
+  const faseType =
+    bestaandeFase.type ||   // wat al vast stond → leidend
+    actieveFaseType ||      // fallback
+    "coating";              // laatste fallback
+
   const faseData = {
-    type: actieveFaseType,
+    type: faseType,
 
     gekozenAntwoorden: JSON.parse(JSON.stringify(gekozenAntwoorden || [])),
 
@@ -2614,8 +2638,6 @@ async function genereerBestellijst() {
 // SAMENVATTING TONEN (MULTI-FASE MET COATING + POLIJSTEN)
 // ========================
 function toonSamenvatting() {
-
-  slaHuidigeFaseOp();
 
   const questionEl = document.getElementById("question-text");
   const optionsEl  = document.getElementById("options-box");
@@ -3348,15 +3370,23 @@ function toonCuringVraag() {
 
 
 // ========================
-// POLIJST – PRIJS BEREKENEN (GECORRIGEERD)
+// POLIJST – PRIJS BEREKENEN (ROBUST)
 // ========================
 async function berekenPolijstPrijs() {
 
-
   try {
 
-    const fase = fases[actieveFaseIndex] || {};
-    const curing = fase.curing ?? curingAanwezig;
+    // 🔥 Zorg dat fase altijd bestaat
+    if (!fases[actieveFaseIndex]) {
+      fases[actieveFaseIndex] = { type: "polijsten" };
+    }
+
+    const fase = fases[actieveFaseIndex];
+
+    const curing =
+      fase.curing !== undefined
+        ? fase.curing
+        : curingAanwezig;
 
     const res = await fetch(`${API_BASE}/api/polijst-price`, {
       method: "POST",
@@ -3383,33 +3413,6 @@ async function berekenPolijstPrijs() {
       alert(data.error);
       return false;
     }
-
-    // ========================
-    // 🔥 ALLES UIT BACKEND = WAARHEID
-    // ========================
-    basisPrijs  = data.basis_totaal ?? data.basisprijs ?? null;
-    prijsPerM2  = data.prijs_per_m2 ?? null;
-    totaalPrijs = data.totaalprijs ?? 0;
-
-    backendExtras = Array.isArray(data.extras) ? data.extras : [];
-
-    // 🔥 BELANGRIJK: systeem zetten (anders mist titel)
-    gekozenSysteem = data.systeem || polijstSysteem;
-
-    // 🔥 opslaan op fase
-    if (!fases[actieveFaseIndex]) fases[actieveFaseIndex] = {};
-
-    fases[actieveFaseIndex].backendExtras = backendExtras;
-    fases[actieveFaseIndex].totaalPrijs = totaalPrijs;
-    fases[actieveFaseIndex].basisPrijs = basisPrijs;
-
-    return true;
-
-  } catch (err) {
-    console.error("❌ polijstprijs fout:", err);
-    return false;
-  }
-}
 
 
 
