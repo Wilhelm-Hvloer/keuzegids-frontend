@@ -66,8 +66,11 @@ async function gaNaarMeerwerkOfKleur() {
     toonKleurVraag();
   } else {
 
-    // 🔥 NIEUWE FLOW: direct afronden
-    const ok = await herberekenPrijs();
+    // 🔥 JUISTE PRIJSFUNCTIE PER FASE
+    const ok = actieveFaseType === "polijsten"
+      ? await berekenPolijstPrijs()
+      : await herberekenPrijs();
+
     if (!ok) return;
 
     slaHuidigeFaseOp();
