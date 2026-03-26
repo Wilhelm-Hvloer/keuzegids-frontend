@@ -3307,6 +3307,12 @@ function toonCuringVraag() {
   // 🔥 NIEUWE FLOW
   async function afronden() {
 
+    // 🔥 CRUCIAAL: fase type forceren
+    if (!fases[actieveFaseIndex]) {
+      fases[actieveFaseIndex] = {};
+    }
+    fases[actieveFaseIndex].type = "polijsten";
+
     const ok = await berekenPolijstPrijs();
     if (!ok) return;
 
@@ -3337,7 +3343,6 @@ function toonCuringVraag() {
 
   optionsEl.appendChild(groep);
 }
-
 
 
 
