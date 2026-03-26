@@ -1986,9 +1986,9 @@ function openMateriaal(faseIndex) {
 
 
 // ========================
-// EXTRA ARBEID (MEERWERK) – DEFINITIEF
+// EXTRA ARBEID (MEERWERK) – PLANNING GESTUURD
 // ========================
-function toonMeerwerkPagina() {
+async function toonMeerwerkPagina() {
 
   const questionEl = document.getElementById("question-text");
   const optionsEl  = document.getElementById("options-box");
@@ -1999,26 +1999,13 @@ function toonMeerwerkPagina() {
     fases[actieveFaseIndex] = {};
   }
 
-  // ========================
-  // 🔑 FASE LADEN (CRUCIAAL)
-  // ========================
   const fase = fases[actieveFaseIndex];
   const faseType = fase.type || "coating";
 
-  // 🔥 BELANGRIJK: state synchroniseren met fase
+  // 🔑 STATE SYNC
   gekozenSysteem = fase.gekozenSysteem;
   gekozenOppervlakte = fase.gekozenOppervlakte;
   gekozenRuimtes = fase.gekozenRuimtes;
-
-  prijsPerM2 = fase.prijsPerM2;
-  basisPrijs = fase.basisPrijs;
-  totaalPrijs = fase.totaalPrijs;
-
-  backendExtras = fase.backendExtras || [];
-  currentSystemOmschrijving = fase.currentSystemOmschrijving || [];
-
-  extraMeerwerk = fase.extraMeerwerk || {};
-  extraMateriaal = fase.extraMateriaal || {};
 
   // 🔥 samenvatting weg
   resultEl.innerHTML = "";
@@ -2026,125 +2013,92 @@ function toonMeerwerkPagina() {
 
   questionEl.innerHTML =
     faseType === "polijsten"
-      ? "<strong>Extra arbeid polijsten toevoegen?</strong>"
-      : "<strong>Extra arbeid toevoegen?</strong>";
+      ? "<strong>Kies dag voor extra arbeid (polijsten)</strong>"
+      : "<strong>Kies dag voor extra arbeid</strong>";
 
   optionsEl.style.display = "block";
   optionsEl.innerHTML = "";
 
-  const foutmelding = document.createElement("div");
-  foutmelding.style.color = "#BC4C1F";
-  foutmelding.style.marginTop = "8px";
-
-  const urenInput = document.createElement("input");
-  urenInput.type = "number";
-  urenInput.min = "0";
-  urenInput.step = "1";
-  urenInput.placeholder = "Aantal uren meerwerk";
-  urenInput.classList.add("input-vol");
-
-  const toelichtingInput = document.createElement("textarea");
-  toelichtingInput.placeholder = "Geef toelichting voor meerwerk";
-  toelichtingInput.classList.add("input-vol");
-
-  // 🔥 PREFILL
-  urenInput.value = extraMeerwerk?.uren || "";
-  toelichtingInput.value = extraMeerwerk?.toelichting || "";
-
-  const btnNee = document.createElement("button");
-  btnNee.type = "button";
-  btnNee.textContent = "Nee, geen meerwerk toevoegen";
-
-  const btnJa = document.createElement("button");
-  btnJa.type = "button";
-  btnJa.textContent = "Ja, meerwerk toevoegen";
-  btnJa.classList.add("actie-knop");
-  btnJa.disabled = true;
-
-  function validate() {
-    const uren = urenInput.value;
-    const toel = toelichtingInput.value.trim();
-    btnJa.disabled = !(uren && parseInt(uren) > 0 && toel.length > 0);
-  }
-
-  urenInput.addEventListener("input", validate);
-  toelichtingInput.addEventListener("input", validate);
-
-  validate();
-
   // ========================
-  // 🔑 CENTRALE HERBEREKENING
+  // 🔥 PLANNING OPHALEN
   // ========================
-  async function herberekenAlles() {
-    if (faseType === "polijsten") {
-      return berekenPolijstPrijs();
-    } else {
-      return herberekenPrijs();
-    }
+  const planning = await haalPlanningOp(fase);
+
+  if (!planning || planning.length === 0) {
+    optionsEl.innerHTML = "<div>Geen planning beschikbaar.</div>";
+    return;
   }
 
   // ========================
-  // VERDER FLOW
+  // GEEN MEERWERK KNOP
   // ========================
-  async function gaVerder() {
+  const btnGeen = document.createElement("button");
+  btnGeen.textContent = "Geen meerwerk toevoegen";
 
-    const ok = await herberekenAlles();
+  btnGeen.onclick = async () => {
+    extraMeerwerk = { uren: null, toelichting: "" };
+
+    const ok = await herberekenPrijs();
     if (!ok) return;
 
     slaHuidigeFaseOp();
     toonSamenvatting();
-  }
-
-  // ========================
-  // GEEN MEERWERK
-  // ========================
-  btnNee.onclick = async () => {
-
-    if (urenInput.value) {
-      foutmelding.textContent =
-        'Maak invoerveld leeg, of kies "Ja, meerwerk toevoegen"';
-      return;
-    }
-
-    extraMeerwerk = { uren: null, toelichting: "" };
-
-    await gaVerder();
   };
 
-  // ========================
-  // WEL MEERWERK
-  // ========================
-  btnJa.onclick = async () => {
-
-    if (!toelichtingInput.value.trim()) {
-      foutmelding.textContent = "Geef toelichting voor meerwerk";
-      return;
-    }
-
-    extraMeerwerk = {
-      uren: parseInt(urenInput.value),
-      toelichting: toelichtingInput.value.trim()
-    };
-
-    await gaVerder();
-  };
+  optionsEl.appendChild(btnGeen);
 
   // ========================
-  // UI OPBOUW
+  // DAGEN ALS KNOPPEN
   // ========================
-  const groep = document.createElement("div");
-  groep.className = "antwoord-groep";
+  planning.forEach(dag => {
 
-  groep.appendChild(btnNee);
-  groep.appendChild(btnJa);
+    const btn = document.createElement("button");
 
-  optionsEl.append(
-    urenInput,
-    toelichtingInput,
-    foutmelding,
-    groep
-  );
+    // 🔥 werkzaamheden tonen (kort)
+    const taken = dag.werkzaamheden
+      .map(t => `${t.naam}`)
+      .join(", ");
+
+    btn.innerHTML = `
+      <strong>Dag ${dag.dag}</strong><br>
+      ${dag.man} man – ${dag.uren_per_persoon} uur<br>
+      <span style="opacity:0.7;">${taken}</span>
+    `;
+
+    btn.onclick = () => vraagMeerwerkDetails(dag.dag);
+    optionsEl.appendChild(btn);
+  });
+
 }
+
+
+// ========================
+// DETAILS MEERWERK (UREN + TOELICHTING)
+// ========================
+function vraagMeerwerkDetails(dag) {
+
+  const uren = prompt(`Aantal uren meerwerk op dag ${dag}?`);
+  if (!uren || parseInt(uren) <= 0) return;
+
+  const toelichting = prompt("Toelichting voor meerwerk:");
+  if (!toelichting || !toelichting.trim()) return;
+
+  // 🔥 opslaan
+  extraMeerwerk = {
+    dag: dag,
+    uren: parseInt(uren),
+    toelichting: toelichting.trim()
+  };
+
+  // 🔥 herberekenen + terug
+  herberekenPrijs().then(ok => {
+    if (!ok) return;
+
+    slaHuidigeFaseOp();
+    toonSamenvatting();
+  });
+}
+
 
 
 // ========================
@@ -2457,7 +2411,16 @@ async function haalPlanningOp(fase) {
         systeem: fase.gekozenSysteem,
         m2: fase.gekozenOppervlakte,
         ruimtes: fase.gekozenRuimtes,
-        reistijd: fase.gekozenReistijd || 0
+        reistijd: fase.gekozenReistijd || 0,
+
+        // 🔥 CRUCIAAL: meerwerk meesturen
+        meerwerk: fase.extraMeerwerk?.uren
+          ? [{
+              dag: fase.extraMeerwerk.dag,
+              naam: fase.extraMeerwerk.toelichting || "Meerwerk",
+              uren: fase.extraMeerwerk.uren
+            }]
+          : []
       })
     });
 
@@ -2938,37 +2901,52 @@ html += `
   // ========================
   // PLANNING PER FASE LADEN
   // ========================
-  fases.forEach((fase, index) => {
+  fases.forEach(async (fase, index) => {
 
-    haalPlanningOp(fase).then(planning => {
+    const planning = await haalPlanningOp(fase);
 
-      const container = document.getElementById(`planning-${index}`);
-      if (!container) return;
+    const container = document.getElementById(`planning-${index}`);
+    if (!container) return;
 
-      if (!planning || planning.length === 0) {
-        container.innerHTML = "<div>Geen planning beschikbaar.</div>";
-        return;
-      }
+    if (!planning || planning.length === 0) {
+      container.innerHTML = "<div>Geen planning beschikbaar.</div>";
+      return;
+    }
 
-      let planningHtml = "";
+    let planningHtml = "";
 
-      planning.forEach(dag => {
+    planning.forEach(dag => {
 
-        const reistijdTotaal =
-          dag.totaal_incl_reistijd - dag.totaal_werk;
+      const reistijdTotaal =
+        dag.totaal_incl_reistijd - dag.totaal_werk;
 
-        planningHtml += `
-          <div style="margin-bottom:10px;">
-            <strong>Dag ${dag.dag}</strong><br>
-            ${dag.man} man ${dag.uren_per_persoon} uur (${dag.totaal_werk} + ${reistijdTotaal} uur)<br>
-            ${dag.werkzaamheden.join(", ")}
+      let werkzaamhedenHtml = "";
+
+      dag.werkzaamheden.forEach(taak => {
+
+        let stijl = "";
+
+        if (taak.type === "meerwerk") {
+          stijl = "color: orange; font-weight: 600;";
+        }
+
+        werkzaamhedenHtml += `
+          <div style="${stijl}">
+            - ${taak.naam} (${taak.uren} uur)
           </div>
         `;
       });
 
-      container.innerHTML = planningHtml;
-
+      planningHtml += `
+        <div style="margin-bottom:10px;">
+          <strong>Dag ${dag.dag}</strong><br>
+          ${dag.man} man ${dag.uren_per_persoon} uur (${dag.totaal_werk} + ${reistijdTotaal} uur)<br>
+          ${werkzaamhedenHtml}
+        </div>
+      `;
     });
+
+    container.innerHTML = planningHtml;
 
   });
 
