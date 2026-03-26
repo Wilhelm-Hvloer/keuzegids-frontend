@@ -2935,14 +2935,9 @@ html += `
     }
   });
 
-
-}
-
-// ========================
-// PLANNING PER FASE LADEN
-// ========================
-setTimeout(() => {
-
+  // ========================
+  // PLANNING PER FASE LADEN
+  // ========================
   fases.forEach((fase, index) => {
 
     haalPlanningOp(fase).then(planning => {
@@ -2959,7 +2954,8 @@ setTimeout(() => {
 
       planning.forEach(dag => {
 
-        const reistijdTotaal = dag.totaal_incl_reistijd - dag.totaal_werk;
+        const reistijdTotaal =
+          dag.totaal_incl_reistijd - dag.totaal_werk;
 
         planningHtml += `
           <div style="margin-bottom:10px;">
@@ -2976,8 +2972,7 @@ setTimeout(() => {
 
   });
 
-}, 0);
-
+}
 
 
 
