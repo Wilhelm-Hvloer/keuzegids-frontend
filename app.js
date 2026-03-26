@@ -3019,9 +3019,18 @@ function startNieuwePolijstFase() {
 
   // Nieuwe actieve fase bepalen
   actieveFaseIndex = fases.length;
+
+  // 🔥 NIEUW: fase direct aanmaken (CRUCIAAL)
+  fases[actieveFaseIndex] = {
+    type: "polijsten"
+  };
+
+  // (optioneel nog laten staan voor compatibiliteit)
   actieveFaseType = "polijsten";
 
-  // State resetten (alleen huidige flow)
+  // ========================
+  // STATE RESETTEN
+  // ========================
   gekozenAntwoorden = [];
   gekozenSysteem = null;
   gekozenOppervlakte = null;
@@ -3042,7 +3051,9 @@ function startNieuwePolijstFase() {
   currentNode = null;
   currentSystemNode = null;
 
-  // Polijst prijslijst starten
+  // ========================
+  // POLIJST FLOW STARTEN
+  // ========================
   startPolijstPrijslijst();
 }
 
