@@ -1997,21 +1997,14 @@ function toonMeerwerkPagina() {
   // ========================
   async function gaVerder() {
 
-    if (actieveFaseType === "polijsten") {
-      const ok = await berekenPolijstPrijs();
-      if (!ok) return;
+    const ok = actieveFaseType === "polijsten"
+      ? await berekenPolijstPrijs()
+      : await herberekenPrijs();
 
-      slaHuidigeFaseOp();   // 🔥 fase updaten
-      toonSamenvatting();   // 🔥 direct naar samenvatting
-
-      return;
-    }
-
-    const ok = await herberekenPrijs();
     if (!ok) return;
 
-    slaHuidigeFaseOp();     // 🔥 fase updaten
-    toonSamenvatting();     // 🔥 NIET meer naar materiaal
+    slaHuidigeFaseOp();   // 🔥 altijd
+    toonSamenvatting();   // 🔥 altijd
   }
 
 
@@ -2129,22 +2122,14 @@ function toonMateriaalPagina() {
   // ========================
   async function gaVerder() {
 
-    if (actieveFaseType === "coating") {
-      const ok = await herberekenPrijs();
-      if (!ok) return;
+    const ok = actieveFaseType === "polijsten"
+      ? await berekenPolijstPrijs()
+      : await herberekenPrijs();
 
-      slaHuidigeFaseOp(); // 🔥 DEZE MIS JE
-
-      toonSamenvatting();
-      return;
-    }
-
-    const ok = await berekenPolijstPrijs();
     if (!ok) return;
 
-    slaHuidigeFaseOp(); // 🔥 OOK HIER
-
-    toonSamenvatting();
+    slaHuidigeFaseOp();   // 🔥 altijd uitvoeren
+    toonSamenvatting();   // 🔥 altijd terug naar samenvatting
   }
 
   // ========================
