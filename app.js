@@ -49,14 +49,17 @@ let gekozenReistijd = 0; // minuten
 
 
 // ========================
-// FLOW HELPERS
+// FLOW HELPERS (GEFIXT - FASE-GEKOPPELD)
 // ========================
 async function gaNaarMeerwerkOfKleur() {
+
+  const fase = fases[actieveFaseIndex] || {};
+  const faseType = fase.type || "coating";
 
   let kleurNodig = false;
 
   if (
-    actieveFaseType === "coating" &&
+    faseType === "coating" &&
     typeof faseHeeftKleurNodig === "function"
   ) {
     kleurNodig = await faseHeeftKleurNodig();
@@ -64,18 +67,25 @@ async function gaNaarMeerwerkOfKleur() {
 
   if (kleurNodig) {
     toonKleurVraag();
-  } else {
-
-    // 🔥 JUISTE PRIJSFUNCTIE PER FASE
-    const ok = actieveFaseType === "polijsten"
-      ? await berekenPolijstPrijs()
-      : await herberekenPrijs();
-
-    if (!ok) return;
-
-    slaHuidigeFaseOp();
-    toonSamenvatting();
+    return;
   }
+
+  // ========================
+  // 🔑 CENTRALE HERBEREKENING
+  // ========================
+  async function herberekenAlles() {
+    if (faseType === "polijsten") {
+      return berekenPolijstPrijs();
+    } else {
+      return herberekenPrijs();
+    }
+  }
+
+  const ok = await herberekenAlles();
+  if (!ok) return;
+
+  slaHuidigeFaseOp();
+  toonSamenvatting();
 }
 
 
@@ -983,13 +993,16 @@ function handleSystemNode(node) {
   // ========================
   if (gekozenOppervlakte && gekozenRuimtes) {
 
-    if (actieveFaseType === "polijsten") {
+    const fase = fases[actieveFaseIndex] || {};
+    const faseType = fase.type || "coating";
+
+    if (faseType === "polijsten") {
 
       berekenPolijstPrijs().then(ok => {
         if (!ok) return;
 
         slaHuidigeFaseOp();
-        toonSamenvatting();   // 🔥 polijsten gaat direct naar overzicht
+        toonSamenvatting();   // 🔥 polijsten → direct overzicht
       });
 
     } else {
@@ -997,7 +1010,7 @@ function handleSystemNode(node) {
       herberekenPrijs().then(ok => {
         if (!ok) return;
 
-        toonSysteemPrijsResultaat(); // coating blijft in flow
+        toonSysteemPrijsResultaat(); // coating → blijft in flow
       });
 
     }
@@ -1007,7 +1020,7 @@ function handleSystemNode(node) {
 
   console.warn("⚠️ System-node zonder prijsfase", node);
 
-} // 🔥 DIT AFSLUITENDE HAAKJE MIS JE
+} // 🔥 afsluiting functie
 
 
 
@@ -1860,7 +1873,7 @@ function toonKleurVraag() {
 
 
 // ========================
-// REISTIJD VRAGEN
+// REISTIJD VRAGEN (FASE-GEKOPPELD)
 // ========================
 function toonReistijdVraag() {
 
@@ -1870,6 +1883,10 @@ function toonReistijdVraag() {
   resetUI();
   optionsEl.style.display = "block";
 
+  // 🔑 FASE BEPALEN
+  const fase = fases[actieveFaseIndex] || {};
+  const faseType = fase.type || "coating";
+
   questionEl.innerHTML = `
     <strong>Hoeveel minuten is de heenreis?</strong>
   `;
@@ -1877,9 +1894,16 @@ function toonReistijdVraag() {
   const container = document.createElement("div");
   container.className = "antwoord-groep";
 
-  const opties = [
-    0, 15, 30, 45, 60, 75, 90, 105, 120
-  ];
+  const opties = [0, 15, 30, 45, 60, 75, 90, 105, 120];
+
+  // 🔑 CENTRALE HERBEREKENING
+  async function herberekenAlles() {
+    if (faseType === "polijsten") {
+      return berekenPolijstPrijs();
+    } else {
+      return herberekenPrijs();
+    }
+  }
 
   opties.forEach(minuten => {
 
@@ -1891,17 +1915,11 @@ function toonReistijdVraag() {
 
       gekozenReistijd = minuten;
 
-      // 🔥 NIEUWE FLOW
-      if (actieveFaseType === "polijsten") {
-        const ok = await berekenPolijstPrijs();
-        if (!ok) return;
-      } else {
-        const ok = await herberekenPrijs();
-        if (!ok) return;
-      }
+      const ok = await herberekenAlles();
+      if (!ok) return;
 
-      slaHuidigeFaseOp();   // 🔥 cruciaal
-      toonSamenvatting();   // 🔥 klaar
+      slaHuidigeFaseOp();
+      toonSamenvatting();
     };
 
     container.appendChild(btn);
@@ -1958,12 +1976,18 @@ function toonMeerwerkPagina() {
   const optionsEl  = document.getElementById("options-box");
   const resultEl   = document.getElementById("result-box");
 
-  // 🔥 NIEUW: samenvatting weg
+  // ========================
+  // 🔑 FASE BEPALEN (VANUIT OPGESLAGEN FASE)
+  // ========================
+  const fase = fases[actieveFaseIndex] || {};
+  const faseType = fase.type || "coating";
+
+  // 🔥 samenvatting weg
   resultEl.innerHTML = "";
   resultEl.style.display = "none";
 
   questionEl.innerHTML =
-    actieveFaseType === "polijsten"
+    faseType === "polijsten"
       ? "<strong>Extra arbeid polijsten toevoegen?</strong>"
       : "<strong>Extra arbeid toevoegen?</strong>";
 
@@ -1985,7 +2009,7 @@ function toonMeerwerkPagina() {
   toelichtingInput.placeholder = "Geef toelichting voor meerwerk";
   toelichtingInput.classList.add("input-vol");
 
-  // 🔥 PREFILL (DIT IS DE BELANGRIJKE TOEVOEGING)
+  // 🔥 PREFILL
   urenInput.value = extraMeerwerk?.uren || "";
   toelichtingInput.value = extraMeerwerk?.toelichting || "";
 
@@ -2008,48 +2032,54 @@ function toonMeerwerkPagina() {
   urenInput.addEventListener("input", validate);
   toelichtingInput.addEventListener("input", validate);
 
-  // 🔥 BELANGRIJK: direct valideren bij openen (voor prefill)
   validate();
+
+  // ========================
+  // 🔑 CENTRALE HERBEREKENING
+  // ========================
+  async function herberekenAlles() {
+    if (faseType === "polijsten") {
+      return berekenPolijstPrijs();
+    } else {
+      return herberekenPrijs();
+    }
+  }
 
   // ========================
   // VERDER FLOW
   // ========================
   async function gaVerder() {
 
-    const ok = actieveFaseType === "polijsten"
-      ? await berekenPolijstPrijs()
-      : await herberekenPrijs();
-
+    const ok = await herberekenAlles();
     if (!ok) return;
 
-    slaHuidigeFaseOp();   // 🔥 altijd
-    toonSamenvatting();   // 🔥 altijd
+    slaHuidigeFaseOp();
+    toonSamenvatting();
   }
-
 
   // ========================
   // GEEN MEERWERK
   // ========================
-  btnNee.onclick = () => {
+  btnNee.onclick = async () => {
 
     if (urenInput.value) {
       foutmelding.textContent =
-        'Maak invoerveld leeg, of kies "Ja, extra toevoegen"';
+        'Maak invoerveld leeg, of kies "Ja, meerwerk toevoegen"';
       return;
     }
 
     extraMeerwerk = { uren: null, toelichting: "" };
 
-    gaVerder();
+    await gaVerder();
   };
 
   // ========================
   // WEL MEERWERK
   // ========================
-  btnJa.onclick = () => {
+  btnJa.onclick = async () => {
 
     if (!toelichtingInput.value.trim()) {
-      foutmelding.textContent = "Geef toelichting voor extra";
+      foutmelding.textContent = "Geef toelichting voor meerwerk";
       return;
     }
 
@@ -2058,7 +2088,7 @@ function toonMeerwerkPagina() {
       toelichting: toelichtingInput.value.trim()
     };
 
-    gaVerder();
+    await gaVerder();
   };
 
   // ========================
@@ -2080,18 +2110,29 @@ function toonMeerwerkPagina() {
 
 
 // ========================
-// EXTRA MATERIAAL – DEFINITIEF (CONSISTENT)
+// EXTRA MATERIAAL – DEFINITIEF (FASE-GEKOPPELD)
 // ========================
 function toonMateriaalPagina() {
 
   const questionEl = document.getElementById("question-text");
   const optionsEl = document.getElementById("options-box");
-  const resultEl  = document.getElementById("result-box"); // 👈 toevoegen
+  const resultEl  = document.getElementById("result-box");
+
+  // ========================
+  // 🔑 FASE BEPALEN (VANUIT OPGESLAGEN FASE)
+  // ========================
+  const fase = fases[actieveFaseIndex] || {};
+  const faseType = fase.type || "coating";
 
   // 🔥 SAMENVATTING VERBERGEN
+  resultEl.innerHTML = "";
   resultEl.style.display = "none";
 
-  questionEl.innerHTML = "<strong>Extra materiaal toevoegen?</strong>";
+  questionEl.innerHTML =
+    faseType === "polijsten"
+      ? "<strong>Extra materiaal polijsten toevoegen?</strong>"
+      : "<strong>Extra materiaal toevoegen?</strong>";
+
   optionsEl.style.display = "block";
   optionsEl.innerHTML = "";
 
@@ -2110,7 +2151,7 @@ function toonMateriaalPagina() {
   toelichtingInput.placeholder = "Geef toelichting voor extra materiaal";
   toelichtingInput.classList.add("input-vol");
 
-  // 🔥 PREFILL (BELANGRIJK)
+  // 🔥 PREFILL
   bedragInput.value = extraMateriaal?.bedrag || "";
   toelichtingInput.value = extraMateriaal?.toelichting || "";
 
@@ -2133,28 +2174,35 @@ function toonMateriaalPagina() {
   bedragInput.addEventListener("input", validate);
   toelichtingInput.addEventListener("input", validate);
 
-  // 🔥 BELANGRIJK: direct valideren (voor prefill)
   validate();
+
+  // ========================
+  // 🔑 CENTRALE HERBEREKENING
+  // ========================
+  async function herberekenAlles() {
+    if (faseType === "polijsten") {
+      return berekenPolijstPrijs();
+    } else {
+      return herberekenPrijs();
+    }
+  }
 
   // ========================
   // VERDER FLOW
   // ========================
   async function gaVerder() {
 
-    const ok = actieveFaseType === "polijsten"
-      ? await berekenPolijstPrijs()
-      : await herberekenPrijs();
-
+    const ok = await herberekenAlles();
     if (!ok) return;
 
-    slaHuidigeFaseOp();   // 🔥 altijd uitvoeren
-    toonSamenvatting();   // 🔥 altijd terug naar samenvatting
+    slaHuidigeFaseOp();
+    toonSamenvatting();
   }
 
   // ========================
   // GEEN EXTRA
   // ========================
-  btnNee.onclick = () => {
+  btnNee.onclick = async () => {
 
     if (bedragInput.value) {
       foutmelding.textContent =
@@ -2164,13 +2212,13 @@ function toonMateriaalPagina() {
 
     extraMateriaal = { bedrag: null, toelichting: "" };
 
-    gaVerder();
+    await gaVerder();
   };
 
   // ========================
   // WEL EXTRA
   // ========================
-  btnJa.onclick = () => {
+  btnJa.onclick = async () => {
 
     if (!toelichtingInput.value.trim()) {
       foutmelding.textContent = "Geef toelichting voor extra";
@@ -2182,7 +2230,7 @@ function toonMateriaalPagina() {
       toelichting: toelichtingInput.value.trim()
     };
 
-    gaVerder();
+    await gaVerder();
   };
 
   // ========================
@@ -2209,13 +2257,17 @@ function toonMateriaalPagina() {
 // ========================
 async function herberekenPrijs() {
 
-  console.log("🚨 herberekenPrijs aangeroepen", actieveFaseType);
+  const fase = fases[actieveFaseIndex] || {};
+  const faseType = fase.type || "coating";
+
+  console.log("🚨 herberekenPrijs aangeroepen", faseType);
 
   // 🔥 HARD STOP voor polijsten
-  if (actieveFaseType === "polijsten") {
-    console.error("❌ herberekenPrijs mag niet bij polijsten");
+  if (faseType === "polijsten") {
+    console.error("❌ verkeerde prijsfunctie aangeroepen (polijsten)");
     return false;
   }
+
 
   console.log("=== herberekenPrijs START ===");
 
@@ -3276,6 +3328,9 @@ function toonCuringVraag() {
 }
 
 
+
+
+
 // ========================
 // POLIJST – PRIJS BEREKENEN (GECORRIGEERD)
 // ========================
@@ -3377,6 +3432,22 @@ function toonPolijstResultaat(data) {
   // ========================
   toonSamenvatting();
 }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 // ========================
