@@ -978,18 +978,34 @@ function handleSystemNode(node) {
     return;
   }
 
-  // ========================
-  // PRIJS AL BEKEND → HERBEREKENEN
-  // ========================
-  if (gekozenOppervlakte && gekozenRuimtes) {
-    herberekenPrijs().then(() => {
-      toonSysteemPrijsResultaat();
+// ========================
+// PRIJS AL BEKEND → HERBEREKENEN
+// ========================
+if (gekozenOppervlakte && gekozenRuimtes) {
+
+  if (actieveFaseType === "polijsten") {
+
+    berekenPolijstPrijs().then(ok => {
+      if (!ok) return;
+
+      slaHuidigeFaseOp();
+      toonSamenvatting();   // 🔥 polijsten gaat direct naar overzicht
     });
-    return;
+
+  } else {
+
+    herberekenPrijs().then(ok => {
+      if (!ok) return;
+
+      toonSysteemPrijsResultaat(); // coating blijft in flow
+    });
+
   }
 
-  console.warn("⚠️ System-node zonder prijsfase", node);
+  return;
 }
+
+console.warn("⚠️ System-node zonder prijsfase", node);
 
 
 
