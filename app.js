@@ -2074,11 +2074,14 @@ function toonMateriaalPagina() {
 
   const questionEl = document.getElementById("question-text");
   const optionsEl = document.getElementById("options-box");
+  const resultEl  = document.getElementById("result-box"); // 👈 toevoegen
+
+  // 🔥 SAMENVATTING VERBERGEN
+  resultEl.style.display = "none";
 
   questionEl.innerHTML = "<strong>Extra materiaal toevoegen?</strong>";
   optionsEl.style.display = "block";
   optionsEl.innerHTML = "";
-
 
   const foutmelding = document.createElement("div");
   foutmelding.style.color = "#BC4C1F";
@@ -3189,7 +3192,7 @@ function toonPolijstInvoer(systeem, klanttype) {
 
 
 // ========================
-// POLIJST – CURING VRAAG
+// POLIJST – CURING VRAAG (AANGEPAST)
 // ========================
 function toonCuringVraag() {
 
@@ -3214,24 +3217,32 @@ function toonCuringVraag() {
   btnNee.type = "button";
   btnNee.textContent = "Nee";
 
-  btnJa.onclick = () => {
+  // 🔥 NIEUWE FLOW
+  async function afronden() {
+
+    const ok = await berekenPolijstPrijs();
+    if (!ok) return;
+
+    slaHuidigeFaseOp();   // fase opslaan
+    toonSamenvatting();   // direct naar overzicht
+  }
+
+  btnJa.onclick = async () => {
     curingAanwezig = true;
 
-    // 🔑 OPSLAAN OP FASE
     if (!fases[actieveFaseIndex]) fases[actieveFaseIndex] = {};
     fases[actieveFaseIndex].curing = true;
 
-    toonMeerwerkPaginaPolijsten();
+    await afronden();
   };
 
-  btnNee.onclick = () => {
+  btnNee.onclick = async () => {
     curingAanwezig = false;
 
-    // 🔑 OPSLAAN OP FASE
     if (!fases[actieveFaseIndex]) fases[actieveFaseIndex] = {};
     fases[actieveFaseIndex].curing = false;
 
-    toonMeerwerkPaginaPolijsten();
+    await afronden();
   };
 
   groep.appendChild(btnJa);
@@ -3240,122 +3251,6 @@ function toonCuringVraag() {
   optionsEl.appendChild(groep);
 }
 
-
-// ========================
-// POLIJST – MEERWERK (GECORRIGEERD)
-// ========================
-function toonMeerwerkPaginaPolijsten() {
-
-  const questionEl = document.getElementById("question-text");
-  const optionsEl  = document.getElementById("options-box");
-  const resultEl   = document.getElementById("result-box");
-
-  // 🔥 NIEUW: samenvatting resetten
-  resultEl.innerHTML = "";
-  resultEl.style.display = "none";
-  questionEl.innerHTML = "<strong>Extra arbeid polijsten toevoegen?</strong>";
-  optionsEl.style.display = "block";
-  optionsEl.innerHTML = "";
-
-  const foutmelding = document.createElement("div");
-  foutmelding.style.color = "#BC4C1F";
-  foutmelding.style.marginTop = "8px";
-
-  const urenInput = document.createElement("input");
-  urenInput.type = "number";
-  urenInput.min = "0";
-  urenInput.step = "1";
-  urenInput.placeholder = "Aantal uren meerwerk";
-  urenInput.classList.add("input-vol");
-
-  const toelichtingInput = document.createElement("textarea");
-  toelichtingInput.placeholder = "Geef toelichting voor meerwerk";
-  toelichtingInput.classList.add("input-vol");
-
-  // 🔥 PREFILL
-  urenInput.value = extraMeerwerk?.uren || "";
-  toelichtingInput.value = extraMeerwerk?.toelichting || "";
-
-  const btnNee = document.createElement("button");
-  btnNee.type = "button";
-  btnNee.textContent = "Nee, geen meerwerk toevoegen";
-
-  const btnJa = document.createElement("button");
-  btnJa.type = "button";
-  btnJa.textContent = "Ja, meerwerk toevoegen";
-  btnJa.classList.add("actie-knop");
-  btnJa.disabled = true;
-
-  function validate() {
-    const uren = urenInput.value;
-    const toel = toelichtingInput.value.trim();
-    btnJa.disabled = !(uren && parseInt(uren) > 0 && toel.length > 0);
-  }
-
-  urenInput.addEventListener("input", validate);
-  toelichtingInput.addEventListener("input", validate);
-
-  // 🔥 direct valideren bij openen
-  validate();
-
-  // ========================
-  // GEEN MEERWERK
-  // ========================
-  btnNee.onclick = async () => {
-
-    if (urenInput.value) {
-      foutmelding.textContent =
-        'Maak invoerveld leeg, of kies "Ja, extra toevoegen"';
-      return;
-    }
-
-    extraMeerwerk = { uren: null, toelichting: "" };
-
-    const ok = await berekenPolijstPrijs();
-    if (!ok) return;
-
-    slaHuidigeFaseOp();   // 🔥 cruciaal
-    toonSamenvatting();   // 🔥 UI update
-  };
-
-  // ========================
-  // WEL MEERWERK
-  // ========================
-  btnJa.onclick = async () => {
-
-    if (!toelichtingInput.value.trim()) {
-      foutmelding.textContent = "Geef toelichting voor extra";
-      return;
-    }
-
-    extraMeerwerk = {
-      uren: parseInt(urenInput.value),
-      toelichting: toelichtingInput.value.trim()
-    };
-
-    const ok = await berekenPolijstPrijs();
-    if (!ok) return;
-
-    slaHuidigeFaseOp();   // 🔥 cruciaal
-    toonSamenvatting();   // 🔥 UI update
-  };
-
-  // ========================
-  // UI
-  // ========================
-  const groep = document.createElement("div");
-  groep.className = "antwoord-groep";
-
-  groep.appendChild(btnNee);
-  groep.appendChild(btnJa);
-
-  optionsEl.append(
-    urenInput,
-    toelichtingInput,
-    foutmelding,
-    groep
-  );
-}
 
 // ========================
 // POLIJST – PRIJS BEREKENEN
