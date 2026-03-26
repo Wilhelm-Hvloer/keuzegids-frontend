@@ -3253,13 +3253,12 @@ function toonCuringVraag() {
 
 
 // ========================
-// POLIJST – PRIJS BEREKENEN
+// POLIJST – PRIJS BEREKENEN (GECORRIGEERD)
 // ========================
 async function berekenPolijstPrijs() {
 
   try {
 
-    // 🔑 curing uit fase halen (fallback = huidige state)
     const fase = fases[actieveFaseIndex] || {};
     const curing = fase.curing ?? curingAanwezig;
 
@@ -3271,7 +3270,14 @@ async function berekenPolijstPrijs() {
         klanttype: polijstKlanttype,
         oppervlakte: gekozenOppervlakte,
         curing: curing,
-        meerwerk_uren: Number(extraMeerwerk?.uren || 0)
+
+        // 🔥 MEERWERK
+        meerwerk_uren: Number(extraMeerwerk?.uren || 0),
+        meerwerk_toelichting: extraMeerwerk?.toelichting || "",
+
+        // 🔥 EXTRA MATERIAAL
+        materiaal_bedrag: Number(extraMateriaal?.bedrag || 0),
+        materiaal_toelichting: extraMateriaal?.toelichting || ""
       })
     });
 
@@ -3282,19 +3288,32 @@ async function berekenPolijstPrijs() {
       return false;
     }
 
-    // 🔑 optioneel: ook resultaat opslaan op fase (aanrader)
+    // ========================
+    // RESULTAAT IN STATE ZETTEN (CRUCIAAL)
+    // ========================
+    basisPrijs    = data.basisprijs;
+    prijsPerM2    = data.prijs_per_m2;
+    totaalPrijs   = data.totaalprijs;
+
+    backendExtras = Array.isArray(data.extras) ? data.extras : [];
+
+    // 🔥 opslaan op fase
     if (!fases[actieveFaseIndex]) fases[actieveFaseIndex] = {};
+
     fases[actieveFaseIndex].laatsteBerekening = data;
 
-    toonPolijstResultaat(data);
+    // 🔥 belangrijk voor samenvatting
+    fases[actieveFaseIndex].backendExtras = backendExtras;
+    fases[actieveFaseIndex].totaalPrijs = totaalPrijs;
 
-    return true; // 🔑 BELANGRIJK
+    return true;
 
   } catch (err) {
     console.error("❌ polijstprijs fout:", err);
     return false;
   }
 }
+
 
 
 // ========================
