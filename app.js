@@ -1994,11 +1994,31 @@ function toonMeerwerkPagina() {
   const optionsEl  = document.getElementById("options-box");
   const resultEl   = document.getElementById("result-box");
 
+  // 🔥 Zorg dat fase bestaat
+  if (!fases[actieveFaseIndex]) {
+    fases[actieveFaseIndex] = {};
+  }
+
   // ========================
-  // 🔑 FASE BEPALEN (VANUIT OPGESLAGEN FASE)
+  // 🔑 FASE LADEN (CRUCIAAL)
   // ========================
-  const fase = fases[actieveFaseIndex] || {};
+  const fase = fases[actieveFaseIndex];
   const faseType = fase.type || "coating";
+
+  // 🔥 BELANGRIJK: state synchroniseren met fase
+  gekozenSysteem = fase.gekozenSysteem;
+  gekozenOppervlakte = fase.gekozenOppervlakte;
+  gekozenRuimtes = fase.gekozenRuimtes;
+
+  prijsPerM2 = fase.prijsPerM2;
+  basisPrijs = fase.basisPrijs;
+  totaalPrijs = fase.totaalPrijs;
+
+  backendExtras = fase.backendExtras || [];
+  currentSystemOmschrijving = fase.currentSystemOmschrijving || [];
+
+  extraMeerwerk = fase.extraMeerwerk || {};
+  extraMateriaal = fase.extraMateriaal || {};
 
   // 🔥 samenvatting weg
   resultEl.innerHTML = "";
@@ -2136,11 +2156,31 @@ function toonMateriaalPagina() {
   const optionsEl = document.getElementById("options-box");
   const resultEl  = document.getElementById("result-box");
 
+  // 🔥 Zorg dat fase bestaat
+  if (!fases[actieveFaseIndex]) {
+    fases[actieveFaseIndex] = {};
+  }
+
   // ========================
-  // 🔑 FASE BEPALEN (VANUIT OPGESLAGEN FASE)
+  // 🔑 FASE LADEN (CRUCIAAL)
   // ========================
-  const fase = fases[actieveFaseIndex] || {};
+  const fase = fases[actieveFaseIndex];
   const faseType = fase.type || "coating";
+
+  // 🔥 BELANGRIJK: state synchroniseren met fase
+  gekozenSysteem = fase.gekozenSysteem;
+  gekozenOppervlakte = fase.gekozenOppervlakte;
+  gekozenRuimtes = fase.gekozenRuimtes;
+
+  prijsPerM2 = fase.prijsPerM2;
+  basisPrijs = fase.basisPrijs;
+  totaalPrijs = fase.totaalPrijs;
+
+  backendExtras = fase.backendExtras || [];
+  currentSystemOmschrijving = fase.currentSystemOmschrijving || [];
+
+  extraMeerwerk = fase.extraMeerwerk || {};
+  extraMateriaal = fase.extraMateriaal || {};
 
   // 🔥 SAMENVATTING VERBERGEN
   resultEl.innerHTML = "";
@@ -2482,11 +2522,11 @@ function slaHuidigeFaseOp() {
 
   if (!systeemNaam) return;
 
-  // 🔥 CRUCIAAL: fase type NIET blind overschrijven
+  // 🔥 FIX: actieve flow is leidend (NIET bestaande fase)
   const faseType =
-    bestaandeFase.type ||   // wat al vast stond → leidend
-    actieveFaseType ||      // fallback
-    "coating";              // laatste fallback
+    actieveFaseType ||      // ✅ leidend
+    bestaandeFase.type ||   // fallback
+    "coating";
 
   const faseData = {
     type: faseType,
@@ -3528,6 +3568,15 @@ function gaNaarHome() {
   // ========================
   fases = [];
   actieveFaseIndex = 0;
+
+  // 🔥 CRUCIAAL: fase type resetten
+  actieveFaseType = "coating";
+
+  // 🔥 POLIJST STATE RESETTEN (voorkomt lekkage)
+  polijstSysteem = null;
+  polijstKlanttype = null;
+  curingAanwezig = false;
+
 
   // ========================
   // FRONTEND STATE RESET
