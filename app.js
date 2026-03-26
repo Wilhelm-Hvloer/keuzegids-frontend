@@ -978,36 +978,36 @@ function handleSystemNode(node) {
     return;
   }
 
-// ========================
-// PRIJS AL BEKEND → HERBEREKENEN
-// ========================
-if (gekozenOppervlakte && gekozenRuimtes) {
+  // ========================
+  // PRIJS AL BEKEND → HERBEREKENEN
+  // ========================
+  if (gekozenOppervlakte && gekozenRuimtes) {
 
-  if (actieveFaseType === "polijsten") {
+    if (actieveFaseType === "polijsten") {
 
-    berekenPolijstPrijs().then(ok => {
-      if (!ok) return;
+      berekenPolijstPrijs().then(ok => {
+        if (!ok) return;
 
-      slaHuidigeFaseOp();
-      toonSamenvatting();   // 🔥 polijsten gaat direct naar overzicht
-    });
+        slaHuidigeFaseOp();
+        toonSamenvatting();   // 🔥 polijsten gaat direct naar overzicht
+      });
 
-  } else {
+    } else {
 
-    herberekenPrijs().then(ok => {
-      if (!ok) return;
+      herberekenPrijs().then(ok => {
+        if (!ok) return;
 
-      toonSysteemPrijsResultaat(); // coating blijft in flow
-    });
+        toonSysteemPrijsResultaat(); // coating blijft in flow
+      });
 
+    }
+
+    return;
   }
 
-  return;
-}
+  console.warn("⚠️ System-node zonder prijsfase", node);
 
-console.warn("⚠️ System-node zonder prijsfase", node);
-
-
+} // 🔥 DIT AFSLUITENDE HAAKJE MIS JE
 
 
 
