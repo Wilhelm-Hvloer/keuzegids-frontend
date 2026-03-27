@@ -379,7 +379,7 @@ function toonPrijslijstSysteemSelectie() {
 
       const info = document.createElement("span");
       info.className = "info-icoon";
-      info.textContent = "ℹ️";
+      info.innerHTML = "ⓘ"; // strakker dan emoji
 
       // 🔥 INFO CLICK
       info.onclick = (e) => {
