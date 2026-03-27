@@ -289,7 +289,7 @@ function toonPrijslijstSysteemSelectie() {
   `;
 
   // ========================
-  // 🔼 BEREKEN PRIJS KNOP (ALTIJD BOVEN)
+  // 🔼 BEREKEN PRIJS KNOP
   // ========================
   const actieGroep = document.createElement("div");
   actieGroep.className = "antwoord-groep";
@@ -311,68 +311,128 @@ function toonPrijslijstSysteemSelectie() {
   optionsEl.appendChild(actieGroep);
 
   // ========================
-  // SYSTEEMKNOPPEN
+  // 🔥 EMOJI MAP
   // ========================
-  const systemen = [
-    "Rolcoating Basic",
-    "Rolcoating Premium",
-    "Gietcoating Basic",
-    "Gietcoating Premium",
-    "Rolcoating Optimum",
-    "Rolcoating Extreme",
-    "Flakecoating",
-    "Mortelcoating",
-    "DOS-coating Basic",
-    "DOS-coating Premium",
-    "Boeren coating"
+  const icoonMap = {
+    "Rolcoating Basic": "🖌️",
+    "Rolcoating Premium": "🖌️",
+    "Gietcoating Basic": "🪣",
+    "Gietcoating Premium": "🪣",
+    "Rolcoating Optimum": "🏖️",
+    "Rolcoating Extreme": "🏖️",
+    "DOS-coating Basic": "💨",
+    "DOS-coating Premium": "💨",
+    "Flakecoating": "✨",
+    "Mortelcoating": "🧱",
+    "Boeren coating": "🐄"
+  };
+
+  // ========================
+  // 🔥 GROEPEN
+  // ========================
+  const systeemGroepen = [
+    {
+      titel: "Rollen",
+      items: ["Rolcoating Basic", "Rolcoating Premium"]
+    },
+    {
+      titel: "Gieten",
+      items: ["Gietcoating Basic", "Gietcoating Premium"]
+    },
+    {
+      titel: "Inzand",
+      items: ["Rolcoating Optimum", "Rolcoating Extreme"]
+    },
+    {
+      titel: "Dampopen",
+      items: ["DOS-coating Basic", "DOS-coating Premium"]
+    },
+    {
+      titel: "Specials",
+      items: ["Flakecoating", "Mortelcoating", "Boeren coating"]
+    }
   ];
 
-  const groep = document.createElement("div");
-  groep.className = "antwoord-groep";
+  systeemGroepen.forEach(groepData => {
 
-  systemen.forEach(systeem => {
+    // 🔹 Titel
+    const titel = document.createElement("div");
+    titel.className = "groep-titel";
+    titel.textContent = groepData.titel + ":";
+    optionsEl.appendChild(titel);
 
-    const btn = document.createElement("button");
-    btn.type = "button";
-    btn.textContent = systeem;
+    // 🔹 Groep container
+    const groep = document.createElement("div");
+    groep.className = "antwoord-groep";
 
-    btn.onclick = () => {
+    groepData.items.forEach(systeem => {
 
-      if (geselecteerdePrijslijstSystemen.includes(systeem)) {
+      const btn = document.createElement("button");
+      btn.type = "button";
+      btn.className = "optie-knop";
 
-        geselecteerdePrijslijstSystemen =
-          geselecteerdePrijslijstSystemen.filter(s => s !== systeem);
+      const wrapper = document.createElement("div");
+      wrapper.className = "knop-inhoud";
 
-        btn.classList.remove("actief");
+      const tekst = document.createElement("span");
+      tekst.textContent = `${icoonMap[systeem] || ""} ${systeem}`;
 
-      } else {
+      const info = document.createElement("span");
+      info.className = "info-icoon";
+      info.textContent = "ℹ️";
 
-        if (geselecteerdePrijslijstSystemen.length >= 2) return;
+      // 🔥 INFO CLICK
+      info.onclick = (e) => {
+        e.stopPropagation();
+        openInfoPopup(systeem);
+      };
 
-        geselecteerdePrijslijstSystemen.push(systeem);
-        btn.classList.add("actief");
-      }
+      wrapper.appendChild(tekst);
+      wrapper.appendChild(info);
+      btn.appendChild(wrapper);
 
-      // 🔥 Knopstatus bepalen
-      if (geselecteerdePrijslijstSystemen.length === 1) {
-        btnBereken.disabled = false;
-        btnBereken.classList.remove("disabled-knop");
-      } else {
-        btnBereken.disabled = true;
-        btnBereken.classList.add("disabled-knop");
-      }
+      // 🔥 SELECTIE CLICK
+      btn.onclick = () => {
 
-      // 🔀 Bij 2 systemen → vergelijking
-      if (geselecteerdePrijslijstSystemen.length === 2) {
-        startVergelijking();
-      }
-    };
+        if (geselecteerdePrijslijstSystemen.includes(systeem)) {
 
-    groep.appendChild(btn);
+          geselecteerdePrijslijstSystemen =
+            geselecteerdePrijslijstSystemen.filter(s => s !== systeem);
+
+          btn.classList.remove("actief");
+
+        } else {
+
+          if (geselecteerdePrijslijstSystemen.length >= 2) return;
+
+          geselecteerdePrijslijstSystemen.push(systeem);
+          btn.classList.add("actief");
+        }
+
+        // 🔥 knopstatus
+        if (geselecteerdePrijslijstSystemen.length === 1) {
+          btnBereken.disabled = false;
+          btnBereken.classList.remove("disabled-knop");
+        } else {
+          btnBereken.disabled = true;
+          btnBereken.classList.add("disabled-knop");
+        }
+
+        // 🔀 vergelijking
+        if (geselecteerdePrijslijstSystemen.length === 2) {
+          startVergelijking();
+        }
+      };
+
+      groep.appendChild(btn);
+    });
+
+    optionsEl.appendChild(groep);
   });
-
-  optionsEl.appendChild(groep);
 }
+
+
+
 
 
 // ========================
@@ -2006,6 +2066,7 @@ async function toonMeerwerkPagina() {
   gekozenSysteem = fase.gekozenSysteem;
   gekozenOppervlakte = fase.gekozenOppervlakte;
   gekozenRuimtes = fase.gekozenRuimtes;
+  gekozenReistijd = fase.gekozenReistijd || 0; // 🔥 TOEVOEGEN
 
   // 🔥 samenvatting weg
   resultEl.innerHTML = "";
@@ -2018,6 +2079,7 @@ async function toonMeerwerkPagina() {
 
   optionsEl.style.display = "block";
   optionsEl.innerHTML = "";
+
 
   // ========================
   // 🔥 PLANNING OPHALEN

@@ -478,6 +478,44 @@ hr {
   opacity: 1;
 }
 
+
+
+/* =========================
+   SYSTEEMKNOP STRUCTUUR
+   ========================= */
+
+.knop-inhoud {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  width: 100%;
+}
+
+.knop-inhoud span:first-child {
+  display: flex;
+  align-items: center;
+  gap: 8px; /* ruimte tussen emoji en tekst */
+}
+
+/* emoji iets subtieler maken */
+.knop-inhoud span:first-child::first-letter {
+  font-size: 16px;
+}
+
+
+/* =========================
+   GROEP TITELS
+   ========================= */
+
+.groep-titel {
+  margin-top: 20px;
+  margin-bottom: 6px;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text-muted);
+}
+
+
 /* =========================
    MODAL OVERLAY
    ========================= */
