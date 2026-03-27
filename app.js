@@ -384,7 +384,7 @@ function toonPrijslijstSysteemSelectie() {
       // 🔥 INFO CLICK
       info.onclick = (e) => {
         e.stopPropagation();
-        openInfoPopup(systeem);
+        openInfoModal(systeem);
       };
 
       wrapper.appendChild(tekst);
