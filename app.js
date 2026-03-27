@@ -2069,7 +2069,6 @@ function openMateriaal(faseIndex) {
 
 
 
-
 // ========================
 // EXTRA ARBEID (MEERWERK) – PLANNING GESTUURD
 // ========================
@@ -2079,7 +2078,6 @@ async function toonMeerwerkPagina() {
   const optionsEl  = document.getElementById("options-box");
   const resultEl   = document.getElementById("result-box");
 
-  // 🔥 Zorg dat fase bestaat
   if (!fases[actieveFaseIndex]) {
     fases[actieveFaseIndex] = {};
   }
@@ -2091,9 +2089,8 @@ async function toonMeerwerkPagina() {
   gekozenSysteem = fase.gekozenSysteem;
   gekozenOppervlakte = fase.gekozenOppervlakte;
   gekozenRuimtes = fase.gekozenRuimtes;
-  gekozenReistijd = fase.gekozenReistijd || 0; // 🔥 TOEVOEGEN
+  gekozenReistijd = fase.gekozenReistijd || 0;
 
-  // 🔥 samenvatting weg
   resultEl.innerHTML = "";
   resultEl.style.display = "none";
 
@@ -2105,9 +2102,8 @@ async function toonMeerwerkPagina() {
   optionsEl.style.display = "block";
   optionsEl.innerHTML = "";
 
-
   // ========================
-  // 🔥 PLANNING OPHALEN
+  // PLANNING OPHALEN
   // ========================
   const planning = await haalPlanningOp(fase);
 
@@ -2116,8 +2112,12 @@ async function toonMeerwerkPagina() {
     return;
   }
 
+  // 🔥 GROEP (FIX VOOR SPACING)
+  const groep = document.createElement("div");
+  groep.className = "antwoord-groep";
+
   // ========================
-  // GEEN MEERWERK KNOP
+  // GEEN MEERWERK
   // ========================
   const btnGeen = document.createElement("button");
   btnGeen.textContent = "Geen meerwerk toevoegen";
@@ -2132,18 +2132,17 @@ async function toonMeerwerkPagina() {
     toonSamenvatting();
   };
 
-  optionsEl.appendChild(btnGeen);
+  groep.appendChild(btnGeen);
 
   // ========================
-  // DAGEN ALS KNOPPEN
+  // DAGEN
   // ========================
   planning.forEach(dag => {
 
     const btn = document.createElement("button");
 
-    // 🔥 werkzaamheden tonen (kort)
     const taken = dag.werkzaamheden
-      .map(t => `${t.naam}`)
+      .map(t => t.naam)
       .join(", ");
 
     btn.innerHTML = `
@@ -2152,39 +2151,92 @@ async function toonMeerwerkPagina() {
       <span style="opacity:0.7;">${taken}</span>
     `;
 
-    btn.onclick = () => vraagMeerwerkDetails(dag.dag);
-    optionsEl.appendChild(btn);
+    btn.onclick = () => toonMeerwerkInvoer(dag.dag);
+
+    groep.appendChild(btn);
   });
 
+  optionsEl.appendChild(groep);
 }
 
 
+
+
 // ========================
-// DETAILS MEERWERK (UREN + TOELICHTING)
+// MEERWERK INVOER SCHERM (NIEUW)
 // ========================
-function vraagMeerwerkDetails(dag) {
+function toonMeerwerkInvoer(dag) {
 
-  const uren = prompt(`Aantal uren meerwerk op dag ${dag}?`);
-  if (!uren || parseInt(uren) <= 0) return;
+  const questionEl = document.getElementById("question-text");
+  const optionsEl  = document.getElementById("options-box");
 
-  const toelichting = prompt("Toelichting voor meerwerk:");
-  if (!toelichting || !toelichting.trim()) return;
+  optionsEl.innerHTML = "";
 
-  // 🔥 opslaan
-  extraMeerwerk = {
-    dag: dag,
-    uren: parseInt(uren),
-    toelichting: toelichting.trim()
-  };
+  questionEl.innerHTML = `
+    <strong>Meerwerk invoeren (dag ${dag})</strong>
+  `;
 
-  // 🔥 herberekenen + terug
-  herberekenPrijs().then(ok => {
+  const groep = document.createElement("div");
+  groep.className = "antwoord-groep";
+
+  const urenInput = document.createElement("input");
+  urenInput.type = "number";
+  urenInput.placeholder = "Aantal uren";
+  urenInput.classList.add("input-vol");
+
+  const toelichtingInput = document.createElement("textarea");
+  toelichtingInput.placeholder = "Toelichting";
+  toelichtingInput.classList.add("input-vol");
+
+  const foutmelding = document.createElement("div");
+  foutmelding.style.color = "#BC4C1F";
+
+  const btnOpslaan = document.createElement("button");
+  btnOpslaan.textContent = "Meerwerk toevoegen";
+  btnOpslaan.classList.add("actie-knop");
+
+  btnOpslaan.onclick = async () => {
+
+    const uren = parseInt(urenInput.value);
+    const toelichting = toelichtingInput.value.trim();
+
+    if (!uren || uren <= 0) {
+      foutmelding.textContent = "Voer geldige uren in";
+      return;
+    }
+
+    if (!toelichting) {
+      foutmelding.textContent = "Geef toelichting";
+      return;
+    }
+
+    extraMeerwerk = {
+      dag: dag,
+      uren: uren,
+      toelichting: toelichting
+    };
+
+    const ok = await herberekenPrijs();
     if (!ok) return;
 
     slaHuidigeFaseOp();
     toonSamenvatting();
-  });
+  };
+
+  const btnTerug = document.createElement("button");
+  btnTerug.textContent = "← terug";
+  btnTerug.onclick = toonMeerwerkPagina;
+
+  groep.appendChild(urenInput);
+  groep.appendChild(toelichtingInput);
+  groep.appendChild(foutmelding);
+  groep.appendChild(btnOpslaan);
+  groep.appendChild(btnTerug);
+
+  optionsEl.appendChild(groep);
 }
+
+
 
 
 
