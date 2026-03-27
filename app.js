@@ -382,9 +382,34 @@ function toonPrijslijstSysteemSelectie() {
       info.innerHTML = "ⓘ"; // strakker dan emoji
 
       // 🔥 INFO CLICK
-      info.onclick = (e) => {
+      info.onclick = async (e) => {
         e.stopPropagation();
-        openInfoModal(systeem);
+
+        try {
+          const res = await fetch(`${API_BASE}/api/price`, {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json"
+            },
+            body: JSON.stringify({
+              systeem: systeem,
+              oppervlakte: 100, // dummy voor ophalen omschrijving
+              ruimtes: 1,
+              extras: [],
+              forced_extras: []
+            })
+          });
+
+          const data = await res.json();
+
+          if (data.omschrijving) {
+            currentSystemOmschrijving = data.omschrijving;
+            openInfoModal();
+          }
+
+        } catch (err) {
+          console.error("❌ info ophalen mislukt:", err);
+        }
       };
 
       wrapper.appendChild(tekst);
