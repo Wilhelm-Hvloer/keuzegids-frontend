@@ -48,12 +48,16 @@ let planning = [];
 let gekozenReistijd = 0; // minuten
 
 
+
 // ========================
 // FLOW HELPERS (DEFINITIEF STABIEL)
 // ========================
+function isBestellijst() {
+  return actieveFlow === "bestellijst";
+}
+
 async function gaNaarMeerwerkOfKleur() {
 
-  // 🔥 Zorg dat fase altijd bestaat
   if (!fases[actieveFaseIndex]) {
     fases[actieveFaseIndex] = {};
   }
@@ -70,14 +74,12 @@ async function gaNaarMeerwerkOfKleur() {
     kleurNodig = await faseHeeftKleurNodig();
   }
 
+  // 🔥 HIER kun je ‘m ook gebruiken (optioneel)
   if (kleurNodig) {
     toonKleurVraag();
     return;
   }
 
-  // ========================
-  // 🔑 CENTRALE HERBEREKENING
-  // ========================
   async function herberekenAlles() {
     if (faseType === "polijsten") {
       return berekenPolijstPrijs();
@@ -188,6 +190,28 @@ function toonFlow() {
   if (flow) flow.style.display = "block";
 }
 
+
+// ========================
+// START BESTELLIJST
+// ========================
+function startBestellijst() {
+
+  toonFlow();
+  resetUI();
+
+  actieveFlow = "bestellijst";
+
+  gekozenSysteem = null;
+  gekozenOppervlakte = null;
+  gekozenKleur = null;
+
+  toonPrijslijstSysteemSelectie();
+}
+
+
+
+
+
 // ========================
 // START PRIJSLIJST (GECORRIGEERD & VEILIG)
 // ========================
@@ -253,6 +277,11 @@ function startPrijslijst() {
   toonPrijslijstSysteemSelectie();
 }
 
+
+
+
+
+
 // ========================
 // START POLIJST PRIJSLIJST
 // ========================
@@ -265,6 +294,8 @@ function startPolijstPrijslijst() {
 
   toonPolijstSelectie();
 }
+
+
 
 // ========================
 // PRIJSLIJST – SYSTEEMSELECTIE (NIEUWE UX)
@@ -282,7 +313,11 @@ function toonPrijslijstSysteemSelectie() {
   resultEl.innerHTML = "";
 
   geselecteerdePrijslijstSystemen = [];
-  actieveFlow = "prijslijst";
+  const isBestelFlow = actieveFlow === "bestellijst";
+
+  if (!actieveFlow) {
+    actieveFlow = "prijslijst";
+  }
 
   questionEl.innerHTML = `
     <strong>Kies één of twee coatingsystemen</strong>
@@ -303,8 +338,14 @@ function toonPrijslijstSysteemSelectie() {
 
   btnBereken.onclick = () => {
     if (geselecteerdePrijslijstSystemen.length !== 1) return;
+
     gekozenSysteem = geselecteerdePrijslijstSystemen[0];
-    toonPrijsInvoer();
+
+    if (isBestellijst()) {
+      toonBestellijstM2();
+    } else {
+      toonPrijsInvoer();
+    }
   };
 
   actieGroep.appendChild(btnBereken);
@@ -1908,7 +1949,7 @@ function toonKleurVraag() {
   let gekozenKleurTemp = "";
 
   // ========================
-  // INPUT VELD (eerder nodig voor gebruik in buttons)
+  // INPUT VELD
   // ========================
   const input = document.createElement("input");
   input.type = "text";
@@ -1930,19 +1971,23 @@ function toonKleurVraag() {
     btn.textContent = kleur;
 
     btn.onclick = () => {
+
       gekozenKleurTemp = kleur;
-      gekozenKleur = kleur;        // 🔥 definitief zetten
+      gekozenKleur = kleur;
       input.value = kleur;
 
-      toonReistijdVraag();         // 🔥 direct door
+      if (isBestellijst()) {
+        toonBestellijstResultaat();
+      } else {
+        toonReistijdVraag();
+      }
     };
 
     container.appendChild(btn);
   });
 
-
   // ========================
-  // VERDER KNOP
+  // HANDMATIGE KLEUR
   // ========================
   const btnVerder = document.createElement("button");
   btnVerder.textContent = "Verder";
@@ -1950,24 +1995,87 @@ function toonKleurVraag() {
 
   btnVerder.onclick = () => {
 
-    if (!gekozenKleurTemp) {
+    if (!gekozenKleurTemp || !gekozenKleurTemp.trim()) {
       alert("Voer een kleur in");
       return;
     }
 
-    gekozenKleur = gekozenKleurTemp;
+    gekozenKleur = gekozenKleurTemp.trim();
 
-    toonReistijdVraag();
+    if (isBestellijst()) {
+      toonBestellijstResultaat();
+    } else {
+      toonReistijdVraag();
+    }
   };
 
-  // ========================
-  // BUILD UI (alles in 1 container!)
-  // ========================
   container.appendChild(input);
   container.appendChild(btnVerder);
 
   optionsEl.appendChild(container);
 }
+
+
+// ========================
+// BESTELLIJST RESULTAAT
+// ========================
+async function toonBestellijstResultaat() {
+
+  const questionEl = document.getElementById("question-text");
+  const optionsEl  = document.getElementById("options-box");
+  const resultEl   = document.getElementById("result-box");
+
+  optionsEl.style.display = "none";
+  resultEl.style.display = "block";
+
+  questionEl.innerHTML = `<strong>Bestellijst</strong>`;
+  resultEl.innerHTML = "Laden...";
+
+  try {
+
+    const res = await fetch(`${API_BASE}/api/materialen`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify({
+        fases: [{
+          gekozenSysteem: gekozenSysteem,
+          gekozenOppervlakte: gekozenOppervlakte,
+          kleur: gekozenKleur,
+          type: "coating"
+        }]
+      })
+    });
+
+    const data = await res.json();
+
+    if (!data || !data.materialen) {
+      resultEl.innerHTML = "Geen bestellijst beschikbaar.";
+      return;
+    }
+
+    let html = `<div class="kaart">`;
+
+    Object.entries(data.materialen).forEach(([product, info]) => {
+      html += `
+        <div class="bestelregel">
+          <span>${product}</span>
+          <span>${info.kg.toFixed(1)} kg</span>
+        </div>
+      `;
+    });
+
+    html += `</div>`;
+
+    resultEl.innerHTML = html;
+
+  } catch (err) {
+    console.error("❌ bestellijst fout:", err);
+    resultEl.innerHTML = "Fout bij laden bestellijst.";
+  }
+}
+
 
 
 // ========================
