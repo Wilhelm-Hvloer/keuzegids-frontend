@@ -46,7 +46,7 @@ let gekozenAntwoorden = [];
 let gekozenKleur = null;
 let planning = [];
 let gekozenReistijd = 0; // minuten
-let bestellijstFases = [];
+
 
 
 // ========================
@@ -2098,6 +2098,10 @@ function toonKleurVraag() {
 }
 
 
+
+
+
+
 // ========================
 // BESTELLIJST RESULTAAT
 // ========================
@@ -2113,7 +2117,7 @@ async function toonBestellijstResultaat() {
   questionEl.innerHTML = `<strong>Bestellijst</strong>`;
   resultEl.innerHTML = "Laden...";
 
-  // 🔥 NIEUW: fase toevoegen
+  // 🔥 NIEUW: fase toevoegen aan DE ENIGE BRON → fases
   const nieuweFase = {
     gekozenSysteem: gekozenSysteem,
     gekozenOppervlakte: gekozenOppervlakte,
@@ -2122,14 +2126,14 @@ async function toonBestellijstResultaat() {
   };
 
   // 🔥 voorkom dubbele entries
-  const bestaatAl = bestellijstFases.some(f =>
+  const bestaatAl = fases.some(f =>
     f.gekozenSysteem === nieuweFase.gekozenSysteem &&
     f.gekozenOppervlakte === nieuweFase.gekozenOppervlakte &&
     f.kleur === nieuweFase.kleur
   );
 
   if (!bestaatAl) {
-    bestellijstFases.push(nieuweFase);
+    fases.push(nieuweFase);
   }
 
   try {
@@ -2140,7 +2144,7 @@ async function toonBestellijstResultaat() {
         "Content-Type": "application/json"
       },
       body: JSON.stringify({
-        fases: bestellijstFases   // 🔥 BELANGRIJK
+        fases: fases   // 🔥 ALLES via fases
       })
     });
 
@@ -2197,6 +2201,7 @@ async function toonBestellijstResultaat() {
 
       const exacteKg = kg.toFixed(1);
 
+      // 🔥 GEEN globale kleur → backend bepaalt of kleur nodig is
       const kleurTekst = info.kleur_verplicht && gekozenKleur
         ? ` (${gekozenKleur})`
         : "";
@@ -2227,7 +2232,13 @@ async function toonBestellijstResultaat() {
 
     if (btnOpnieuw) {
       btnOpnieuw.onclick = () => {
-        toonPrijslijstSysteemSelectie(); // 🔥 GEEN RESET
+        // 🔥 NIEUWE FASE STARTEN (anders lekt state)
+        gekozenSysteem = null;
+        gekozenKleur = null;
+        gekozenExtras = [];
+        gekozenAntwoorden = [];
+
+        toonPrijslijstSysteemSelectie();
       };
     }
 
@@ -2236,6 +2247,8 @@ async function toonBestellijstResultaat() {
     resultEl.innerHTML = "Fout bij laden bestellijst.";
   }
 }
+
+
 
 
 // ========================
@@ -2877,25 +2890,25 @@ async function berekenBasisPrijsVoorSysteem(systeemNaam, m2, ruimtes) {
 
 
 
+
 // ========================
-// FASE SNAPSHOT OPSLAAN
+// FASE SNAPSHOT OPSLAAN (DEFINITIEF)
 // ========================
 function slaHuidigeFaseOp() {
 
-  const bestaandeFase = fases[actieveFaseIndex] || {};
+  // 🔥 GEEN bestaandeFase MEER NODIG VOOR INDEX-LOGICA
+  const laatsteFase = fases[fases.length - 1] || {};
 
-  // 🔥 BETERE fallback (volgorde is belangrijk)
   const systeemNaam =
     gekozenSysteem ||
-    bestaandeFase.gekozenSysteem ||
+    laatsteFase.gekozenSysteem ||
     polijstSysteem;
 
   if (!systeemNaam) return;
 
-  // 🔥 FIX: actieve flow is leidend (NIET bestaande fase)
   const faseType =
     actieveFaseType ||
-    bestaandeFase.type ||
+    laatsteFase.type ||
     "coating";
 
   const faseData = {
@@ -2917,23 +2930,21 @@ function slaHuidigeFaseOp() {
 
     systeemKeuzeIndex,
 
-    // 🔥 CRUCIALE FIX:
-    // behoud bestaande kleur als er geen nieuwe gekozen is
+    // 🔥 kleur netjes behouden
     kleur:
       gekozenKleur !== null && gekozenKleur !== undefined
         ? gekozenKleur
-        : bestaandeFase.kleur || null,
+        : laatsteFase.kleur || null,
 
     extraMeerwerk: JSON.parse(JSON.stringify(extraMeerwerk || {})),
     extraMateriaal: JSON.parse(JSON.stringify(extraMateriaal || {}))
   };
 
-  if (!fases[actieveFaseIndex]) {
-    fases.push(faseData);
-  } else {
-    fases[actieveFaseIndex] = faseData;
-  }
+  // 🔥 ALTIJD NIEUWE FASE TOEVOEGEN
+  fases.push(faseData);
 }
+
+
 
 
 
