@@ -2894,8 +2894,8 @@ function slaHuidigeFaseOp() {
 
   // 🔥 FIX: actieve flow is leidend (NIET bestaande fase)
   const faseType =
-    actieveFaseType ||      // ✅ leidend
-    bestaandeFase.type ||   // fallback
+    actieveFaseType ||
+    bestaandeFase.type ||
     "coating";
 
   const faseData = {
@@ -2917,7 +2917,12 @@ function slaHuidigeFaseOp() {
 
     systeemKeuzeIndex,
 
-    kleur: gekozenKleur || null,
+    // 🔥 CRUCIALE FIX:
+    // behoud bestaande kleur als er geen nieuwe gekozen is
+    kleur:
+      gekozenKleur !== null && gekozenKleur !== undefined
+        ? gekozenKleur
+        : bestaandeFase.kleur || null,
 
     extraMeerwerk: JSON.parse(JSON.stringify(extraMeerwerk || {})),
     extraMateriaal: JSON.parse(JSON.stringify(extraMateriaal || {}))
