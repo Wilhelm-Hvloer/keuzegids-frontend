@@ -2103,7 +2103,7 @@ function toonKleurVraag() {
 
 
 // ========================
-// BESTELLIJST RESULTAAT
+// BESTELLIJST RESULTAAT (PER FASE + TOTAAL)
 // ========================
 async function toonBestellijstResultaat() {
 
@@ -2117,49 +2117,112 @@ async function toonBestellijstResultaat() {
   questionEl.innerHTML = `<strong>Bestellijst</strong>`;
   resultEl.innerHTML = "Laden...";
 
-  // 🔥 NIEUW: fase toevoegen aan DE ENIGE BRON → fases
-  const nieuweFase = {
-    gekozenSysteem: gekozenSysteem,
-    gekozenOppervlakte: gekozenOppervlakte,
-    kleur: gekozenKleur,
-    type: "coating"
-  };
-
-  // 🔥 voorkom dubbele entries
-  const bestaatAl = fases.some(f =>
-    f.gekozenSysteem === nieuweFase.gekozenSysteem &&
-    f.gekozenOppervlakte === nieuweFase.gekozenOppervlakte &&
-    f.kleur === nieuweFase.kleur
-  );
-
-  if (!bestaatAl) {
-    fases.push(nieuweFase);
-  }
-
   try {
 
-    const res = await fetch(`${API_BASE}/api/materialen`, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json"
-      },
-      body: JSON.stringify({
-        fases: fases   // 🔥 ALLES via fases
-      })
-    });
+    let html = "";
+    let totaalMaterialen = {};
 
-    const data = await res.json();
+    // ========================
+    // 🔼 PER FASE
+    // ========================
+    for (let i = 0; i < fases.length; i++) {
 
-    if (!data || !data.materialen) {
-      resultEl.innerHTML = "Geen bestellijst beschikbaar.";
-      return;
+      const fase = fases[i];
+
+      const res = await fetch(`${API_BASE}/api/materialen`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ fases: [fase] })
+      });
+
+      const data = await res.json();
+      if (!data?.materialen) continue;
+
+      html += `
+        <div class="kaart" style="margin-bottom:15px;">
+          <strong>Fase ${i + 1} – ${fase.gekozenSysteem}</strong>
+      `;
+
+      Object.entries(data.materialen).forEach(([product, info]) => {
+
+        const kg = info.kg || 0;
+
+        // 🔥 sleutel = product + kleur (anders gaat het weer mis)
+        const key = `${product}__${fase.kleur || "geen"}`;
+
+        if (!totaalMaterialen[key]) {
+          totaalMaterialen[key] = {
+            product,
+            kleur: fase.kleur,
+            kg: 0,
+            verpakkingen: info.verpakkingen || []
+          };
+        }
+
+        totaalMaterialen[key].kg += kg;
+
+        // 🔹 verpakking berekening
+        const verpakkingen = Array.isArray(info.verpakkingen)
+          ? [...info.verpakkingen].sort((a, b) => b - a)
+          : [];
+
+        if (verpakkingen.length === 0) return;
+
+        const grootste = verpakkingen[0];
+        const kleinste = verpakkingen[verpakkingen.length - 1];
+
+        let aantalGroot = Math.floor(kg / grootste);
+        let totaal = aantalGroot * grootste;
+        let aantalKlein = 0;
+
+        if (kleinste && kleinste !== grootste) {
+          if (totaal + kleinste >= kg) {
+            aantalKlein = 1;
+          } else {
+            aantalGroot += 1;
+          }
+        } else {
+          if (totaal < kg) {
+            aantalGroot += 1;
+          }
+        }
+
+        let verpakkingTekst = "";
+
+        if (aantalGroot > 0) {
+          verpakkingTekst += `${aantalGroot} x ${grootste}kg`;
+        }
+
+        if (aantalKlein > 0) {
+          verpakkingTekst += `${aantalGroot > 0 ? " + " : ""}${aantalKlein} x ${kleinste}kg`;
+        }
+
+        const kleurTekst = info.kleur_verplicht && fase.kleur
+          ? ` (${fase.kleur})`
+          : "";
+
+        html += `
+          <div class="bestelregel">
+            <span>${product}${kleurTekst}</span>
+            <span>${verpakkingTekst}</span>
+          </div>
+        `;
+      });
+
+      html += `</div>`;
     }
 
-    let html = `<div class="kaart">`;
+    // ========================
+    // 🔽 TOTAAL
+    // ========================
+    html += `
+      <div class="kaart" style="margin-top:20px;">
+        <strong>Totaal bestellijst</strong>
+    `;
 
-    Object.entries(data.materialen).forEach(([product, info]) => {
+    Object.values(totaalMaterialen).forEach(info => {
 
-      const kg = info.kg || 0;
+      const kg = info.kg;
 
       const verpakkingen = Array.isArray(info.verpakkingen)
         ? [...info.verpakkingen].sort((a, b) => b - a)
@@ -2172,17 +2235,14 @@ async function toonBestellijstResultaat() {
 
       let aantalGroot = Math.floor(kg / grootste);
       let totaal = aantalGroot * grootste;
-
       let aantalKlein = 0;
 
       if (kleinste && kleinste !== grootste) {
-
         if (totaal + kleinste >= kg) {
           aantalKlein = 1;
         } else {
           aantalGroot += 1;
         }
-
       } else {
         if (totaal < kg) {
           aantalGroot += 1;
@@ -2199,18 +2259,13 @@ async function toonBestellijstResultaat() {
         verpakkingTekst += `${aantalGroot > 0 ? " + " : ""}${aantalKlein} x ${kleinste}kg`;
       }
 
-      const exacteKg = kg.toFixed(1);
-
-      // 🔥 GEEN globale kleur → backend bepaalt of kleur nodig is
-      const kleurTekst = info.kleur_verplicht && gekozenKleur
-        ? ` (${gekozenKleur})`
+      const kleurTekst = info.kleur
+        ? ` (${info.kleur})`
         : "";
 
       html += `
         <div class="bestelregel">
-          <span>
-            ${product}${kleurTekst} (${exacteKg} kg)
-          </span>
+          <span>${info.product}${kleurTekst}</span>
           <span>${verpakkingTekst}</span>
         </div>
       `;
@@ -2218,6 +2273,9 @@ async function toonBestellijstResultaat() {
 
     html += `</div>`;
 
+    // ========================
+    // ➕ NIEUW SYSTEEM
+    // ========================
     html += `
       <div style="margin-top: 15px;">
         <button id="btn-opnieuw" class="actie-knop" style="width:100%;">
@@ -2232,11 +2290,12 @@ async function toonBestellijstResultaat() {
 
     if (btnOpnieuw) {
       btnOpnieuw.onclick = () => {
-        // 🔥 NIEUWE FASE STARTEN (anders lekt state)
         gekozenSysteem = null;
         gekozenKleur = null;
         gekozenExtras = [];
         gekozenAntwoorden = [];
+        gekozenOppervlakte = null;
+        gekozenRuimtes = null;
 
         toonPrijslijstSysteemSelectie();
       };
@@ -2247,7 +2306,6 @@ async function toonBestellijstResultaat() {
     resultEl.innerHTML = "Fout bij laden bestellijst.";
   }
 }
-
 
 
 
