@@ -3784,19 +3784,17 @@ function gaNaarHome() {
   document.getElementById("question-text").innerHTML = "";
 
   // ========================
-  // 🔧 FASES RESET (BELANGRIJK)
+  // 🔧 FASES RESET
   // ========================
   fases = [];
   actieveFaseIndex = 0;
 
-  // 🔥 CRUCIAAL: fase type resetten
   actieveFaseType = "coating";
 
-  // 🔥 POLIJST STATE RESETTEN (voorkomt lekkage)
+  // 🔥 POLIJST RESET
   polijstSysteem = null;
   polijstKlanttype = null;
   curingAanwezig = false;
-
 
   // ========================
   // FRONTEND STATE RESET
@@ -3815,7 +3813,6 @@ function gaNaarHome() {
   forcedExtras = [];
   backendExtras = [];
 
-  // 🔑 BELANGRIJK: info-popup data resetten
   currentSystemOmschrijving = [];
 
   basisPrijs = null;
@@ -3826,7 +3823,7 @@ function gaNaarHome() {
   gekozenRuimtes = null;
 
   // ========================
-  // AFWEGING STATE RESET
+  // AFWEGING RESET
   // ========================
   afwegingNode = null;
   afwegingResultaten = [];
@@ -3855,7 +3852,7 @@ function gaNaarHome() {
   lastVraagTekst = null;
 
   // ========================
-  // HOMESCREEN OPNIEUW OPBOUWEN
+  // HOMESCREEN OPBOUW
   // ========================
   homeEl.innerHTML = "";
 
@@ -3872,11 +3869,24 @@ function gaNaarHome() {
   btnPrijslijst.textContent = "Prijslijst coatings";
   btnPrijslijst.onclick = startPrijslijst;
 
+  // 🔥 NIEUW
+  const btnBestellijst = document.createElement("button");
+  btnBestellijst.type = "button";
+  btnBestellijst.textContent = "Bestellijst coatings";
+  btnBestellijst.classList.add("actie-knop"); // optioneel highlight
+  btnBestellijst.onclick = startBestellijst;
+
   const btnPolijsten = document.createElement("button");
   btnPolijsten.type = "button";
   btnPolijsten.textContent = "Prijslijst polijsten";
   btnPolijsten.onclick = startPolijstPrijslijst;
 
-  groep.append(btnKeuzegids, btnPrijslijst, btnPolijsten);
+  groep.append(
+    btnKeuzegids,
+    btnPrijslijst,
+    btnBestellijst, // 👈 toegevoegd
+    btnPolijsten
+  );
+
   homeEl.appendChild(groep);
 }
