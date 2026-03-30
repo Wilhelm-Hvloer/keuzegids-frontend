@@ -2138,10 +2138,59 @@ async function toonBestellijstResultaat() {
     let html = `<div class="kaart">`;
 
     Object.entries(data.materialen).forEach(([product, info]) => {
+
+      const kg = info.kg || 0;
+
+      const verpakkingen = Array.isArray(info.verpakkingen)
+        ? [...info.verpakkingen].sort((a, b) => b - a)
+        : [];
+
+      if (verpakkingen.length === 0) return;
+
+      const grootste = verpakkingen[0];
+      const kleinste = verpakkingen[verpakkingen.length - 1];
+
+      let aantalGroot = Math.floor(kg / grootste);
+      let totaal = aantalGroot * grootste;
+
+      let aantalKlein = 0;
+
+      if (kleinste && kleinste !== grootste) {
+
+        if (totaal + kleinste >= kg) {
+          aantalKlein = 1;
+        } else {
+          aantalGroot += 1;
+        }
+
+      } else {
+        if (totaal < kg) {
+          aantalGroot += 1;
+        }
+      }
+
+      let verpakkingTekst = "";
+
+      if (aantalGroot > 0) {
+        verpakkingTekst += `${aantalGroot} x ${grootste}kg`;
+      }
+
+      if (aantalKlein > 0) {
+        verpakkingTekst += `${aantalGroot > 0 ? " + " : ""}${aantalKlein} x ${kleinste}kg`;
+      }
+
+      const exacteKg = kg.toFixed(1);
+
+      const kleurTekst = info.kleur_verplicht && gekozenKleur
+        ? ` (${gekozenKleur})`
+        : "";
+
       html += `
         <div class="bestelregel">
-          <span>${product}</span>
-          <span>${info.kg.toFixed(1)} kg</span>
+          <span>
+            ${product}${kleurTekst} (${exacteKg} kg)
+          </span>
+          <span>${verpakkingTekst}</span>
         </div>
       `;
     });
