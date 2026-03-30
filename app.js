@@ -460,6 +460,18 @@ function toonPrijslijstSysteemSelectie() {
       // 🔥 SELECTIE CLICK
       btn.onclick = () => {
 
+        // ========================
+        // 🔥 BESTELLIJST = DIRECT DOOR
+        // ========================
+        if (isBestellijst()) {
+          gekozenSysteem = systeem;
+          toonBestellijstM2();
+          return;
+        }
+
+        // ========================
+        // 🔹 PRIJSLIJST GEDRAG
+        // ========================
         if (geselecteerdePrijslijstSystemen.includes(systeem)) {
 
           geselecteerdePrijslijstSystemen =
@@ -1600,6 +1612,74 @@ function toonPrijsInvoer() {
   hoofdGroep.appendChild(ruimteGroep);
   optionsEl.appendChild(hoofdGroep);
 }
+
+
+
+
+// ========================
+// BESTELLIJST – M2 + RUIMTES
+// ========================
+function toonBestellijstM2() {
+
+  const questionEl = document.getElementById("question-text");
+  const optionsEl  = document.getElementById("options-box");
+
+  resetUI();
+  optionsEl.style.display = "block";
+
+  questionEl.innerHTML = `
+    <strong>${gekozenSysteem}</strong><br>
+    Voer oppervlakte in
+  `;
+
+  const groep = document.createElement("div");
+  groep.className = "antwoord-groep";
+
+  // ========================
+  // M2 INPUT
+  // ========================
+  const input = document.createElement("input");
+  input.type = "number";
+  input.placeholder = "Oppervlakte in m²";
+  input.classList.add("input-vol");
+
+  // ========================
+  // RUIMTES
+  // ========================
+  const ruimteGroep = document.createElement("div");
+  ruimteGroep.className = "antwoord-groep";
+
+  [1, 2, 3].forEach(aantal => {
+
+    const btn = document.createElement("button");
+    btn.type = "button";
+    btn.textContent = `${aantal} ruimte${aantal > 1 ? "s" : ""}`;
+
+    btn.onclick = () => {
+
+      const m2 = parseFloat(input.value);
+
+      if (!m2 || m2 <= 0) {
+        alert("Voer eerst geldige m² in");
+        return;
+      }
+
+      gekozenOppervlakte = m2;
+      gekozenRuimtes = aantal;
+
+      // 🔥 DIRECT DOOR → GEEN PRIJSSTAP
+      toonKleurVraag();
+    };
+
+    ruimteGroep.appendChild(btn);
+  });
+
+  groep.appendChild(input);
+  groep.appendChild(ruimteGroep);
+
+  optionsEl.appendChild(groep);
+}
+
 
 
 
@@ -3890,3 +3970,7 @@ function gaNaarHome() {
 
   homeEl.appendChild(groep);
 }
+
+window.onload = () => {
+  gaNaarHome();
+};
