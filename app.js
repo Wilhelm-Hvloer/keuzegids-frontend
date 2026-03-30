@@ -2011,7 +2011,7 @@ async function faseHeeftKleurNodig() {
 
 
 // ========================
-// KLEUR VRAGEN (VERBETERD)
+// KLEUR VRAGEN (GEFIXT)
 // ========================
 function toonKleurVraag() {
 
@@ -2059,6 +2059,7 @@ function toonKleurVraag() {
       input.value = kleur;
 
       if (isBestellijst()) {
+        slaHuidigeFaseOp();   // 🔥 CRUCIAAL
         toonBestellijstResultaat();
       } else {
         toonReistijdVraag();
@@ -2085,6 +2086,7 @@ function toonKleurVraag() {
     gekozenKleur = gekozenKleurTemp.trim();
 
     if (isBestellijst()) {
+      slaHuidigeFaseOp();   // 🔥 CRUCIAAL
       toonBestellijstResultaat();
     } else {
       toonReistijdVraag();
