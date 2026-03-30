@@ -76,7 +76,7 @@ async function gaNaarMeerwerkOfKleur() {
 
   // 🔥 HIER kun je ‘m ook gebruiken (optioneel)
   if (kleurNodig) {
-    toonKleurVraag();
+    toonReistijdVraag();
     return;
   }
 
@@ -2104,9 +2104,6 @@ function toonKleurVraag() {
 
 
 
-// ========================
-// BESTELLIJST RESULTAAT (PER FASE + TOTAAL)
-// ========================
 async function toonBestellijstResultaat() {
 
   const questionEl = document.getElementById("question-text");
@@ -2149,7 +2146,6 @@ async function toonBestellijstResultaat() {
 
         const kg = info.kg || 0;
 
-        // 🔥 sleutel = product + kleur (anders gaat het weer mis)
         const key = `${product}__${fase.kleur || "geen"}`;
 
         if (!totaalMaterialen[key]) {
@@ -2163,7 +2159,6 @@ async function toonBestellijstResultaat() {
 
         totaalMaterialen[key].kg += kg;
 
-        // 🔹 verpakking berekening
         const verpakkingen = Array.isArray(info.verpakkingen)
           ? [...info.verpakkingen].sort((a, b) => b - a)
           : [];
@@ -2199,9 +2194,10 @@ async function toonBestellijstResultaat() {
           verpakkingTekst += `${aantalGroot > 0 ? " + " : ""}${aantalKlein} x ${kleinste}kg`;
         }
 
-        const kleurTekst = info.kleur_verplicht && fase.kleur
-          ? ` (${fase.kleur})`
-          : "";
+        const kleurTekst =
+          info.kleur_verplicht && fase.kleur
+            ? ` (${fase.kleur})`
+            : "";
 
         html += `
           <div class="bestelregel">
@@ -2211,7 +2207,7 @@ async function toonBestellijstResultaat() {
         `;
       });
 
-      html += `</div>`;
+      html += `</div>`; // 🔥 BELANGRIJK: sluit fase hier
     }
 
     // ========================
@@ -2276,7 +2272,7 @@ async function toonBestellijstResultaat() {
     html += `</div>`;
 
     // ========================
-    // ➕ NIEUW SYSTEEM
+    // BUTTON
     // ========================
     html += `
       <div style="margin-top: 15px;">
@@ -2349,29 +2345,31 @@ function toonReistijdVraag() {
     }
   }
 
-  opties.forEach(minuten => {
+opties.forEach(minuten => {
 
-    const btn = document.createElement("button");
-    btn.type = "button";
-    btn.textContent = `${minuten} min.`;
+  const btn = document.createElement("button");
+  btn.type = "button";
+  btn.textContent = `${minuten} min.`;
 
-    btn.onclick = async () => {
+  btn.onclick = async () => {
 
-      gekozenReistijd = minuten;
+    gekozenReistijd = minuten;
 
-      const ok = await herberekenAlles();
-      if (!ok) return;
+    const ok = await herberekenAlles();
+    if (!ok) return;
 
-      slaHuidigeFaseOp();
-      toonSamenvatting();
-    };
+    if (isBestellijst()) {
+      toonKleurVraag();
+    } else {
+      toonKleurVraag(); // prijslijst gaat ook naar kleur nu
+    }
 
-    container.appendChild(btn);
-  });
+  };
 
-  optionsEl.appendChild(container);
-}
+  container.appendChild(btn);
+});
 
+optionsEl.appendChild(container);
 
 
 
@@ -3000,8 +2998,7 @@ function slaHuidigeFaseOp() {
     extraMateriaal: JSON.parse(JSON.stringify(extraMateriaal || {}))
   };
 
-  // 🔥 ALTIJD NIEUWE FASE TOEVOEGEN
-  fases.push(faseData);
+  fases[actieveFaseIndex] = faseData;
 }
 
 
