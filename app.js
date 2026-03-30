@@ -46,7 +46,7 @@ let gekozenAntwoorden = [];
 let gekozenKleur = null;
 let planning = [];
 let gekozenReistijd = 0; // minuten
-
+let bestellijstFases = [];
 
 
 // ========================
@@ -201,13 +201,15 @@ function startBestellijst() {
 
   actieveFlow = "bestellijst";
 
+  // 🔥 NIEUW: bestellijst resetten
+  bestellijstFases = [];
+
   gekozenSysteem = null;
   gekozenOppervlakte = null;
   gekozenKleur = null;
 
   toonPrijslijstSysteemSelectie();
 }
-
 
 
 
@@ -2111,6 +2113,25 @@ async function toonBestellijstResultaat() {
   questionEl.innerHTML = `<strong>Bestellijst</strong>`;
   resultEl.innerHTML = "Laden...";
 
+  // 🔥 NIEUW: fase toevoegen
+  const nieuweFase = {
+    gekozenSysteem: gekozenSysteem,
+    gekozenOppervlakte: gekozenOppervlakte,
+    kleur: gekozenKleur,
+    type: "coating"
+  };
+
+  // 🔥 voorkom dubbele entries
+  const bestaatAl = bestellijstFases.some(f =>
+    f.gekozenSysteem === nieuweFase.gekozenSysteem &&
+    f.gekozenOppervlakte === nieuweFase.gekozenOppervlakte &&
+    f.kleur === nieuweFase.kleur
+  );
+
+  if (!bestaatAl) {
+    bestellijstFases.push(nieuweFase);
+  }
+
   try {
 
     const res = await fetch(`${API_BASE}/api/materialen`, {
@@ -2119,12 +2140,7 @@ async function toonBestellijstResultaat() {
         "Content-Type": "application/json"
       },
       body: JSON.stringify({
-        fases: [{
-          gekozenSysteem: gekozenSysteem,
-          gekozenOppervlakte: gekozenOppervlakte,
-          kleur: gekozenKleur,
-          type: "coating"
-        }]
+        fases: bestellijstFases   // 🔥 BELANGRIJK
       })
     });
 
@@ -2197,14 +2213,29 @@ async function toonBestellijstResultaat() {
 
     html += `</div>`;
 
+    html += `
+      <div style="margin-top: 15px;">
+        <button id="btn-opnieuw" class="actie-knop" style="width:100%;">
+          + nog een systeem toevoegen
+        </button>
+      </div>
+    `;
+
     resultEl.innerHTML = html;
+
+    const btnOpnieuw = document.getElementById("btn-opnieuw");
+
+    if (btnOpnieuw) {
+      btnOpnieuw.onclick = () => {
+        toonPrijslijstSysteemSelectie(); // 🔥 GEEN RESET
+      };
+    }
 
   } catch (err) {
     console.error("❌ bestellijst fout:", err);
     resultEl.innerHTML = "Fout bij laden bestellijst.";
   }
 }
-
 
 
 // ========================
