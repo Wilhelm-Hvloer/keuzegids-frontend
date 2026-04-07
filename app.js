@@ -3441,6 +3441,8 @@ html += `
 
     planning.forEach(dag => {
 
+    console.log("WERKZAAMHEDEN:", dag.werkzaamheden); // 👈 HIER
+
       const reistijdTotaal =
         dag.totaal_incl_reistijd - dag.totaal_werk;
 
