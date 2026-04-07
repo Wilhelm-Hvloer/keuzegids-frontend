@@ -3427,7 +3427,7 @@ html += `
 
         werkzaamhedenHtml += `
           <div style="${stijl}">
-            - ${taak.naam} (${taak.uren} uur)
+            - ${taak.naam} <span class="subtle-info">(${taak.uren} uur)</span>
           </div>
         `;
       });
@@ -3436,10 +3436,7 @@ html += `
         <div style="margin-bottom:10px;">
           <strong>Dag ${dag.dag}</strong><br>
 
-          <div class="bestelregel">
-            <span>${dag.man} man ${dag.uren_per_persoon} uur</span>
-            <span>(${dag.totaal_werk} + ${reistijdTotaal} uur)</span>
-          </div>
+          ${dag.man} man ${dag.uren_per_persoon} uur<span class="subtle-info"> (${dag.totaal_werk} + ${reistijdTotaal} uur)</span><br>
 
           ${werkzaamhedenHtml}
         </div>
@@ -3451,7 +3448,6 @@ html += `
   });
 
 }
-
 
 
 
