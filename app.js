@@ -4121,6 +4121,6 @@ function gaNaarHome() {
   homeEl.appendChild(groep);
 }
 
-window.onload = () => {
+document.addEventListener("DOMContentLoaded", () => {
   gaNaarHome();
-};
+});
