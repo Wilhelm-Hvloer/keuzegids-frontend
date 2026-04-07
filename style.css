@@ -303,6 +303,11 @@ hr {
   padding:4px 0;
 }
 
+.subtle-info {
+  color: var(--text-muted);
+}
+
+
 /* =========================
    FASE SCHEIDING
    ========================= */
