@@ -2318,12 +2318,13 @@ function toonReistijdVraag() {
   resetUI();
   optionsEl.style.display = "block";
 
-  // 🔥 Zorg dat fase altijd bestaat
+  // 🔥 Zorg dat fase altijd bestaat + type heeft
   if (!fases[actieveFaseIndex]) {
-    fases[actieveFaseIndex] = {};
+    fases[actieveFaseIndex] = {
+      type: actieveFaseType || "coating"
+    };
   }
 
-  // 🔑 FASE BEPALEN
   const fase = fases[actieveFaseIndex];
   const faseType = fase.type || "coating";
 
@@ -2345,32 +2346,28 @@ function toonReistijdVraag() {
     }
   }
 
-opties.forEach(minuten => {
+  opties.forEach(minuten => {
 
-  const btn = document.createElement("button");
-  btn.type = "button";
-  btn.textContent = `${minuten} min.`;
+    const btn = document.createElement("button");
+    btn.type = "button";
+    btn.textContent = `${minuten} min.`;
 
-  btn.onclick = async () => {
+    btn.onclick = async () => {
 
-    gekozenReistijd = minuten;
+      gekozenReistijd = minuten;
 
-    const ok = await herberekenAlles();
-    if (!ok) return;
+      const ok = await herberekenAlles();
+      if (!ok) return;
 
-    if (isBestellijst()) {
+      // 🔥 altijd door naar kleur
       toonKleurVraag();
-    } else {
-      toonKleurVraag(); // prijslijst gaat ook naar kleur nu
-    }
+    };
 
-  };
+    container.appendChild(btn);
+  });
 
-  container.appendChild(btn);
-});
-
-optionsEl.appendChild(container);
-
+  optionsEl.appendChild(container);
+}
 
 
 // ========================
