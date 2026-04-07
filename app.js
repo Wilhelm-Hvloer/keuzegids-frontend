@@ -3011,8 +3011,8 @@ async function berekenBasisPrijsVoorSysteem(systeemNaam, m2, ruimtes) {
 // ========================
 function slaHuidigeFaseOp() {
 
-  // 🔥 GEEN bestaandeFase MEER NODIG VOOR INDEX-LOGICA
   const laatsteFase = fases[fases.length - 1] || {};
+  const bestaandeFase = fases[actieveFaseIndex] || {};
 
   const systeemNaam =
     gekozenSysteem ||
@@ -3045,14 +3045,23 @@ function slaHuidigeFaseOp() {
 
     systeemKeuzeIndex,
 
-    // 🔥 kleur netjes behouden
     kleur:
       gekozenKleur !== null && gekozenKleur !== undefined
         ? gekozenKleur
         : laatsteFase.kleur || null,
 
-    extraMeerwerk: JSON.parse(JSON.stringify(extraMeerwerk || {})),
-    extraMateriaal: JSON.parse(JSON.stringify(extraMateriaal || {}))
+    // 🔥 FIX: XTR niet overschrijven
+    extraMeerwerk: JSON.parse(JSON.stringify(
+      extraMeerwerk?.uren
+        ? extraMeerwerk
+        : bestaandeFase.extraMeerwerk || {}
+    )),
+
+    extraMateriaal: JSON.parse(JSON.stringify(
+      extraMateriaal?.bedrag
+        ? extraMateriaal
+        : bestaandeFase.extraMateriaal || {}
+    ))
   };
 
   fases[actieveFaseIndex] = faseData;
