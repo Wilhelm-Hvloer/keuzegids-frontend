@@ -2929,7 +2929,7 @@ async function haalPlanningOp(fase) {
           // 🔹 keuzegids extra’s (zoals coating verwijderen)
           ...(fase.gekozenExtras || []).map(extra => {
 
-            if (extra === "coating verwijderen") {
+            if (extra && extra.toLowerCase().includes("coating verwijderen")) {
               return {
                 dag: 1,
                 naam: "coating verwijderen",
