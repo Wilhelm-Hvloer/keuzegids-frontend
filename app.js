@@ -3028,9 +3028,6 @@ async function berekenBasisPrijsVoorSysteem(systeemNaam, m2, ruimtes) {
 
 
 
-// ========================
-// FASE SNAPSHOT OPSLAAN (DEFINITIEF)
-// ========================
 function slaHuidigeFaseOp() {
 
   const laatsteFase = fases[fases.length - 1] || {};
@@ -3072,11 +3069,8 @@ function slaHuidigeFaseOp() {
         ? gekozenKleur
         : laatsteFase.kleur || null,
 
-    // 🔥 NIEUW: hellingbaan meenemen (CRUCIAAL)
-    heeftHellingbaan:
-      bestaandeFase.heeftHellingbaan ||
-      fases[actieveFaseIndex]?.heeftHellingbaan ||
-      false,
+    // ✅ FIX: GEEN fallback-logica meer → gewoon de echte waarde
+    heeftHellingbaan: fases[actieveFaseIndex]?.heeftHellingbaan === true,
 
     // 🔥 FIX: XTR niet overschrijven
     extraMeerwerk: JSON.parse(JSON.stringify(
