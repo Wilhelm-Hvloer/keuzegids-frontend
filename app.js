@@ -49,6 +49,7 @@ let gekozenReistijd = 0; // minuten
 
 
 
+
 // ========================
 // FLOW HELPERS (DEFINITIEF STABIEL)
 // ========================
@@ -74,9 +75,15 @@ async function gaNaarMeerwerkOfKleur() {
     kleurNodig = await faseHeeftKleurNodig();
   }
 
-  // 🔥 HIER kun je ‘m ook gebruiken (optioneel)
-  if (kleurNodig) {
+  // 🔥 eerst kleur
+  if (kleurNodig && !gekozenKleur) {
     toonKleurVraag();
+    return;
+  }
+
+  // 🔥 NIEUW: altijd reistijd afdwingen
+  if (!gekozenReistijd) {
+    toonReistijdVraag();
     return;
   }
 
@@ -94,6 +101,9 @@ async function gaNaarMeerwerkOfKleur() {
   slaHuidigeFaseOp();
   toonSamenvatting();
 }
+
+
+
 
 
 // ========================
