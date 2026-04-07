@@ -2916,20 +2916,25 @@ async function haalPlanningOp(fase) {
         ruimtes: fase.gekozenRuimtes,
         reistijd: fase.gekozenReistijd || 0,
 
-        // 🔥 CRUCIAAL: meerwerk combineren
+        // 🔥 CRUCIAAL: meerwerk combineren (netjes gescheiden)
         meerwerk: [
 
-          // 🔹 bestaand handmatig meerwerk
+          // 🔹 1. bestaand handmatig meerwerk (leidend)
           ...(fase.extraMeerwerk?.uren ? [{
-            dag: fase.extraMeerwerk.dag,
+            dag: fase.extraMeerwerk.dag || 1,
             naam: fase.extraMeerwerk.toelichting || "Meerwerk",
             uren: fase.extraMeerwerk.uren
           }] : []),
 
-          // 🔹 keuzegids extra’s (zoals coating verwijderen)
+          // 🔹 2. keuzegids extras → alleen als het echt werk is
           ...(fase.gekozenExtras || []).map(extra => {
 
-            if (extra && extra.toLowerCase().includes("coating verwijderen")) {
+            if (!extra) return null;
+
+            const cleanExtra = extra.toLowerCase().replace("meerwerk – ", "").trim();
+
+            // alleen werk-gerelateerde extras meenemen
+            if (cleanExtra === "coating verwijderen") {
               return {
                 dag: 1,
                 naam: "coating verwijderen",
