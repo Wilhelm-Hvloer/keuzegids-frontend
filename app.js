@@ -1191,9 +1191,6 @@ function handleSystemNode(node) {
 // XTR → MEERWERK COATING VERWIJDEREN
 // ========================
 function handleXtrNode(node) {
-  // xtr is een expliciete tussenstap met eigen UI
-  // frontend verzamelt ALLEEN input (uren)
-  // backend rekent prijs
 
   const questionEl = document.getElementById("question-text");
   const optionsEl  = document.getElementById("options-box");
@@ -1217,9 +1214,21 @@ function handleXtrNode(node) {
   btn.textContent = "Bevestigen";
 
   btn.onclick = async () => {
-    xtrCoatingVerwijderenUren = Number(input.value || 0);
+    const uren = Number(input.value || 0);
 
-    // xtr heeft altijd exact 1 vervolg
+    xtrCoatingVerwijderenUren = uren;
+
+    // 🔥 HIER zat je bug → fase vullen
+    if (!fases[actieveFaseIndex]) {
+      fases[actieveFaseIndex] = {};
+    }
+
+    fases[actieveFaseIndex].extraMeerwerk = {
+      uren: uren,
+      dag: 1,
+      toelichting: "coating verwijderen"
+    };
+
     await chooseOption(0);
   };
 
@@ -1227,7 +1236,6 @@ function handleXtrNode(node) {
   groep.appendChild(btn);
   optionsEl.appendChild(groep);
 }
-
 
 
 
