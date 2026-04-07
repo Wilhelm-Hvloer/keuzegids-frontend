@@ -46,6 +46,11 @@ let gekozenAntwoorden = [];
 let gekozenKleur = null;
 let planning = [];
 let gekozenReistijd = 0; // minuten
+if (!fases[actieveFaseIndex]) {
+  fases[actieveFaseIndex] = {};
+}
+
+fases[actieveFaseIndex].heeftHellingbaan = false;
 
 
 
@@ -270,6 +275,11 @@ function startPrijslijst() {
   basisPrijs = null;
   totaalPrijs = null;
   prijsPerM2 = null;
+  if (!fases[actieveFaseIndex]) {
+    fases[actieveFaseIndex] = {};
+  }
+
+  fases[actieveFaseIndex].heeftHellingbaan = false;
 
   systeemKeuzeIndex = null;
 
@@ -651,6 +661,11 @@ async function startKeuzegids() {
 
   gekozenSysteem = null;
   gekozenAntwoorden = [];
+  if (!fases[actieveFaseIndex]) {
+    fases[actieveFaseIndex] = {};
+  }
+
+  fases[actieveFaseIndex].heeftHellingbaan = false;
 
   gekozenKleur = null; // 🔥 TOEVOEGEN
 
@@ -725,7 +740,6 @@ function toonSysteemSelectie(node) {
 
 
 
-
 // ========================
 // KEUZE MAKEN (BACKEND-LEIDEND)
 // ========================
@@ -749,6 +763,22 @@ async function chooseOption(index) {
 
   const gekozenOptie = currentNode.next[index];
   console.log("gekozenOptie object:", gekozenOptie);
+
+  // ========================
+  // 🔥 SET HANDLING (NIEUW)
+  // ========================
+  if (gekozenOptie?.set) {
+
+    if (!fases[actieveFaseIndex]) {
+      fases[actieveFaseIndex] = {};
+    }
+
+    Object.entries(gekozenOptie.set).forEach(([key, value]) => {
+      fases[actieveFaseIndex][key] = value;
+    });
+
+    console.log("🟢 SET toegepast:", gekozenOptie.set);
+  }
 
   // ========================
   // ANTWOORD REGISTREREN
@@ -803,7 +833,6 @@ async function chooseOption(index) {
         gekozenExtras.push(extraKey);
       }
 
-      // Geen eigen m2-flow.
       // Backend berekent staffel op basis van systeem m2.
     }
 
@@ -818,9 +847,7 @@ async function chooseOption(index) {
       }
     }
 
-    // Let op:
-    // Geen return hier.
-    // Backend bepaalt vervolg via /api/next
+    // Geen return → backend routing gaat door
   }
 
   // ========================
@@ -850,7 +877,6 @@ async function chooseOption(index) {
     console.error("❌ Fout bij chooseOption:", err);
   }
 }
-
 
 
 
@@ -2822,6 +2848,7 @@ async function herberekenPrijs() {
         systeem: gekozenSysteem,
         oppervlakte: gekozenOppervlakte,
         ruimtes: gekozenRuimtes,
+        heeft_hellingbaan: fases[actieveFaseIndex]?.heeftHellingbaan || false,
         extras: extrasPayload,
         forced_extras: forcedPayload,
         xtr_coating_verwijderen_uren: xtrCoatingVerwijderenUren || 0,
@@ -2923,6 +2950,7 @@ async function haalPlanningOp(fase) {
         m2: fase.gekozenOppervlakte,
         ruimtes: fase.gekozenRuimtes,
         reistijd: fase.gekozenReistijd || 0,
+        heeft_hellingbaan: fase.heeftHellingbaan || false,
 
         // 🔥 CRUCIAAL: meerwerk combineren (netjes gescheiden)
         meerwerk: [
@@ -3050,6 +3078,12 @@ function slaHuidigeFaseOp() {
         ? gekozenKleur
         : laatsteFase.kleur || null,
 
+    // 🔥 NIEUW: hellingbaan meenemen (CRUCIAAL)
+    heeftHellingbaan:
+      bestaandeFase.heeftHellingbaan ||
+      fases[actieveFaseIndex]?.heeftHellingbaan ||
+      false,
+
     // 🔥 FIX: XTR niet overschrijven
     extraMeerwerk: JSON.parse(JSON.stringify(
       extraMeerwerk?.uren
@@ -3066,8 +3100,6 @@ function slaHuidigeFaseOp() {
 
   fases[actieveFaseIndex] = faseData;
 }
-
-
 
 
 
@@ -3695,6 +3727,12 @@ function startPrijslijstCoatingFase() {
   gekozenSysteem = null;
   gekozenOppervlakte = null;
   gekozenRuimtes = null;
+  if (!fases[actieveFaseIndex]) {
+    fases[actieveFaseIndex] = {};
+  }
+
+  fases[actieveFaseIndex].heeftHellingbaan = false;
+
 
   gekozenKleur = null;
   prijsPerM2 = null;
@@ -4114,6 +4152,11 @@ function gaNaarHome() {
 
   gekozenSysteem = null;
   gekozenAntwoorden = [];
+  if (!fases[actieveFaseIndex]) {
+    fases[actieveFaseIndex] = {};
+  }
+
+  fases[actieveFaseIndex].heeftHellingbaan = false;
 
   gekozenExtras = [];
   forcedExtras = [];
