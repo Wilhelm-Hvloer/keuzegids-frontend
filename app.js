@@ -3436,7 +3436,7 @@ html += `
         <div style="margin-bottom:10px;">
           <strong>Dag ${dag.dag}</strong><br>
 
-          ${dag.man} man ${dag.uren_per_persoon} uur<span class="subtle-info"> (${dag.totaal_werk} + ${reistijdTotaal} uur)</span><br>
+          ${dag.man} man ${dag.uren_per_persoon} uur<span class="subtle-info"> (${dag.totaal_werk} + ${reistijdTotaal} uur)</span>
 
           ${werkzaamhedenHtml}
         </div>
