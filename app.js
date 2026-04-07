@@ -76,7 +76,7 @@ async function gaNaarMeerwerkOfKleur() {
 
   // 🔥 HIER kun je ‘m ook gebruiken (optioneel)
   if (kleurNodig) {
-    toonReistijdVraag();
+    toonKleurVraag();
     return;
   }
 
