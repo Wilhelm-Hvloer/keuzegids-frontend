@@ -2916,14 +2916,33 @@ async function haalPlanningOp(fase) {
         ruimtes: fase.gekozenRuimtes,
         reistijd: fase.gekozenReistijd || 0,
 
-        // 🔥 CRUCIAAL: meerwerk meesturen
-        meerwerk: fase.extraMeerwerk?.uren
-          ? [{
-              dag: fase.extraMeerwerk.dag,
-              naam: fase.extraMeerwerk.toelichting || "Meerwerk",
-              uren: fase.extraMeerwerk.uren
-            }]
-          : []
+        // 🔥 CRUCIAAL: meerwerk combineren
+        meerwerk: [
+
+          // 🔹 bestaand handmatig meerwerk
+          ...(fase.extraMeerwerk?.uren ? [{
+            dag: fase.extraMeerwerk.dag,
+            naam: fase.extraMeerwerk.toelichting || "Meerwerk",
+            uren: fase.extraMeerwerk.uren
+          }] : []),
+
+          // 🔹 keuzegids extra’s (zoals coating verwijderen)
+          ...(fase.gekozenExtras || []).map(extra => {
+
+            if (extra === "coating verwijderen") {
+              return {
+                dag: 1,
+                naam: "coating verwijderen",
+                uren: fase.extraMeerwerk?.uren || 0
+              };
+            }
+
+            return null;
+
+          }).filter(Boolean)
+
+        ]
+
       })
     });
 
