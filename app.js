@@ -3435,7 +3435,12 @@ html += `
       planningHtml += `
         <div style="margin-bottom:10px;">
           <strong>Dag ${dag.dag}</strong><br>
-          ${dag.man} man ${dag.uren_per_persoon} uur (${dag.totaal_werk} + ${reistijdTotaal} uur)<br>
+
+          <div class="bestelregel">
+            <span>${dag.man} man ${dag.uren_per_persoon} uur</span>
+            <span>(${dag.totaal_werk} + ${reistijdTotaal} uur)</span>
+          </div>
+
           ${werkzaamhedenHtml}
         </div>
       `;
