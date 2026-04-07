@@ -2280,7 +2280,7 @@ async function toonBestellijstResultaat() {
     html += `
       <div style="margin-top: 15px;">
         <button id="btn-opnieuw" class="actie-knop" style="width:100%;">
-          + nog een systeem toevoegen
+          + systeem toevoegen
         </button>
       </div>
     `;
@@ -2370,16 +2370,23 @@ function toonReistijdVraag() {
       const ok = await herberekenAlles();
       if (!ok) return;
 
-      // 🔥 altijd door naar kleur
-      toonKleurVraag();
+      // 🔥 FIX: niet meer terug naar kleur
+      if (isBestellijst()) {
+        // komt normaal niet voor, maar veilig
+        slaHuidigeFaseOp();
+        toonBestellijstResultaat();
+      } else {
+        // keuzegids → afronden
+        slaHuidigeFaseOp();
+        toonSamenvatting();
+      }
     };
 
     container.appendChild(btn);
   });
 
   optionsEl.appendChild(container);
-}
-
+  }
 
 // ========================
 // OPEN EXTRA ACTIES (FASE-GEBONDEN)
