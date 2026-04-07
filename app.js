@@ -46,6 +46,8 @@ let gekozenAntwoorden = [];
 let gekozenKleur = null;
 let planning = [];
 let gekozenReistijd = 0; // minuten
+let fases = [];
+let actieveFaseIndex = 0;
 if (!fases[actieveFaseIndex]) {
   fases[actieveFaseIndex] = {};
 }
@@ -108,14 +110,6 @@ async function gaNaarMeerwerkOfKleur() {
 }
 
 
-
-
-
-// ========================
-// FASES (NIEUW)
-// ========================
-let fases = [];              // opgeslagen fases (max 5)
-let actieveFaseIndex = 0;    // fase die nu wordt opgebouwd
 
 
 // ========================
