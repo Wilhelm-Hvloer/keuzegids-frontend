@@ -2291,6 +2291,14 @@ async function toonBestellijstResultaat() {
 
     if (btnOpnieuw) {
       btnOpnieuw.onclick = () => {
+
+        // 🔥 eerst huidige fase veiligstellen
+        slaHuidigeFaseOp();
+
+        // 🔥 nieuwe fase starten
+        actieveFaseIndex++;
+
+        // 🔥 input resetten (prima zo)
         gekozenSysteem = null;
         gekozenKleur = null;
         gekozenExtras = [];
