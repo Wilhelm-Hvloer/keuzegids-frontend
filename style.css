@@ -94,7 +94,7 @@ h2 {
 #home-screen {
   display: flex;
   flex-direction: column;
-  gap: 16px;
+  gap: 14px;
   margin-top: 40px;
 }
 
@@ -623,3 +623,7 @@ hr {
   padding-bottom: 90px;
 }
 
+.secondary-btn {
+  color: var(--text-muted);
+  font-weight: 500; /* iets minder dominant */
+}

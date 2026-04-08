@@ -4087,9 +4087,8 @@ function formatPrijs(bedrag) {
 }
 
 
-
 // ========================
-// HOMESCREEN ACTIES (DEFINITIEF & VOLLEDIG GERESET)
+// HOMESCREEN ACTIES (DEFINITIEF & STABIEL)
 // ========================
 function gaNaarHome() {
 
@@ -4098,7 +4097,7 @@ function gaNaarHome() {
   const optionsEl = document.getElementById("options-box");
   const resultEl  = document.getElementById("result-box");
 
-  // 🔥 NIEUW: onderste knoppen verbergen
+  // 🔥 onderste knoppen verbergen
   const bottom = document.getElementById("bottom-actions");
   if (bottom) bottom.style.display = "none";
 
@@ -4106,7 +4105,10 @@ function gaNaarHome() {
   // SCHERMEN RESETTEN
   // ========================
   flowEl.style.display = "none";
-  homeEl.style.display = "block";
+  homeEl.style.display = "flex"; // 🔥 FIX: was block → breekt je layout
+
+  // 🔥 NIET MEER DOEN:
+  // homeEl.innerHTML = "";
 
   optionsEl.innerHTML = "";
   optionsEl.style.display = "none";
@@ -4144,6 +4146,7 @@ function gaNaarHome() {
 
   gekozenSysteem = null;
   gekozenAntwoorden = [];
+
   if (!fases[actieveFaseIndex]) {
     fases[actieveFaseIndex] = {};
   }
