@@ -618,12 +618,14 @@ hr {
   flex: 1;
 }
 
+/* 🔥 FIX: secondary knop overschrijft standaard button kleur */
+#bottom-actions .secondary-btn {
+  color: var(--text-muted);
+  font-weight: 500;
+  opacity: 0.85;
+}
+
 /* ruimte onder content zodat niets achter de knoppen valt */
 #app {
   padding-bottom: 90px;
-}
-
-.secondary-btn {
-  color: var(--text-muted);
-  font-weight: 500; /* iets minder dominant */
 }
