@@ -307,7 +307,6 @@ hr {
   color: var(--text-muted);
 }
 
-
 /* =========================
    FASE SCHEIDING
    ========================= */
@@ -594,4 +593,33 @@ hr {
   padding: 6px 0;
 }
 
+/* =========================
+   BOTTOM ACTIONS (COATING FLOW)
+   ========================= */
+
+#bottom-actions {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  width: 100%;
+
+  display: flex;
+  gap: 10px;
+
+  padding: 10px 12px;
+
+  background: #2f3231;
+  border-top: 2px solid var(--accent);
+
+  z-index: 1000;
+}
+
+#bottom-actions button {
+  flex: 1;
+}
+
+/* ruimte onder content zodat niets achter de knoppen valt */
+#app {
+  padding-bottom: 90px;
+}
 

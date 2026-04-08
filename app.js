@@ -640,6 +640,10 @@ function startVergelijking() {
 // ========================
 async function startKeuzegids() {
 
+  // 🔥 NIEUW: onderste knoppen tonen
+  const bottom = document.getElementById("bottom-actions");
+  if (bottom) bottom.style.display = "flex";
+
   // UI reset
   resetUI();
   toonFlow();
@@ -661,7 +665,7 @@ async function startKeuzegids() {
 
   fases[actieveFaseIndex].heeftHellingbaan = false;
 
-  gekozenKleur = null; // 🔥 TOEVOEGEN
+  gekozenKleur = null;
 
   gekozenExtras = [];
   forcedExtras = [];
@@ -691,7 +695,6 @@ async function startKeuzegids() {
     console.error("❌ Fout bij starten keuzegids:", err);
   }
 }
-
 
 
  
@@ -759,6 +762,14 @@ async function chooseOption(index) {
   console.log("gekozenOptie object:", gekozenOptie);
 
   // ========================
+  // 🔥 NIEUW: ONDERSTE KNOPPEN VERBERGEN (ALLEEN 1e KEER)
+  // ========================
+  if (gekozenAntwoorden.length === 0) {
+    const bottom = document.getElementById("bottom-actions");
+    if (bottom) bottom.style.display = "none";
+  }
+
+  // ========================
   // 🔥 SET HANDLING (NIEUW)
   // ========================
   if (gekozenOptie?.set) {
@@ -796,9 +807,6 @@ async function chooseOption(index) {
       gekozenExtras = [];
     }
 
-    // ========================
-    // VARIABLE SURFACE EXTRA (eigen m2 invoer)
-    // ========================
     const VARIABLE_SURFACE_EXTRAS = ["DuraKorrel"];
 
     if (VARIABLE_SURFACE_EXTRAS.includes(extraKey)) {
@@ -813,12 +821,9 @@ async function chooseOption(index) {
         vervolgNodeId
       );
 
-      return; // ⛔ stop hier – geen backend routing
+      return;
     }
 
-    // ========================
-    // COMPLEXE EXTRA VIA extra_systemen (hele systeem m2)
-    // ========================
     const FULL_SURFACE_EXTRA_SYSTEMS = ["AG lak", "extra uitvlaklaag"];
 
     if (FULL_SURFACE_EXTRA_SYSTEMS.includes(extraKey)) {
@@ -826,13 +831,8 @@ async function chooseOption(index) {
       if (!gekozenExtras.includes(extraKey)) {
         gekozenExtras.push(extraKey);
       }
-
-      // Backend berekent staffel op basis van systeem m2.
     }
 
-    // ========================
-    // NORMALE PER_M2 EXTRA
-    // ========================
     if (!VARIABLE_SURFACE_EXTRAS.includes(extraKey) &&
         !FULL_SURFACE_EXTRA_SYSTEMS.includes(extraKey)) {
 
@@ -840,8 +840,6 @@ async function chooseOption(index) {
         gekozenExtras.push(extraKey);
       }
     }
-
-    // Geen return → backend routing gaat door
   }
 
   // ========================
@@ -4088,6 +4086,8 @@ function formatPrijs(bedrag) {
     });
 }
 
+
+
 // ========================
 // HOMESCREEN ACTIES (DEFINITIEF & VOLLEDIG GERESET)
 // ========================
@@ -4097,6 +4097,10 @@ function gaNaarHome() {
   const flowEl    = document.getElementById("flow-screen");
   const optionsEl = document.getElementById("options-box");
   const resultEl  = document.getElementById("result-box");
+
+  // 🔥 NIEUW: onderste knoppen verbergen
+  const bottom = document.getElementById("bottom-actions");
+  if (bottom) bottom.style.display = "none";
 
   // ========================
   // SCHERMEN RESETTEN
@@ -4187,45 +4191,6 @@ function gaNaarHome() {
   }
 
   lastVraagTekst = null;
-
-  // ========================
-  // HOMESCREEN OPBOUW
-  // ========================
-  homeEl.innerHTML = "";
-
-  const groep = document.createElement("div");
-  groep.className = "antwoord-groep";
-
-  const btnKeuzegids = document.createElement("button");
-  btnKeuzegids.type = "button";
-  btnKeuzegids.textContent = "Keuzegids coatings";
-  btnKeuzegids.onclick = startKeuzegids;
-
-  const btnPrijslijst = document.createElement("button");
-  btnPrijslijst.type = "button";
-  btnPrijslijst.textContent = "Prijslijst coatings";
-  btnPrijslijst.onclick = startPrijslijst;
-
-  // 🔥 NIEUW
-  const btnBestellijst = document.createElement("button");
-  btnBestellijst.type = "button";
-  btnBestellijst.textContent = "Bestellijst coatings";
-  btnBestellijst.classList.add("actie-knop"); // optioneel highlight
-  btnBestellijst.onclick = startBestellijst;
-
-  const btnPolijsten = document.createElement("button");
-  btnPolijsten.type = "button";
-  btnPolijsten.textContent = "Prijslijst polijsten";
-  btnPolijsten.onclick = startPolijstPrijslijst;
-
-  groep.append(
-    btnKeuzegids,
-    btnPrijslijst,
-    btnBestellijst, // 👈 toegevoegd
-    btnPolijsten
-  );
-
-  homeEl.appendChild(groep);
 }
 
 document.addEventListener("DOMContentLoaded", () => {
