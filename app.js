@@ -26,7 +26,7 @@ function maakAntwoordGroep() {
 // CONFIG
 // ========================
 
-const API_BASE = "https://keuzegids-backend-dev.onrender.com";
+const API_BASE = "https://keuzegids-backend.onrender.com";
 
 
 // ========================
@@ -2092,7 +2092,7 @@ function toonKleurVraag() {
   // ========================
   // STANDAARD KLEUREN
   // ========================
-  const kleuren = ["RAL 7035", "RAL 7040", "RAL 9005"];
+  const kleuren = ["RAL 7035", "RAL 7040", "RAL 7044"];
 
   kleuren.forEach(kleur => {
 
