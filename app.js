@@ -206,12 +206,16 @@ function toonFlow() {
 // ========================
 function startBestellijst() {
 
+  // 🔥 NIEUW: onderste knoppen verbergen
+  const bottom = document.getElementById("bottom-actions");
+  if (bottom) bottom.style.display = "none";
+
   toonFlow();
   resetUI();
 
   actieveFlow = "bestellijst";
 
-  // 🔥 NIEUW: bestellijst resetten
+  // 🔥 bestellijst resetten
   bestellijstFases = [];
 
   gekozenSysteem = null;
@@ -232,6 +236,10 @@ function startBestellijst() {
 function startPrijslijst() {
 
   console.log("📋 Prijslijst gestart");
+
+  // 🔥 NIEUW: onderste knoppen verbergen
+  const bottom = document.getElementById("bottom-actions");
+  if (bottom) bottom.style.display = "none";
 
   toonFlow();
   resetUI();
@@ -269,6 +277,7 @@ function startPrijslijst() {
   basisPrijs = null;
   totaalPrijs = null;
   prijsPerM2 = null;
+
   if (!fases[actieveFaseIndex]) {
     fases[actieveFaseIndex] = {};
   }
@@ -295,7 +304,6 @@ function startPrijslijst() {
   // ========================
   toonPrijslijstSysteemSelectie();
 }
-
 
 
 
